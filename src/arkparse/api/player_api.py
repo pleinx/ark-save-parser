@@ -3,7 +3,7 @@ from pathlib import Path
 import time
 import threading
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMaps
 from arkparse.objects.player.ark_profile import ArkProfile
 from arkparse.objects.tribe.ark_tribe import ArkTribe
 
@@ -19,12 +19,12 @@ class PlayerApi:
         LEVEL = 1
         XP = 2
 
-    def __init__(self, ftp_client: ArkFtpClient, update_frequency = 900):
+    def __init__(self, ftp_config: dict, map: ArkMaps, update_frequency = 900):
         self.players : List[ArkProfile] = []
         self.tribes : List[ArkTribe] = []
 
-        self.ftp_client : ArkFtpClient = ftp_client
-
+        self.ftp_client : ArkFtpClient = ArkFtpClient.from_config(ftp_config, map)
+        
         self.__update_files()
         self.__initial_run = True
 
@@ -39,9 +39,17 @@ class PlayerApi:
         update_thread = threading.Thread(target=update_loop, daemon=True)
         update_thread.start()
 
+    def dispose(self):
+        self.ftp_client.close()
+
+    def __del__(self):
+        self.ftp_client.close()
+
     def __update_files(self):
         new_players = []
         new_tribes = []
+
+        self.ftp_client.connect()
 
         player_files = self.ftp_client.list_all_profile_files()
         tribe_files = self.ftp_client.list_all_tribe_files()
@@ -61,6 +69,8 @@ class PlayerApi:
 
         self.players = new_players
         self.tribes = new_tribes
+
+        self.ftp_client.close()
 
     def __calc_stat(self, stat: List[int], stat_type: int):
         if stat_type == self.StatType.LOWEST:
