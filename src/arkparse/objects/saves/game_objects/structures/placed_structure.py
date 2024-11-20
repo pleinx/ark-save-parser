@@ -1,0 +1,132 @@
+from dataclasses import dataclass
+from typing import List
+from uuid import UUID
+
+from arkparse.objects.saves.game_objects.misc import ObjectOwner
+from arkparse.parsing import ArkPropertyContainer
+from arkparse.struct import ActorTransform
+from arkparse.parsing import ArkBinaryParser
+from arkparse.objects.saves.asa_save import AsaSave
+from ..abstract_game_object import AbstractGameObject
+
+@dataclass
+class SimpleStructure:
+    binary: ArkBinaryParser
+    object: AbstractGameObject
+
+    blueprint: str
+
+    owner: ObjectOwner
+    id_: int #StructureID
+    max_health: float#MaxHealth
+    current_health: float#Health
+
+    location: ActorTransform
+    binary_data: bytes
+
+    linked_structure_uuids: List[str]#LinkedStructures
+    linked_structures = List["SimpleStructure"]
+
+    # timestamps
+    original_creation_time: float #OriginalCreationTime
+    last_enter_stasis_time: float #LastEnterStasisTime
+    has_reset_decay_time: bool #bHasResetDecayTime
+    saved_when_stasised: bool #bSavedWhenStasised
+
+    # other
+    was_placement_snapped: bool #bWasPlacementSnapped
+    last_in_ally_range_time_serialized: float #LastInAllyRangeTimeSerialized
+
+    #?
+    #StructuresPlacedOnFloor
+    #PrimarySnappedStructureChild
+    #BedID
+    #NextAllowedUseTime
+    #PlacedOnFloorStructure
+    #LinkedPlayerID
+    #LinkedPlayerName
+    #bInitializedRotation
+    #DoorOpenState
+    #CurrentOpenMode
+    #CurrentItemCount
+    #MyInventoryComponent
+    #NetDestructionTime
+
+    def _get_class_name(self):
+        self.binary.set_position(0)
+        class_name = self.binary.read_name()
+        return class_name
+
+    def __init__(self, uuid: UUID, binary: ArkBinaryParser):
+        self.binary = binary
+        self.blueprint = self._get_class_name()
+        self.object = AbstractGameObject(uuid=uuid, blueprint=self.blueprint, binary_reader=binary)
+
+        properties = self.object
+
+        self.owner = ObjectOwner(properties)
+
+        self.id_ = properties.get_property_value("StructureID")
+        self.max_health = properties.get_property_value("MaxHealth")
+        self.current_health = properties.get_property_value("Health", self.max_health)
+
+        self.location = None
+        self.binary_data = None
+
+        self.linked_structure_uuids = properties.get_array_property_value("LinkedStructures", [])
+        self.linked_structures = []
+
+        self.original_creation_time = properties.get_property_value("OriginalCreationTime")
+        self.last_enter_stasis_time = properties.get_property_value("LastEnterStasisTime")
+        self.has_reset_decay_time = properties.get_property_value("bHasResetDecayTime", False)
+        self.saved_when_stasised = properties.get_property_value("bSavedWhenStasised", False)
+
+        self.was_placement_snapped = properties.get_property_value("bWasPlacementSnapped", False)
+        self.last_in_ally_range_time_serialized = properties.get_property_value("LastInAllyRangeTimeSerialized")
+
+    def set_actor_transform(self, actor_transform: ActorTransform):
+        self.location = actor_transform
+
+    def set_binary_data(self, binary_data: bytes):
+        self.binary_data = binary_data
+
+    def debug_unkown_properties(self, properties: ArkPropertyContainer):
+        print(f"MyInventoryComponent: {properties.get_property_value('MyInventoryComponent')}")
+        print(f"NetDestructionTime: {properties.get_property_value('NetDestructionTime')}")
+
+    def is_owned_by(self, owner: ObjectOwner):
+        if self.owner.id_ is not None and self.owner.id_ == owner.id_:
+            return True
+        elif self.owner.player_name is not None and self.owner.player_name == owner.player_name:
+            return True
+        elif self.owner.name is not None and self.owner.name == owner.name:
+            return True
+        elif self.owner.original_placer_id is not None and self.owner.original_placer_id == owner.original_placer_id:
+            return True
+        return False
+    
+    # def set_owner(self, owner: ObjectOwner, save: AsaSave):
+    #     self.owner = owner
+    #     save.update_game_object(self.object)
+
+    def __str__(self):
+        return f"SimpleStructure: {self.owner.name} {self.id_} {self.current_health}/{self.max_health} {self.location}"
+    
+    def to_string_complete(self):
+        parts = [
+            f"Last in ally range time: {self.last_in_ally_range_time_serialized}",
+            f"Owner: {self.owner}",
+            f"Location: {self.location}",
+            f"Max health: {self.max_health}",
+            f"Current health: {self.current_health}",
+            f"Linked structures: {self.linked_structures}",
+            f"Linked structure uuids: {self.linked_structure_uuids}",
+            f"Original creation time: {self.original_creation_time}",
+            f"Last enter stasis time: {self.last_enter_stasis_time}",
+            f"Has reset decay time: {self.has_reset_decay_time}",
+            f"Saved when stasised: {self.saved_when_stasised}",
+            f"Was placement snapped: {self.was_placement_snapped}",
+            f"Last in ally range time serialized: {self.last_in_ally_range_time_serialized}",
+        ]
+        return "\n".join(parts)
+        

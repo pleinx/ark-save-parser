@@ -1,0 +1,149 @@
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+import struct
+from pathlib import Path
+import json
+
+if TYPE_CHECKING:
+    from arkparse.parsing.ark_binary_parser import ArkBinaryParser
+from arkparse.enums.ark_map import ArkMap
+from .ark_vector import ArkVector
+from .ark_rotator import ArkRotator
+
+
+FOUNDATION_DISTANCE = 300  # 300 units in ark is 1 foundation
+
+@dataclass
+class MapCoordinateParameters:
+    latitude_shift: float
+    longitude_shift: float
+    latitude_scale: float
+    longitude_scale: float
+
+    def __init__(self, map: ArkMap):
+        #https://arkparse.fandom.com/wiki/Coordinates
+        if map == ArkMap.ABERRATION:
+            self.latitude_shift = 50
+            self.longitude_shift = 50
+            self.latitude_scale = 8000
+            self.longitude_scale = 8000
+        else:
+            raise ValueError(f"Map {map} not supported")
+        
+    def transform_to(self, x: float, y: float) -> ArkVector:
+        lo = (x / self.latitude_scale) + self.latitude_shift
+        lat = (y / self.longitude_scale) + self.longitude_shift
+
+        # 2 digits after the comma
+        return round(lat, 2), round(lo, 2)
+    
+    def transform_from(self, lat: float, lo: float) -> ArkVector:
+        x = (lat - self.latitude_shift) * self.latitude_scale
+        y = (lo - self.longitude_shift) * self.longitude_scale
+
+        return x, y
+
+class MapCoords:
+    lat : float
+    long : float
+
+    def __init__(self, lat, long):
+        self.lat = lat
+        self.long = long
+
+    def __str__(self) -> str:
+        return f"({self.lat}, {self.long})"
+
+@dataclass
+class ActorTransform:
+    x: float
+    y: float
+    z: float
+    pitch: float
+    yaw: float
+    roll: float
+
+    unknown: int = 0
+
+    def __init__(self, reader: "ArkBinaryParser" = None, vector: ArkVector = None, rotator: ArkRotator = None, from_json: Path = None):
+        if reader:
+            # Initialize from ArkBinaryParser
+            self.x = reader.read_double()
+            self.y = reader.read_double()
+            self.z = reader.read_double()
+            self.pitch = reader.read_double()
+            self.yaw = reader.read_double()
+            self.roll = reader.read_double()
+            self.unknown = reader.read_uint64()
+        elif vector:
+            # Initialize from ArkVector and ArkRotator
+            self.x = vector.x
+            self.y = vector.y
+            self.z = vector.z
+
+            if rotator:
+                self.pitch = rotator.pitch
+                self.yaw = rotator.yaw
+                self.roll = rotator.roll
+            else:
+                self.pitch = 0
+                self.yaw = 0
+                self.roll = 0
+        elif from_json:
+            # Initialize from JSON
+            with open(from_json, "r") as f:
+                data = json.load(f)
+                self.x = data["x"]
+                self.y = data["y"]
+                self.z = data["z"]
+                self.pitch = data["pitch"]
+                self.yaw = data["yaw"]
+                self.roll = data["roll"]
+                self.unknown = data["unknown"]
+        
+
+    def get_distance_to(self, other: "ActorTransform") -> float:
+        return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2) ** 0.5
+    
+    def __str__(self) -> str:
+        return f"({self.x}, {self.y}, {self.z}) ({self.pitch}, {self.yaw}, {self.roll})"
+    
+    def as_map_coords(self, map) -> MapCoords:
+        lat, long = MapCoordinateParameters(map).transform_to(self.x, self.y)
+        return MapCoords(lat, long)
+    
+    def is_within_distance(self, location: "ActorTransform", distance: float = None, foundations: int = None, tolerance: int = 10) -> bool:
+        if distance is not None:
+            return (self.get_distance_to(location) + tolerance) <= distance
+        elif foundations is not None:
+            return (self.get_distance_to(location) + tolerance) <= foundations * FOUNDATION_DISTANCE
+        else:
+            raise ValueError("Either distance or foundations must be provided")
+        
+    def is_at_map_coordinate(self, map: ArkMap, coordinates: MapCoords, tolerance = 0.1) -> bool:
+        own_coords = self.as_map_coords(map)
+
+        return abs(own_coords.lat - coordinates.lat) <= tolerance and abs(own_coords.long - coordinates.long) <= tolerance
+    
+    def as_json(self):
+        return {
+            "x": self.x,
+            "y": self.y,
+            "z": self.z,
+            "pitch": self.pitch,
+            "yaw": self.yaw,
+            "roll": self.roll,
+            "unknown": self.unknown
+        }
+    
+    def to_bytes(self):
+        return (
+            struct.pack('<d', self.x) +
+            struct.pack('<d', self.y) +
+            struct.pack('<d', self.z) +
+            struct.pack('<d', self.pitch) +
+            struct.pack('<d', self.yaw) +
+            struct.pack('<d', self.roll) +
+            struct.pack('<Q', self.unknown)
+        )
