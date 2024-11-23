@@ -1,21 +1,26 @@
 from pathlib import Path
 import os
 from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.classes.dinos import Dinos
+from arkparse.api.player_api import PlayerApi, ArkMaps
+from arkparse.logging import ArkSaveLogger
 
 
 def main():
     path = os.path.join(os.getcwd(), "test_saves", "server.ark")
     save = AsaSave(Path(path))
-    
-    reader_config = GameObjectReaderConfiguration(
-        blueprint_name_filter=lambda name: name == Dinos.Abberant.dodo
-    )
 
-    dodos = save.get_game_objects(reader_config)
+    ArkSaveLogger.enable_debug = True
+    ArkSaveLogger.temp_file_path = Path.cwd()
 
-    print(f"There are {len(dodos)} dodos on the map.")
+    pApi: PlayerApi = PlayerApi("../ftp_config.json", ArkMaps.ABERRATION, save=save)
+
+    for player in pApi.players:
+        print(f"Inventory of {player.player_data.name}:")
+        for inv in player.inventory.values():
+            print(f"Inventory: {inv.object.uuid}")
+            for key, item in inv.items.items():
+                bp = item.object.blueprint.split('.')[-1]
+                print(f"  - Item ({key}): {bp}")
 
 
 if __name__ == "__main__":
