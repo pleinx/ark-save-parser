@@ -7,7 +7,6 @@ import uuid
 from arkparse.logging import ArkSaveLogger
 from arkparse.utils.json_utils import JsonUtils
 
-from arkparse.parsing.game_object_parser_configuration import GameObjectParserConfiguration
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
 
@@ -81,7 +80,6 @@ class AsaSave:
         ArkSaveLogger.debug_log("Actor transforms table retrieved")
         if actor_transforms:
             self.save_context.actor_transforms = actor_transforms.read_actor_transforms()   
-        ArkSaveLogger.enable_debug = False
 
     def read_header(self):
         header_data = self.get_custom_value("SaveHeader")
@@ -270,24 +268,9 @@ class AsaSave:
                     if class_name not in objects:
                         objects.append(class_name)
                     ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
-
-                    if reader_config.game_object_filter and not reader_config.game_object_filter(ark_game_object):
-                        ArkSaveLogger.debug_log("Skipping object %s of type %s", obj_uuid, class_name)
-                        ArkSaveLogger.exit_struct()
-                        continue
                     
                     if ark_game_object:
                         game_objects[obj_uuid] = ark_game_object
-
-                    if reader_config.json_files_output_directory:
-                        json_file = self.remove_leading_slash(class_name).joinpath(f"{obj_uuid}.json")
-                        JsonUtils.write_json_to_file(ark_game_object, reader_config.json_files_output_directory / json_file)
-
-                    if reader_config.binary_files_output_directory:
-                        bin_file = self.remove_leading_slash(class_name).joinpath(f"{obj_uuid}.bin")
-                        bin_file_path = reader_config.binary_files_output_directory / bin_file
-                        bin_file_path.parent.mkdir(parents=True, exist_ok=True)
-                        bin_file_path.write_bytes(row[1])
 
                 except Exception as e:
                     ArkSaveLogger.enable_debug = True
@@ -316,32 +299,6 @@ class AsaSave:
                 if class_name not in classes:
                     classes.append(class_name)
         return classes
-
-    def get_game_objects_by_ids(self, uuids: Collection[uuid.UUID], parser_config: Optional['GameObjectParserConfiguration'] = None) -> Dict[uuid.UUID, 'ArkGameObject']:
-        parser_config = parser_config or GameObjectParserConfiguration()
-        if not uuids:
-            return {}
-
-        game_objects = {}
-        uuid_chunks = [list(uuids)[i:i + self.MAX_IN_LIST] for i in range(0, len(uuids), self.MAX_IN_LIST)]
-
-        for chunk in uuid_chunks:
-            placeholders = ','.join('?' * len(chunk))
-            query = f"SELECT key, value FROM game WHERE key IN ({placeholders})"
-            cursor = self.connection.cursor()
-            cursor.execute(query, [self.uuid_to_byte_array(u) for u in chunk])
-
-            for row in cursor:
-                obj_uuid = self.byte_array_to_uuid(row["key"])
-                byte_buffer = ArkBinaryParser(row["value"], self.save_context)
-                try:
-                    class_name = byte_buffer.read_name()
-                    game_objects[obj_uuid] = AbstractGameObject(obj_uuid, class_name, byte_buffer)
-                except Exception as e:
-                    logger.error("Failed reading gameObject with UUID %s, skipping...", obj_uuid, exc_info=e)
-                    if parser_config.throw_exception_on_parse_error:
-                        raise
-        return game_objects
 
     def get_game_object_by_id(self, obj_uuid: uuid.UUID) -> Optional['ArkGameObject']:
         bin = self.get_game_obj_binary(obj_uuid)
@@ -377,10 +334,11 @@ class AsaSave:
     def parse_as_predefined_object(self, obj_uuid, class_name, byte_buffer):
         self.nr_parsed += 1
 
+        debug = ArkSaveLogger.enable_debug
         ArkSaveLogger.enable_debug = True
         if self.nr_parsed % 2500 == 0:
             ArkSaveLogger.debug_log(f"Nr parsed: {self.nr_parsed}")
-        ArkSaveLogger.enable_debug = False
+        ArkSaveLogger.enable_debug = debug
 
         skip_list = [
             "/QoLPlus/Items/OmniTool/PrimalItem_OmniTool.PrimalItem_OmniTool_C",

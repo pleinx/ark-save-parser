@@ -176,7 +176,7 @@ class ArkProperty:
         return obj_name
 
     @staticmethod
-    def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:
+    def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
         if not in_array:
             ArkSaveLogger.enter_struct(f"S({struct_type})")
             ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
@@ -245,7 +245,8 @@ class ArkProperty:
                     ArkSaveLogger.debug_log(f"Struct properties: {struct_property.name} {struct_property.type} {struct_property.value}")
             else:
                 break
-
+        
+        ArkSaveLogger.debug_log(f"Read {len(properties)} struct properties")
         return ArkPropertyContainer(properties)
 
     @staticmethod
@@ -267,19 +268,38 @@ class ArkProperty:
             array_content_type = byte_buffer.read_name()
             byte_buffer.skip_bytes(17)
             ArkSaveLogger.enter_struct(f"Arr({array_content_type})")
-            ArkSaveLogger.debug_log(f"Reading array \'{array_name}\' with {array_length} values of type {array_content_type} for a total of {content_size} bytes")
+            ArkSaveLogger.debug_log(f"STRUCT ARRAY: Reading array \'{array_name}\' with {array_length} values of type {array_content_type} for a total of {content_size} bytes")
             struct_array = []
             for _ in range(array_length):
                 struct_array.append(ArkProperty.read_struct_property(byte_buffer, data_size, array_content_type, True))
+
+            if array_content_type == "CustomItemByteArray":
+                struct_array = []
+                for _ in range(array_length):
+                    struct_array.append(ArkProperty.read_property(byte_buffer))
+                    none = ArkProperty.read_property(byte_buffer)
+                    ArkSaveLogger.enter_struct("Arr(CustomItemByteArray)")
+                    if none is not None:
+                        raise ValueError(f"Expected None, got {none}")
+                    
+                    dinostate = struct_array[0].value
+                    # if len(dinostate) > 0:
+                    #     bytes_ = bytes(dinostate)
+                    #     print(f"Bytes: {bytes_}")
+                    #     newReader = ArkBinaryParser(bytes_, byte_buffer.save_context)
+                    #     ArkSaveLogger.set_file(newReader, "debug.bin")
+                    #     newReader.find_names()
+                    #     ArkSaveLogger.open_hex_view(True)
+
             p = ArkProperty(key, type_, position, end_of_struct, struct_array)
 
+            ArkSaveLogger.debug_log(f"============ END {array_name}[{array_content_type}] ============")
             ArkSaveLogger.exit_struct()
-
             return p
     
         else:
             ArkSaveLogger.enter_struct(f"Arr({array_type})")
-            ArkSaveLogger.debug_log(f"Read array property {key} with {array_length} values of type {array_type}")
+            ArkSaveLogger.debug_log(f"VALUE ARRAY: Read array property {key} with {array_length} values of type {array_type}")
 
             if key == "MyPersistentBuffDatas":
                 p = ArkProperty(key, "Struct", position, 0x00, ArkProperty.read_struct_property(byte_buffer, array_length, key, True))
@@ -291,11 +311,16 @@ class ArkProperty:
                     else:
                         array.append(ArkProperty.read_property_value(ArkValueType.from_name(array_type), byte_buffer))
 
-                for i, value in enumerate(array):
-                    ArkSaveLogger.debug_log(f"Array value {i}: {value}")
-
+                if array_type != "ByteProperty":
+                    for i, value in enumerate(array):
+                        ArkSaveLogger.debug_log(f"Array value {i}: {value}")
+                else:
+                    ArkSaveLogger.debug_log(f"Array value: {array}")
+                    
+    
                 p = ArkProperty(key, type_, position, end_of_struct, array)
 
+            ArkSaveLogger.debug_log(f"============ END Arr({array_type}) ============")
             ArkSaveLogger.exit_struct()
         
             return p

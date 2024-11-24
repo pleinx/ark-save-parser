@@ -1,16 +1,169 @@
 from typing import List, Dict
 from uuid import UUID
-
+from io import BytesIO
+import zlib
 
 from arkparse.struct.actor_transform import ActorTransform
 from arkparse.logging import ArkSaveLogger
 from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
 from .ark_value_type import ArkValueType
+from collections import deque
+
+COMPRESSED_BYTES_NAME_CONSTANTS = {
+        0: "TribeName",
+        1: "StrProperty",
+        2: "bServerInitializedDino",
+        3: "BoolProperty",
+        5: "FloatProperty",
+        6: "ColorSetIndices",
+        7: "ByteProperty",
+        8: "None",
+        9: "ColorSetNames",
+        10: "NameProperty",
+        11: "TamingTeamID",
+        12: "UInt64Property",  # ???
+        13: "RequiredTameAffinity",
+        14: "TamingTeamID",
+        15: "IntProperty",
+        19: "StructProperty",
+        23: "DinoID1",
+        24: "UInt32Property",
+        25: "DinoID2",
+        31: "UploadedFromServerName",
+        32: "TamedOnServerName",
+        36: "TargetingTeam",
+        38: "bReplicateGlobalStatusValues",
+        39: "bAllowLevelUps",
+        40: "bServerFirstInitialized",
+        41: "ExperiencePoints",
+        42: "CurrentStatusValues",
+        44: "ArrayProperty",
+        55: "bIsFemale",
+    }
 
 class ArkBinaryParser(PropertyParser, PropertyReplacer):
     def __init__(self, data: bytes, save_context=None):
         super().__init__(data, save_context)
+
+    @staticmethod
+    def __wildcard_inflater(input_buffer):
+        """
+        Processes the input buffer using the wildcard inflation rules
+        and returns the resulting decompressed buffer.
+
+        :param input_buffer: The compressed input as bytes.
+        :return: The decompressed output as bytes.
+        """
+        class ReadState:
+            NONE = 0
+            ESCAPE = 1
+            SWITCH = 2
+
+        fifo_queue = deque()
+        output_buffer = bytearray()
+        read_state = ReadState.NONE
+
+        def read_from_input(data, pos):
+            """Reads the next byte from the input buffer."""
+            if pos < len(data):
+                return data[pos], pos + 1
+            return None, pos
+
+        pos = 0
+        states = 0
+        while pos < len(input_buffer) or fifo_queue:
+            if fifo_queue:
+                # Read from fifo_queue if it's not empty
+                output_buffer.append(fifo_queue.popleft())
+                continue
+
+            next_byte, pos = read_from_input(input_buffer, pos)
+            if next_byte is None:
+                print("End of stream")
+                break
+
+            if read_state == ReadState.SWITCH:
+                # Handle SWITCH state
+                return_value = 0xF0 | ((next_byte & 0xF0) >> 4)
+                fifo_queue.append(0xF0 | (next_byte & 0x0F))
+                output_buffer.append(return_value)
+                read_state = ReadState.NONE
+                continue
+
+            if read_state == ReadState.NONE:
+                if next_byte == 0xF0:
+                    print(f"Escape state after {len(output_buffer)} bytes")
+                    # read_state = ReadState.ESCAPE
+                    continue
+                elif next_byte == 0xF1:
+                    read_state = ReadState.SWITCH
+                    continue
+                elif 0xF2 <= next_byte < 0xFF:
+                    # Insert padding bytes
+                    byte_count = next_byte & 0x0F
+                    fifo_queue.extend([0] * byte_count)
+                    continue
+                elif next_byte == 0xFF:
+                    # Handle special FF case
+                    b1, pos = read_from_input(input_buffer, pos)
+                    b2, pos = read_from_input(input_buffer, pos)
+                    if b1 is None or b2 is None:
+                        raise ValueError("Unexpected end of stream after 0xFF")
+                    fifo_queue.extend([0, 0, 0, b1, 0, 0, 0, b2, 0, 0, 0])
+                    continue
+
+            # Default case: append the byte to the output
+            output_buffer.append(next_byte)
+
+        return bytes(output_buffer)
+
+    @staticmethod
+    def from_deflated_data(byte_arr: List[int]):
+        parser = ArkBinaryParser(None)
+
+        raw_data = BytesIO(bytes(byte_arr))
+        header_data_bytes = raw_data.read(12)
+        if len(header_data_bytes) < 12:
+            raise ValueError("Insufficient data for header")
+        
+        header_parser = ArkBinaryParser(header_data_bytes)
+
+        header_parser.validate_uint32(0x0406)
+        inflated_size = header_parser.read_uint32()
+        names_offset = header_parser.read_uint32()
+
+        compressed_data = raw_data.read()
+        if not compressed_data:
+            raise ValueError("No compressed data found")
+
+        # Decompress data with error handling
+        try:
+            decompressed = zlib.decompress(compressed_data) # decompress the data using the DEFLATE algorithm
+        except zlib.error as e:
+            raise RuntimeError(f"Failed to decompress data") from e
+
+        print(len(decompressed))
+        parser.byte_buffer = ArkBinaryParser.__wildcard_inflater(decompressed)
+        print(len(parser.byte_buffer))
+        ArkSaveLogger.set_file(parser, "debug.bin")
+
+        name_table = {}
+        print(f"Pos: {parser.position}, names offset: {names_offset}, size: {len(decompressed)}, infl size: {inflated_size}")
+        parser.position = names_offset
+
+        ArkSaveLogger.enable_debug = True
+        ArkSaveLogger.open_hex_view(True)
+
+        name_count = parser.read_uint32()
+        for i in range(name_count):
+            name_table[i | 0x10000000] = parser.read_string()
+        parser.save_context.names = name_table
+        parser.save_context.constant_name_table = COMPRESSED_BYTES_NAME_CONSTANTS
+        parser.save_context.generate_unknown_names = True
+        parser.position = 0
+
+        return parser
     
     def read_value_type_by_name(self):
         position = self.get_position()

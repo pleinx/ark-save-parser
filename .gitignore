@@ -163,5 +163,6 @@ cython_debug/
 
 test.py
 out/*
-ftp_config.json
-rcon_config.json
+*.json
+*.bin
+*.arkprofile

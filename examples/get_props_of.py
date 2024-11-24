@@ -52,14 +52,3 @@ for prop in unique_props:
             print(f"Object: {obj.blueprint}, Value: {obj.get_property_value(prop.split('(')[0])}")
 
 ArkSaveLogger.temp_file_path = Path.cwd()
-
-# ArkSaveLogger.enable_debug = True
-# binary = save.get_game_obj_binary(list(objects.keys())[0]) #list(objects.keys())[0])
-# parser = ArkBinaryParser(binary, save.save_context)
-# ArkSaveLogger.set_file(parser, "debug.bin")
-# o = AbstractGameObject(list(objects.keys())[0], bp, parser)
-# ArkSaveLogger.open_hex_view(True)
-
-
-
-

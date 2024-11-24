@@ -18,44 +18,27 @@ class ArkGameObject(ArkPropertyContainer):
     location: Optional[ActorTransform] = None
     uuid2: str = ""
 
-    def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser] = None):
+    def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser] = None, from_custom_bytes: bool = False):
         super().__init__()
         if binary_reader:
-            self.uuid = uuid
-            self.uuid2 = ""
+            ArkSaveLogger.set_file(binary_reader, "debug.bin")
+            if not from_custom_bytes:
+                self.uuid = uuid
+                self.uuid2 = ""
+                binary_reader.set_position(0)
 
-            binary_reader.set_position(0)
-            self.blueprint = binary_reader.read_name()
-            
-            sContext : SaveContext = binary_reader.save_context
-            self.location = sContext.get_actor_transform(uuid) or None
-            ArkSaveLogger.debug_log(f"Retrieved actor location: {('Success' if self.location else 'Failed')}")
+                self.blueprint = binary_reader.read_name()
+
+                sContext : SaveContext = binary_reader.save_context
+                self.location = sContext.get_actor_transform(uuid) or None
+                ArkSaveLogger.debug_log(f"Retrieved actor location: {('Success' if self.location else 'Failed')}")
+                
+            else:
+                self.uuid = binary_reader.read_uuid()
+                self.blueprint = binary_reader.read_string()
+
             ArkSaveLogger.debug_log(f"Blueprint: {blueprint}")
             binary_reader.validate_uint32(0)
-
-    @classmethod
-    def read_from_custom_bytes(cls, reader: ArkBinaryParser) -> "ArkGameObject":
-        ark_game_object = cls()
-        ark_game_object.uuid = reader.read_uuid()
-        ark_game_object.blueprint = reader.read_string()
-        reader.validate_uint32(0)
-        # ark_game_object.names = reader.read_strings_array()
-        
-        from_data_file = reader.read_boolean()  # Placeholder for unknown data
-        data_file_index = reader.read_int()  # Placeholder for unknown data
-        
-        if reader.read_boolean():
-            rotator = ArkRotator(reader)  # Placeholder for rotation data
-            ark_game_object.location = ActorTransform(ArkVector(0, 0, 0), rotator)
-        
-        # ark_game_object.properties_offset = reader.read_int()
-        reader.validate_uint32(0)
-
-        return ark_game_object
-
-    def read_extra_data(self, reader: ArkBinaryParser):
-        if reader.has_more() and reader.read_boolean():
-            self.uuid2 = reader.read_uuid()
 
     def read_double(self, reader: ArkBinaryParser, property_name: str) -> float:
         reader.validate_name(property_name)

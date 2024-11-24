@@ -2,6 +2,7 @@ from .consumables import Consumables
 from .placed_structures import PlacedStructures
 from .dinos import Dinos
 from .resources import Resources
+from .player import Player
 
 class Structures:
     placed : PlacedStructures = PlacedStructures()
@@ -13,5 +14,6 @@ class Classes:
     structures: Structures = Structures()
     dinos: Dinos = Dinos()
     resources: Resources = Resources()
+    player: Player = Player()
 
-    all_bps = consumables.all_bps + structures.all_bps + dinos.all_bps + resources.all_bps
+    all_bps = consumables.all_bps + structures.all_bps + dinos.all_bps + resources.all_bps + player.all_bps

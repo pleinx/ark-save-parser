@@ -14,7 +14,7 @@ from .inventory_item import InventoryItem
 class Inventory:
     binary: ArkBinaryParser
     object: AbstractGameObject
-    item: List[Dict[UUID, InventoryItem]]
+    items: Dict[UUID, InventoryItem]
 
     container_uuid: UUID
     container_type: str
@@ -28,14 +28,16 @@ class Inventory:
         self.binary = binary
         bp = self._get_class_name()
         self.object: AbstractGameObject = AbstractGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+        self.items = {}
 
         item_arr = self.object.get_array_property_value("InventoryItems")
-        self.items = [{UUID(item.value): None} for item in item_arr]
-
-        for item in self.items:
-            uuid = list(item.keys())[0]
-            reader = ArkBinaryParser(save.get_game_obj_binary(uuid), save.save_context)
-            item[uuid] = InventoryItem(uuid, reader, container_type)
+        for item in item_arr:
+            item_uuid = UUID(item.value)
+            reader = ArkBinaryParser(save.get_game_obj_binary(item_uuid), save.save_context)
+            item = InventoryItem(item_uuid, reader, container_type)
+            is_engram = item.object.get_property_value("bIsEngram")
+            if is_engram is None or not is_engram:
+                self.items[item_uuid] = item
 
     def add_item(self, item: UUID):
         if len(self.items) == 0:

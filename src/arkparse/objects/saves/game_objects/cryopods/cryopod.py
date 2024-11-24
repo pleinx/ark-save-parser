@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import List, Dict, Optional
 from io import BytesIO
 from zipfile import ZipFile
+import os
+import zlib
 
 from arkparse.parsing import ArkBinaryParser
 from arkparse.objects.saves.game_objects import ArkGameObject
@@ -16,109 +18,74 @@ from arkparse.utils import WildcardInflaterInputStream
 logger = logging.getLogger(__name__)
 
 class Cryopod:
-    NAME_CONSTANTS = {
-        0: "TribeName",
-        1: "StrProperty",
-        2: "bServerInitializedDino",
-        3: "BoolProperty",
-        5: "FloatProperty",
-        6: "ColorSetIndices",
-        7: "ByteProperty",
-        8: "None",
-        9: "ColorSetNames",
-        10: "NameProperty",
-        11: "TamingTeamID",
-        12: "UInt64Property",
-        13: "RequiredTameAffinity",
-        14: "TamingTeamID",
-        15: "IntProperty",
-        19: "StructProperty",
-        23: "DinoID1",
-        24: "UInt32Property",
-        25: "DinoID2",
-        31: "UploadedFromServerName",
-        32: "TamedOnServerName",
-        36: "TargetingTeam",
-        38: "bReplicateGlobalStatusValues",
-        39: "bAllowLevelUps",
-        40: "bServerFirstInitialized",
-        41: "ExperiencePoints",
-        42: "CurrentStatusValues",
-        44: "ArrayProperty",
-        55: "bIsFemale",
-    }
+    def __init__(self, uuid, parser: ArkBinaryParser):
+        self.uuid = uuid
+        self.dinoAndStatusComponent = []
+        self.saddle = None
+        self.costume = None
 
-    def __init__(self, uuid_: uuid.UUID):
-        self.uuid = uuid_
-        self.dino_and_status_component: List['ArkGameObject'] = []
-        self.saddle: Optional['ArkPropertyContainer'] = None
-        self.costume: Optional['ArkPropertyContainer'] = None
+        
 
-    def parse_dino_and_status_component_data(self, data: bytes, reader_config: 'GameObjectReaderConfiguration'):
+    def parseDinoAndStatusComponentData(self, bytes_data: List[int]):
         try:
-            with BytesIO(data) as raw_input_stream, \
-                 ZipFile(raw_input_stream) as inflater_input_stream, \
-                 WildcardInflaterInputStream(inflater_input_stream) as input_stream:
+            raw_input_stream = BytesIO(bytes_data)
+            header_data_bytes = raw_input_stream.read(12)
+            if len(header_data_bytes) < 12:
+                raise ValueError("Insufficient data for header")
+            header_data = ArkBinaryParser(header_data_bytes)
 
-                self.read_header_dino_and_status_component(raw_input_stream, input_stream, reader_config)
-        except Exception as e:
-            logger.error("Failed to read data for %s", self, exc_info=e)
-            if reader_config.throw_exception_on_parse_error:
-                raise RuntimeError(f"Failed to read cryopod data for UUID {self.uuid}") from e
+            header_data.validate_uint32(0x0406)
+            inflated_size = header_data.read_uint32()
+            names_offset = header_data.read_uint32()
 
-    def read_header_dino_and_status_component(self, raw_input_stream, inflated_input_stream, reader_config: 'GameObjectReaderConfiguration'):
-        header_data = ArkBinaryParser(raw_input_stream.read(12))
-        header_data.validate_int32(0x0406)
-        inflated_size = header_data.read_int()  # size of inflated data before processing
-        names_offset = header_data.read_int()
+            compressed_data = raw_input_stream.read()
+            if not compressed_data:
+                raise ValueError("No compressed data found")
 
-        inflated_data = inflated_input_stream.read()
-        if reader_config.binary_files_output_directory:
-            output_dir = Path(reader_config.binary_files_output_directory) / "cryopods"
-            output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / f"{self.uuid}.bytes0.bin").write_bytes(inflated_data)
-
-        self.read_dino_and_status_component(ArkBinaryParser(inflated_data), names_offset)
-
-    def read_dino_and_status_component(self, reader: 'ArkBinaryParser', names_table_offset: int):
-        save_context = reader.save_context
-        save_context.names = self.read_name_table(reader, names_table_offset)
-        save_context.use_constant_name_table(self.NAME_CONSTANTS)
-        save_context.generate_unknown_names = True
-
-        reader.set_position(0)
-        self.dino_and_status_component = []
-
-        object_count = reader.read_int()
-        for _ in range(object_count):
-            game_object = ArkGameObject.read_from_custom_bytes(reader)
-            self.dino_and_status_component.append(game_object)
-
-        for game_object in self.dino_and_status_component:
+            # Decompress data with error handling
             try:
-                if reader.position != game_object.properties_offset:
-                    logger.warning("Reader position %d does not match properties offset %d, bytes left: %d",
-                                   reader.position, game_object.properties_offset,
-                                   game_object.properties_offset - reader.position)
-                    reader.set_position(game_object.properties_offset)
-                game_object.read_properties(reader)
-                game_object.read_extra_data(reader)
-                reader.read_int()  # Dummy read to sync
+                inflated_data = zlib.decompress(compressed_data) # decompress the data using the DEFLATE algorithm
+            except zlib.error as e:
+                raise RuntimeError(f"Failed to decompress cryopod data for UUID {self.uuid}") from e
 
+            inflated_data_reader = ArkBinaryParser(inflated_data)
+            ArkSaveLogger.set_file(inflated_data_reader, "debug.bin")
+            self.readDinoAndStatusComponent(inflated_data_reader, names_offset)
+
+        except Exception as e:
+            raise RuntimeError(f"Failed to read cryopod data for UUID {self.uuid}") from e
+
+    def readDinoAndStatusComponent(self, reader : ArkBinaryParser, names_table_offset : int):
+        save_context = reader.save_context
+        save_context.names = self.readNameTable(reader, names_table_offset)
+        save_context.constant_name_table = self.NAME_CONSTANTS
+        save_context.generate_unknown_names = True
+        reader.position = 0
+
+        self.dinoAndStatusComponent = []
+        object_count = reader.read_uint32()
+        for _ in range(object_count):
+            game_object = ArkGameObject.readFromCustomBytes(reader)
+            self.dinoAndStatusComponent.append(game_object)
+
+        for game_object in self.dinoAndStatusComponent:
+            try:
+                if reader.getPosition() != game_object.getPropertiesOffset():
+                    log.warning(f"Reader position {reader.getPosition()} does not match properties offset {game_object.getPropertiesOffset()}, bytes left to read: {game_object.getPropertiesOffset() - reader.getPosition()}")
+                    reader.setPosition(game_object.getPropertiesOffset())
+                game_object.readProperties(reader)
+                game_object.readExtraData(reader)
+                reader.readInt()  # Assuming this is to align or consume extra data
             except Exception as e:
-                logger.error("Error reading properties for cryopod %s", self, exc_info=e)
-                ArkSaveLogger.enable_debug_logging = True
-                reader.set_position(game_object.properties_offset)
-                game_object.properties = []
-                game_object.read_properties(reader)
-                game_object.read_extra_data(reader)
-                ArkSaveLogger.enable_debug_logging = False
+                log.error(f"Error reading properties for cryopod {self}, debug info follows:", exc_info=e)
+                ArkSaveUtils.enableDebugLogging = True
+                reader.setPosition(game_object.getPropertiesOffset())
+                game_object.setProperties([])
+                game_object.readProperties(reader)
+                game_object.readExtraData(reader)
+            finally:
+                ArkSaveUtils.enableDebugLogging = False
 
-    @staticmethod
-    def read_name_table(reader: 'ArkBinaryParser', names_table_offset: int) -> Dict[int, str]:
-        reader.set_position(names_table_offset)
-        name_table = {}
-        name_count = reader.read_int()
-        for i in range(name_count):
-            name_table[i | 0x10000000] = reader.read_string()
+    def readNameTable(self, reader, names_table_offset):
+          
         return name_table

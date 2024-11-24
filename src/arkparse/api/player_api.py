@@ -6,6 +6,9 @@ import threading
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMaps
 from arkparse.objects.player.ark_profile import ArkProfile
 from arkparse.objects.tribe.ark_tribe import ArkTribe
+from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.classes.player import Player
+from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
 
 class PlayerApi:
     class StatType:
@@ -19,9 +22,18 @@ class PlayerApi:
         LEVEL = 1
         XP = 2
 
-    def __init__(self, ftp_config: dict, map: ArkMaps, update_frequency = 900):
+    def __init__(self, ftp_config: dict, map: ArkMaps, update_frequency = 900, save: AsaSave = None):
         self.players : List[ArkProfile] = []
         self.tribes : List[ArkTribe] = []
+        self.save: AsaSave = save
+        self.pawns = None
+
+        if save is not None:
+            pawn_bps = [Player.pawn_female, Player.pawn_male]
+            config = GameObjectReaderConfiguration(
+                blueprint_name_filter=lambda name: name is not None and name in pawn_bps,
+            )
+            self.pawns = save.get_game_objects(config)
 
         self.ftp_client : ArkFtpClient = ArkFtpClient.from_config(ftp_config, map)
         
@@ -58,7 +70,10 @@ class PlayerApi:
 
         for file in player_files:
             path = self.ftp_client.download_profile_file(file.name, output_dir)
-            new_players.append(ArkProfile(path))
+            player : ArkProfile = ArkProfile(path)
+            if self.save is not None:
+                player.get_location_and_inventory(self.save, self.pawns)
+            new_players.append(player)
             Path(output_dir / file.name).unlink()
 
         for file in tribe_files:

@@ -31,7 +31,6 @@ class ArkArchive:
         for i, obj in enumerate(self.objects):
             ArkSaveLogger.enter_struct(obj.class_name.split(".")[-1])
             data.set_position(obj.properties_offset)
-            # ArkSaveLogger.open_hex_view(True)
             if ArkSaveLogger.enable_debug:
                 print("\n")
             ArkSaveLogger.debug_log(f"Reading properties for object \'{obj.class_name}\' at {data.get_position()}")
