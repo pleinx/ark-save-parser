@@ -39,6 +39,7 @@ for key, obj in objects.items():
             objects: List[AbstractGameObject] = []
             nr_of_obj = reader.read_uint32()
             for _ in range(nr_of_obj):
+                ArkSaveLogger.enable_debug = True
                 game_object = objects.append(AbstractGameObject(binary_reader=reader, from_custom_bytes=True))
 
             for obj in objects:

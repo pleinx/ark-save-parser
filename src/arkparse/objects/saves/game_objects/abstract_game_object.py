@@ -16,17 +16,24 @@ class AbstractGameObject(ArkGameObject):
     properties_offset : int = 0
 
     def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser] = None, from_custom_bytes: bool = False):
-        super().__init__(uuid, blueprint, binary_reader)
+        super().__init__(uuid, blueprint, binary_reader,from_custom_bytes)
         if binary_reader:
-            self.names = binary_reader.read_names(binary_reader.read_int()) if from_custom_bytes else binary_reader.read_strings_array()
+            if not from_custom_bytes:
+                self.names = binary_reader.read_names(binary_reader.read_int())
+            else:
+                self.names = binary_reader.read_strings_array()
+
             for name in self.names:
                 ArkSaveLogger.debug_log(f"Name: {name}")
 
             self.section = binary_reader.read_part()
             self.unknown = binary_reader.read_byte()
-
+            
             if from_custom_bytes:
-                if binary_reader.read_boolean():
+                binary_reader.validate_uint16(0)
+                binary_reader.validate_byte(0)
+                has_rotator = binary_reader.read_uint32() == 1
+                if has_rotator:
                     ArkRotator(binary_reader)  # Placeholder for rotation data
 
                 self.properties_offset = binary_reader.read_uint32()
@@ -46,9 +53,10 @@ class AbstractGameObject(ArkGameObject):
                         raise Exception("Unknown data left")
                     
     def read_props_at_offset(self, reader: ArkBinaryParser):
-        if reader.position != self.properties_offset:
-            ArkSaveLogger.open_hex_view()
-            raise Exception("Invalid offset for properties")
+        reader.set_position(self.properties_offset)
+        # if reader.position != self.properties_offset:
+        #     ArkSaveLogger.open_hex_view()
+        #     raise Exception("Invalid offset for properties: ", reader.position, "expected: ", self.properties_offset)
         self.read_properties(reader, ArkProperty, reader.size())
-        reader.read_int()
-        self.uuid2 = reader.read_uuid()
+        # reader.read_int()
+        # self.uuid2 = reader.read_uuid()

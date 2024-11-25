@@ -47,7 +47,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         super().__init__(data, save_context)
 
     @staticmethod
-    def __wildcard_inflater(input_buffer):
+    def __wildcard_decompress(input_buffer):
         """
         Processes the input buffer using the wildcard inflation rules
         and returns the resulting decompressed buffer.
@@ -71,10 +71,8 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             return None, pos
 
         pos = 0
-        states = 0
         while pos < len(input_buffer) or fifo_queue:
             if fifo_queue:
-                # Read from fifo_queue if it's not empty
                 output_buffer.append(fifo_queue.popleft())
                 continue
 
@@ -84,7 +82,6 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 break
 
             if read_state == ReadState.SWITCH:
-                # Handle SWITCH state
                 return_value = 0xF0 | ((next_byte & 0xF0) >> 4)
                 fifo_queue.append(0xF0 | (next_byte & 0x0F))
                 output_buffer.append(return_value)
@@ -93,8 +90,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
             if read_state == ReadState.NONE:
                 if next_byte == 0xF0:
-                    print(f"Escape state after {len(output_buffer)} bytes")
-                    # read_state = ReadState.ESCAPE
+                    read_state = ReadState.ESCAPE
                     continue
                 elif next_byte == 0xF1:
                     read_state = ReadState.SWITCH
@@ -114,6 +110,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                     continue
 
             # Default case: append the byte to the output
+            read_state = ReadState.NONE
             output_buffer.append(next_byte)
 
         return bytes(output_buffer)
@@ -135,25 +132,22 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
         compressed_data = raw_data.read()
         if not compressed_data:
-            raise ValueError("No compressed data found")
+            raise ValueError("No compressed data found")  
 
         # Decompress data with error handling
         try:
             decompressed = zlib.decompress(compressed_data) # decompress the data using the DEFLATE algorithm
         except zlib.error as e:
             raise RuntimeError(f"Failed to decompress data") from e
+        
+        if len(decompressed) != inflated_size:
+            raise ValueError(f"Expected compressed size {inflated_size}, got {len(decompressed)}")
 
-        print(len(decompressed))
-        parser.byte_buffer = ArkBinaryParser.__wildcard_inflater(decompressed)
-        print(len(parser.byte_buffer))
+        parser.byte_buffer = ArkBinaryParser.__wildcard_decompress(decompressed)
         ArkSaveLogger.set_file(parser, "debug.bin")
 
         name_table = {}
-        print(f"Pos: {parser.position}, names offset: {names_offset}, size: {len(decompressed)}, infl size: {inflated_size}")
         parser.position = names_offset
-
-        ArkSaveLogger.enable_debug = True
-        ArkSaveLogger.open_hex_view(True)
 
         name_count = parser.read_uint32()
         for i in range(name_count):
@@ -188,8 +182,8 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
     def read_part(self) -> str:
         part_index = self.read_int()
-        if 0 <= part_index < len(self.save_context.parts):
-            return self.save_context.parts[part_index]
+        if 0 <= part_index < len(self.save_context.sections):
+            return self.save_context.sections[part_index]
         return None
 
     def read_uuids(self) -> List[UUID]:
@@ -199,6 +193,9 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     def find_names(self):
         if not self.save_context.has_name_table():
             return []
+        
+        gen_unknown_names = self.save_context.generate_unknown_names
+        self.save_context.generate_unknown_names = False
         
         original_position = self.get_position()
         max_prints = 75
@@ -219,6 +216,8 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                     prints += 1
                 i += 3  # Adjust index to avoid overlapping reads
         self.set_position(original_position)
+
+        self.save_context.generate_unknown_names = gen_unknown_names
         return found
     
     def find_byte_sequence(self, bytes: bytes):

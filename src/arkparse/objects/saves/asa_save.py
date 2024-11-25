@@ -5,7 +5,6 @@ from typing import Dict, Optional, Collection
 import uuid
 
 from arkparse.logging import ArkSaveLogger
-from arkparse.utils.json_utils import JsonUtils
 
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
