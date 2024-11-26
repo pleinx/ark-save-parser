@@ -2,6 +2,7 @@ from typing import List
 from dataclasses import dataclass
 from uuid import UUID
 
+from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
 from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 
@@ -128,42 +129,32 @@ class StatValues:
         ]
         return f"Statvalues(points added)([{', '.join(stats)}])"
     
-class DinoStats:
+class DinoStats(ParsedObjectBase):
     base_level: int = 0
     current_level: int = 0
 
     stat_points: StatPoints = StatPoints()
     stat_values: StatValues = StatValues()
 
-    def _get_class_name(self):
-        self.binary.set_position(0)
-        class_name = self.binary.read_name()
-        return class_name
-    
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        if uuid is None or binary is None:
-            return
-        
-        self.binary = binary
-        bp = self._get_class_name()
-        self.object = ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+    def __init_props__(self, obj: ArkGameObject = None):
+        if obj is not None:
+            super().__init_props__(obj)
 
-        base_lvl = self.object.get_property_value("BaseCharacterLevel")
-        self.base_level = 0 if base_lvl is None else base_lvl
-
+        base_lv = self.object.get_property_value("BaseCharacterLevel")
+        self.base_level = 0 if base_lv is None else base_lv
         self.stat_points = StatPoints(self.object)
         self.stat_values = StatValues(self.object)
         self.current_level = self.stat_points.get_level()
+    
+    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
+        if binary is None:
+            super().__init__(uuid, binary)
+            self.__init_props__()
 
     @staticmethod
     def from_object(obj: ArkGameObject):
         s: DinoStats = DinoStats()
-
-        s.object = obj
-        s.base_level = obj.get_property_value("BaseCharacterLevel")
-        s.stat_points = StatPoints(obj)
-        s.stat_values = StatValues(obj)
-        s.current_level = s.stat_points.get_level()
+        s.__init_props__(obj)
 
         return s
 

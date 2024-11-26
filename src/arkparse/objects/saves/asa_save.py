@@ -100,7 +100,7 @@ class AsaSave:
             self.save_context.unknown_value = header_data.read_uint32()
             ArkSaveLogger.debug_log("Unknown value: %d", self.save_context.unknown_value)
 
-        self.save_context.parts = self.read_locations(header_data)
+        self.save_context.sections = self.read_locations(header_data)
         
         # check_uint64(header_data, 0)
         header_data.set_position(name_table_offset)

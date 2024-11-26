@@ -20,6 +20,7 @@ class ObjectReference:
 
     def __init__(self, reader: "ArkBinaryParser" = None):
         if reader is None:
+            self.value = None
             return
 
         # If the save context has a name table, handle accordingly

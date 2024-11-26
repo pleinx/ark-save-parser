@@ -2,20 +2,14 @@ from dataclasses import dataclass
 from typing import List
 from uuid import UUID
 
+from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.objects.saves.game_objects.misc import ObjectOwner
 from arkparse.parsing import ArkPropertyContainer
 from arkparse.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
-from arkparse.objects.saves.asa_save import AsaSave
-from ..ark_game_object import ArkGameObject
 
 @dataclass
-class SimpleStructure:
-    binary: ArkBinaryParser
-    object: ArkGameObject
-
-    blueprint: str
-
+class SimpleStructure(ParsedObjectBase):
     owner: ObjectOwner
     id_: int #StructureID
     max_health: float#MaxHealth
@@ -52,18 +46,10 @@ class SimpleStructure:
     #MyInventoryComponent
     #NetDestructionTime
 
-    def _get_class_name(self):
-        self.binary.set_position(0)
-        class_name = self.binary.read_name()
-        return class_name
-
     def __init__(self, uuid: UUID, binary: ArkBinaryParser):
-        self.binary = binary
-        self.blueprint = self._get_class_name()
-        self.object = ArkGameObject(uuid=uuid, blueprint=self.blueprint, binary_reader=binary)
+        super.__init__(uuid, binary)
 
         properties = self.object
-
         self.owner = ObjectOwner(properties)
 
         self.id_ = properties.get_property_value("StructureID")

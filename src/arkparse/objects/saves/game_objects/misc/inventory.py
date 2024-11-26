@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from uuid import UUID
-from typing import List, Dict
+from typing import Dict
 
+from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects import ArkGameObject
 from arkparse.struct import get_uuid_reference_bytes
 from arkparse.parsing import ArkBinaryParser
 
@@ -11,23 +11,14 @@ from .inventory_item import InventoryItem
 # items array InventoryItems -> ArrayProperty -> ObjectProperty
 
 @dataclass
-class Inventory:
-    binary: ArkBinaryParser
-    object: ArkGameObject
+class Inventory(ParsedObjectBase):
     items: Dict[UUID, InventoryItem]
 
     container_uuid: UUID
     container_type: str
 
-    def _get_class_name(self):
-        self.binary.set_position(0)
-        class_name = self.binary.read_name()
-        return class_name
-
     def __init__(self, uuid: UUID, binary: ArkBinaryParser, container_type: str = None, save: AsaSave = None):
-        self.binary = binary
-        bp = self._get_class_name()
-        self.object: ArkGameObject = ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+        super().__init__(uuid, binary)
         self.items = {}
 
         item_arr = self.object.get_array_property_value("InventoryItems")
@@ -45,11 +36,10 @@ class Inventory:
         else:
             self.binary.set_property_position("InventoryItems")
 
-
-        self.items.append(item)
+        self.items[item] = None
         
         object_references = []
-        for item in self.items:
+        for item in self.items.keys():
             object_references.append(get_uuid_reference_bytes(item))
         
         self.binary.replace_array("InventoryItems", "ObjectProperty", object_references)
@@ -58,7 +48,7 @@ class Inventory:
         if len(self.items) == 0:
             return
 
-        self.items.remove(item)
+        self.items.pop(item)
         self.binary.set_property_position("InventoryItems")
         
         object_references = []

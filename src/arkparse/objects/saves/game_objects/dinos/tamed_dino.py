@@ -11,30 +11,40 @@ from arkparse.struct.object_reference import ObjectReference
 
 class TamedDino(Dino):
     owner: DinoOwner
+    inv_uuid: UUID
     inventory: Inventory
+    tamed_name: str
+
+    def __init_props__(self, obj: ArkGameObject = None):
+        if obj is not None:
+            super().__init_props__(obj)
+
+        self.tamed_name = self.object.get_property_value("TamedName")
+        inv_uuid: ObjectReference = self.object.get_property_value("MyInventoryComponent")
+
+        if inv_uuid is None:
+            self.inv_uuid = None
+            self.inventory = None
+        else:
+            self.inv_uuid = UUID(inv_uuid.value)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary, save)
 
         if binary is not None:
-            self.owner = DinoOwner(binary)
-            inv_uuid: ObjectReference = self.object.get_property_value("MyInventoryComponent")
+            self.__init_props__()
 
-            if inv_uuid is None:
-                self.inventory = None
-            else:
-                inv_bin = save.get_game_obj_binary(UUID(inv_uuid.value))
+            if self.inv_uuid is not None:
+                inv_bin = save.get_game_obj_binary(self.inv_uuid)
                 inv_parser = ArkBinaryParser(inv_bin, save.save_context)
-                self.inventory = Inventory(UUID(inv_uuid.value), inv_parser, save=save)
+                self.inventory = Inventory(self.inv_uuid, inv_parser, save=save)
 
     @staticmethod
-    def from_object(obj: ArkGameObject):
+    def from_object(dino_obj: ArkGameObject, status_obj: ArkGameObject):
         d: TamedDino = TamedDino()
+        d.__init_props__(dino_obj)
 
-        d.owner = DinoOwner(obj)
-        inv_uuid: ObjectReference = obj.get_property_value("MyInventoryComponent")
+        Dino.from_object(dino_obj, status_obj, d)
 
-        if inv_uuid is None:
-            d.inventory = None
-        else:
-            d.inventory = Inventory(UUID(inv_uuid), None, save=None)
+        if d.inv_uuid is not None:
+            d.inventory = Inventory(d.inv_uuid, None)

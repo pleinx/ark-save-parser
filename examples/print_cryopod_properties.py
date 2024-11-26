@@ -43,6 +43,7 @@ for key, obj in objects.items():
                 objects.append(ArkGameObject(binary_reader=reader, from_custom_bytes=True))
 
             for obj in objects:
+                print("\n\nObject: ", obj.blueprint)
                 obj.read_props_at_offset(reader)
                 obj.print_properties()
                 

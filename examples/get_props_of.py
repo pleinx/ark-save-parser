@@ -21,7 +21,7 @@ bps = [
 ]
 
 config = GameObjectReaderConfiguration(
-    blueprint_name_filter=lambda name: name is not None and "Saddle_C" in name,
+    blueprint_name_filter=lambda name: name is not None and "PrimalItem_WeaponEmptyCryopod_C" in name,
 )
 
 objects = save.get_game_objects(config)
@@ -44,11 +44,13 @@ print(unique_props)
 print("\nProperty counts:")
 print(prop_counts)
 
-print_values = ["CrafterCharacterName"]
-print_obj = True
+print_all = True
+print_values = []
+print_obj = False
+avoid_values = ["ByteArrays", "CustomDataBytes"]
 
 for prop in unique_props:
-    if prop.split('(')[0] in print_values:
+    if prop.split('(')[0] in print_values or (print_all and prop.split('(')[0] not in avoid_values):
         print(f"\nProperty: {prop}")
         for obj in objects.values():
             if prop in obj.get_properties():

@@ -1,82 +1,76 @@
 import logging
-from io import BytesIO
-import zlib
+from uuid import UUID
+from typing import List
 
+from arkparse.parsing.ark_property import ArkProperty
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.objects.saves.game_objects.equipment.saddle import Saddle
+from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
+from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import ArkBinaryParser
-from arkparse.objects.saves.game_objects import ArkGameObject
-from arkparse.parsing import ArkPropertyContainer
-from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.logging import ArkSaveLogger
+from arkparse.objects.saves.game_objects.misc.inventory_item import InventoryItem
 
-logger = logging.getLogger(__name__)
+class EmbeddedCryopodData:
+    class Item:
+        DINO_AND_STATUS = 0
+        SADDLE = 1
+        COSTUME = 2
+        UNKNOWN = 3
 
-class Cryopod:
-    def __init__(self, uuid, parser: ArkBinaryParser):
-        self.uuid = uuid
-        self.dinoAndStatusComponent = []
-        self.saddle = None
-        self.costume = None
+    data_byte_arrays: List[bytes]
+    
+    def __init__(self, data_arrays: List[ArkProperty]):
+        self.data_byte_arrays = [[] if data.value is None else bytes(data.value) for data in data_arrays]
 
-    def parseDinoAndStatusComponentData(self, bytes_data: List[int]):
-        try:
-            raw_input_stream = BytesIO(bytes_data)
-            header_data_bytes = raw_input_stream.read(12)
-            if len(header_data_bytes) < 12:
-                raise ValueError("Insufficient data for header")
-            header_data = ArkBinaryParser(header_data_bytes)
+    def __unembed__(self, item):
+        if item > len(self.data_byte_arrays):
+            return None
 
-            header_data.validate_uint32(0x0406)
-            inflated_size = header_data.read_uint32()
-            names_offset = header_data.read_uint32()
+        elif item == self.Item.DINO_AND_STATUS:
+            bts = self.data_byte_arrays[0]
+            if len(bts) != 0:
+                parser: ArkBinaryParser = ArkBinaryParser.from_deflated_data(bts)
+                objects: List[ArkGameObject] = []
+                nr_of_obj = parser.read_uint32()
+                for _ in range(nr_of_obj):
+                    objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
 
-            compressed_data = raw_input_stream.read()
-            if not compressed_data:
-                raise ValueError("No compressed data found")
+                for obj in objects:
+                    obj.read_props_at_offset(parser)
 
-            # Decompress data with error handling
-            try:
-                inflated_data = zlib.decompress(compressed_data) # decompress the data using the DEFLATE algorithm
-            except zlib.error as e:
-                raise RuntimeError(f"Failed to decompress cryopod data for UUID {self.uuid}") from e
+                return objects[0], objects[1]
 
-            inflated_data_reader = ArkBinaryParser(inflated_data)
-            ArkSaveLogger.set_file(inflated_data_reader, "debug.bin")
-            self.readDinoAndStatusComponent(inflated_data_reader, names_offset)
+            return None, None
 
-        except Exception as e:
-            raise RuntimeError(f"Failed to read cryopod data for UUID {self.uuid}") from e
+        elif item <= self.Item.UNKNOWN:
+            bts = self.data_byte_arrays[item]
+            if len(bts) != 0:
+                parser = ArkBinaryParser(bts)
+                parser.validate_uint32(6)
+                obj = ArkGameObject(binary_reader=parser, no_header=True)
+        
+        return None
+    
+    def get_dino_obj(self):
+        return self.__unembed__(self.Item.DINO_AND_STATUS)
+    
+    def get_saddle_obj(self):
+        return self.__unembed__(self.Item.SADDLE)
 
-    def readDinoAndStatusComponent(self, reader : ArkBinaryParser, names_table_offset : int):
-        save_context = reader.save_context
-        save_context.names = self.readNameTable(reader, names_table_offset)
-        save_context.constant_name_table = self.NAME_CONSTANTS
-        save_context.generate_unknown_names = True
-        reader.position = 0
+class Cryopod(InventoryItem): 
+    embedded_data: EmbeddedCryopodData
+    dino: TamedDino
+    saddle: Saddle
+    costume: any
 
-        self.dinoAndStatusComponent = []
-        object_count = reader.read_uint32()
-        for _ in range(object_count):
-            game_object = ArkGameObject.readFromCustomBytes(reader)
-            self.dinoAndStatusComponent.append(game_object)
+    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
+        super().__init__(uuid, binary, save)
+        self.embedded_data = EmbeddedCryopodData(self.object.get_array_property_value("ByteArrays"), [])
 
-        for game_object in self.dinoAndStatusComponent:
-            try:
-                if reader.getPosition() != game_object.getPropertiesOffset():
-                    log.warning(f"Reader position {reader.getPosition()} does not match properties offset {game_object.getPropertiesOffset()}, bytes left to read: {game_object.getPropertiesOffset() - reader.getPosition()}")
-                    reader.setPosition(game_object.getPropertiesOffset())
-                game_object.readProperties(reader)
-                game_object.readExtraData(reader)
-                reader.readInt()  # Assuming this is to align or consume extra data
-            except Exception as e:
-                log.error(f"Error reading properties for cryopod {self}, debug info follows:", exc_info=e)
-                ArkSaveUtils.enableDebugLogging = True
-                reader.setPosition(game_object.getPropertiesOffset())
-                game_object.setProperties([])
-                game_object.readProperties(reader)
-                game_object.readExtraData(reader)
-            finally:
-                ArkSaveUtils.enableDebugLogging = False
-
-    def readNameTable(self, reader, names_table_offset):
-          
-        return name_table
+        if len(self.embedded_data) != 4 and len(self.embedded_data) != 0:
+            raise ValueError("Expected 4 or no byte arrays, got ", len(self.embedded_data))
+        
+        dino_obj, status_obj = self.embedded_data.get_dino_obj()
+        self.dino = TamedDino.from_object(dino_obj, status_obj)
+        self.saddle = Saddle.from_object(self.embedded_data.get_saddle_obj())
+        self.costume = None     
