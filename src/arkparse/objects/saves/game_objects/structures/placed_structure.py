@@ -3,7 +3,7 @@ from typing import List
 from uuid import UUID
 
 from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
-from arkparse.objects.saves.game_objects.misc import ObjectOwner
+from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
 from arkparse.parsing import ArkPropertyContainer
 from arkparse.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
@@ -47,7 +47,7 @@ class SimpleStructure(ParsedObjectBase):
     #NetDestructionTime
 
     def __init__(self, uuid: UUID, binary: ArkBinaryParser):
-        super.__init__(uuid, binary)
+        super().__init__(uuid, binary)
 
         properties = self.object
         self.owner = ObjectOwner(properties)

@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 class AsaSave:
     MAX_IN_LIST = 10000
-    nr_parsed = 0   
+    nr_parsed = 0
+    parsed_objects: Dict[uuid.UUID, ArkGameObject] = {}   
 
     def __init__(self, ark_file: Path, read_only: bool = True):
         self.sqlite_db = ark_file
@@ -252,29 +253,31 @@ class AsaSave:
 
                 byte_buffer = ArkBinaryParser(row[1], self.save_context)
                 ArkSaveLogger.byte_buffer = byte_buffer
-                # ArkSaveLogger.temp_file_path = ""
                 ArkSaveLogger.set_file(byte_buffer, "game_object.bin")
                 class_name = byte_buffer.read_name()
                 ArkSaveLogger.enter_struct(class_name)
 
                 if reader_config.blueprint_name_filter and not reader_config.blueprint_name_filter(class_name):
-                    # ArkSaveLogger.debug_log("Skipping bp %s of type %s", obj_uuid, class_name)
                     ArkSaveLogger.exit_struct()
                     continue
 
                 try:
-
                     if class_name not in objects:
                         objects.append(class_name)
-                    ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
                     
-                    if ark_game_object:
-                        game_objects[obj_uuid] = ark_game_object
+                    if obj_uuid not in self.parsed_objects.keys():
+                        ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
+                        
+                        if ark_game_object:
+                            game_objects[obj_uuid] = ark_game_object
+                            self.parsed_objects[obj_uuid] = ark_game_object
+                    else:
+                        game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
 
                 except Exception as e:
                     ArkSaveLogger.enable_debug = True
                     byte_buffer.find_names()
-                    raise Exception("Error parsing object %s of type %s", obj_uuid, class_name, exc_info=e)
+                    raise Exception("Error parsing object %s of type %s: %s", obj_uuid, class_name, exc_info=e)
                 
                 for object in objects:
                     ArkSaveLogger.debug_log("Object: %s", object)
@@ -317,7 +320,6 @@ class AsaSave:
     def close(self):
         if self.connection:
             self.connection.close()
-
 
     def remove_leading_slash(self, path: str) -> Path:
         return Path(path.lstrip('/'))

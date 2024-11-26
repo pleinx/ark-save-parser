@@ -27,4 +27,5 @@ class Saddle(InventoryItem):
     def from_object(obj: ArkGameObject):
         saddle = Saddle()
         saddle.__init_props__(obj)
+        
         return saddle

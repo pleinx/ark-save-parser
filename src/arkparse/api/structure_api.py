@@ -6,7 +6,7 @@ from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
 from arkparse.logging import ArkSaveLogger
 
 from arkparse.objects.saves.game_objects import ArkGameObject, ArkGameObject
-from arkparse.objects.saves.game_objects.misc import ObjectOwner
+from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
 from arkparse.objects.saves.game_objects.structures import SimpleStructure, StructureWithInventory
 from arkparse.struct.actor_transform import MapCoords
 from arkparse.enums.ark_map import ArkMap

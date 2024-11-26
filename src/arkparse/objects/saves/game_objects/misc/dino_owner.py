@@ -13,7 +13,7 @@ class DinoOwner:
 
     def __init__(self, obj: ArkGameObject):
         self.tribe = obj.get_property_value("TribeName")
-        self.tribe_id = obj.get_property_value("TamingTeamID")
+        self.tamer_tribe_id = obj.get_property_value("TamingTeamID")
         self.tamer_string = obj.get_property_value("TamerString")
         self.player = obj.get_property_value("OwningPlayerName")
         self.imprinter = obj.get_property_value("ImprinterName")
@@ -24,19 +24,51 @@ class DinoOwner:
     #     if self.original_placer_id is not None
 
     def __str__(self) -> str:
-        tribe = self.tribe if self.tribe is not None else "Unknown"
-        tribe_id = self.tribe_id if self.tribe_id is not None else -1
+        out = "Dino owner("
+        if self.player is not None:
+            out += f"\"{self.player}\""
+        
+        if self.id_ is not None:
+            out += f" ({self.id_})"
 
-        tamer = self.tamer_string if self.tamer_string is not None else "Unknown"
-        tamer_tribe_id = self.tamer_tribe_id if self.tamer_tribe_id is not None else -1
+        if self.tribe is not None:
+            out += f" of tribe \"{self.tribe}\""
 
-        imprinter = self.imprinter if self.imprinter is not None else "Unknown"
-        imprinter_id = self.imprinter_unique_id if self.imprinter_unique_id is not None else -1
+        if len(out) > 11:
+            out += ", "
 
-        player = self.player if self.player is not None else "Unknown"
-        player_id = self.id_ if self.id_ is not None else -1
+        if self.tamer_string is not None or self.tamer_tribe_id is not None:
+            out += "tamer:"
 
-        return f"\"{player}\" ({player_id}) of tribe \"{tribe}\" ({tribe_id}), tamer: \"{tamer}\" ({tamer_tribe_id}), imprinter: \"{imprinter}\" ({imprinter_id})"
+        if self.tamer_string is not None:
+            out += f" \"{self.tamer_string}\""
+
+        if self.tamer_tribe_id is not None:
+            out += " (" if self.tamer_string is not None else " "
+            out += f"{self.tamer_tribe_id}"
+            out += ")" if self.tamer_string is not None else ""
+
+        if len(out) > 11:
+            out += ", "
+
+        if self.imprinter is not None or self.imprinter_unique_id is not None:
+            out += "imprinter:"
+
+        if self.imprinter is not None:
+            out += f" \"{self.imprinter}\""
+
+        if self.imprinter_unique_id is not None:
+            out += " (" if self.imprinter is not None else " "
+            out += f"{self.imprinter_unique_id}"
+            out += ")" if self.imprinter is not None else ""
+
+        return out + ")"
     
     def is_valid(self):
-        return self.player is not None or self.id_ is not None or self.tribe is not None or self.tribe_id is not None or self.targeting_team is not None or self.tamer_string is not None or self.tamer_tribe_id is not None or self.imprinter is not None or self.imprinter_unique_id is not None
+        return self.player is not None or \
+               self.id_ is not None or \
+               self.tribe is not None or \
+               self.tamer_string is not None or \
+               self.tamer_tribe_id is not None or \
+               self.imprinter is not None or \
+               self.imprinter_unique_id is not None

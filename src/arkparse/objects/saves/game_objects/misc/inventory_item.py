@@ -2,7 +2,7 @@ from ..ark_game_object import ArkGameObject
 from uuid import UUID
 from arkparse.parsing import ArkBinaryParser
 from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects.misc.inventory import Inventory
+
 from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.struct.object_reference import ObjectReference
 from arkparse.struct.ark_item_net_id import ArkItemNetId
@@ -38,6 +38,8 @@ class InventoryItem(ParsedObjectBase):
         self.binary.replace_u32(self.binary.position, quantity)
 
     def get_inventory(self, save: AsaSave):
+        from .inventory import Inventory # placed here to avoid circular import
         bin = save.get_game_obj_binary(self.owner_inv_uuid)
         parser = ArkBinaryParser(bin, save.save_context)
+        
         return Inventory(self.owner_inv_uuid, parser, save=save)

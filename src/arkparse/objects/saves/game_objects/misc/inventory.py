@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from uuid import UUID
-from typing import Dict
+from typing import Dict, TYPE_CHECKING
 
 from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.objects.saves.asa_save import AsaSave
@@ -17,7 +17,7 @@ class Inventory(ParsedObjectBase):
     container_uuid: UUID
     container_type: str
 
-    def __init__(self, uuid: UUID, binary: ArkBinaryParser, container_type: str = None, save: AsaSave = None):
+    def __init__(self, uuid: UUID, binary: ArkBinaryParser, save: AsaSave = None):
         super().__init__(uuid, binary)
         self.items = {}
 
@@ -25,7 +25,7 @@ class Inventory(ParsedObjectBase):
         for item in item_arr:
             item_uuid = UUID(item.value)
             reader = ArkBinaryParser(save.get_game_obj_binary(item_uuid), save.save_context)
-            item = InventoryItem(item_uuid, reader, container_type)
+            item = InventoryItem(item_uuid, reader)
             is_engram = item.object.get_property_value("bIsEngram")
             if is_engram is None or not is_engram:
                 self.items[item_uuid] = item

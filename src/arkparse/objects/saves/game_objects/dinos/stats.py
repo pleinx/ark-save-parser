@@ -147,7 +147,7 @@ class DinoStats(ParsedObjectBase):
         self.current_level = self.stat_points.get_level()
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        if binary is None:
+        if binary is not None:
             super().__init__(uuid, binary)
             self.__init_props__()
 

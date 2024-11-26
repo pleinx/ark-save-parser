@@ -1,6 +1,7 @@
 from typing import Dict, List
 from uuid import UUID
 
+from arkparse.objects.saves.game_objects.cryopods.cryopod import Cryopod
 from arkparse.objects.saves.game_objects.dinos.dino import Dino
 from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
 from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
@@ -19,8 +20,10 @@ class DinoApi:
                 return self.all_objects
 
             config = GameObjectReaderConfiguration(
-                blueprint_name_filter=lambda name: name is not None and "Dinos/" in name and "_Character_" in name,
-            )
+                blueprint_name_filter=lambda name: \
+                    name is not None and \
+                        (("Dinos/" in name and "_Character_" in name) or \
+                        ("PrimalItem_WeaponEmptyCryopod_C" in name)))
 
         objects = self.save.get_game_objects(config)
         self.all_objects = objects
@@ -33,15 +36,23 @@ class DinoApi:
         dinos = {}
 
         for key, obj in objects.items():
-            is_tamed = obj.get_property_value("TamedTimeStamp") is not None
-
-            parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
             dino = None
-            if is_tamed:
-                dino = TamedDino(obj.uuid, parser, self.save)
-            else:
-                dino = Dino(obj.uuid, parser, self.save)
-            dinos[key] = dino
+            if "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
+                is_tamed = obj.get_property_value("TamedTimeStamp") is not None
+
+                parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
+                if is_tamed:
+                    dino = TamedDino(obj.uuid, parser, self.save)
+                else:
+                    dino = Dino(obj.uuid, parser, self.save)
+            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint:
+                if not obj.get_property_value("bIsEngram", default=False):
+                    cryopod = Cryopod(obj.uuid, ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context))
+                    if cryopod.dino is not None:
+                        dino = cryopod.dino
+            
+            if dino is not None:
+                dinos[key] = dino
 
         return dinos
     
@@ -56,6 +67,12 @@ class DinoApi:
         tamed_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino)}
 
         return tamed_dinos
+    
+    def get_all_in_cryopod(self) -> Dict[UUID, TamedDino]:
+        dinos = self.get_all()
+        cryopod_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino) and v.cryopod is not None}
+
+        return cryopod_dinos
     
     def get_all_by_class(self, class_names: List[str]) -> Dict[UUID, Dino]:
         config = GameObjectReaderConfiguration(
@@ -97,8 +114,9 @@ class DinoApi:
 
         return tamed_dinos
     
-    def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, class_name: List[str] = None, tamed: bool = None) -> Dict[UUID, Dino]:
+    def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, class_name: List[str] = None, tamed: bool = None, include_cryopodded: bool = True, only_cryopodded: bool = False) -> Dict[UUID, Dino]:
         dinos = None
+
         if class_name is not None:
             config = GameObjectReaderConfiguration(
                 blueprint_name_filter=lambda name: name is not None and name in class_name
@@ -124,6 +142,12 @@ class DinoApi:
             else:
                 filtered_dinos = {k: v for k, v in filtered_dinos.items() if not isinstance(v, TamedDino)}
 
+        if not include_cryopodded:
+            filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino) and v.cryopod is None}
+
+        if only_cryopodded:
+            filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino) and v.cryopod is not None}
+
         return filtered_dinos
     
     def count_by_level(self, List: Dict[UUID, Dino]) -> Dict[int, int]:
@@ -142,8 +166,7 @@ class DinoApi:
         classes = {}
 
         for key, dino in List.items():
-            class_name = dino.object.blueprint
-            short_name = class_name.split('/')[-1].split('.')[0]
+            short_name = dino.get_short_name()
             if short_name in classes:
                 classes[short_name] += 1
             else:
@@ -162,4 +185,21 @@ class DinoApi:
                 tamed[is_tamed] = 1
 
         return tamed
+    
+    def count_by_cryopodded(self, List: Dict[UUID, Dino]) -> Dict[str, int]:
+        cryopodded = {
+            "all": 0,
+        }
+
+        for key, dino in List.items():
+            is_cryopodded = isinstance(dino, TamedDino) and dino.cryopod is not None
+            if is_cryopodded:
+                short_name = dino.get_short_name()
+                cryopodded["all"] += 1
+                if short_name in cryopodded:
+                    cryopodded[short_name] += 1
+                else:
+                    cryopodded[short_name] = 1
+
+        return cryopodded
     

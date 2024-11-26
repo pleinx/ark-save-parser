@@ -22,8 +22,14 @@ class EmbeddedCryopodData:
     def __init__(self, data_arrays: List[ArkProperty]):
         self.data_byte_arrays = [[] if data.value is None else bytes(data.value) for data in data_arrays]
 
+        if len(self.data_byte_arrays) != 4 and len(self.data_byte_arrays) != 0:
+            raise ValueError("Expected 4 or no byte arrays, got ", len(self.data_byte_arrays))
+
     def __unembed__(self, item):
-        if item > len(self.data_byte_arrays):
+        if item > (len(self.data_byte_arrays) - 1):
+            if item == self.Item.DINO_AND_STATUS:
+                return None, None
+            
             return None
 
         elif item == self.Item.DINO_AND_STATUS:
@@ -63,14 +69,29 @@ class Cryopod(InventoryItem):
     saddle: Saddle
     costume: any
 
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
-        super().__init__(uuid, binary, save)
-        self.embedded_data = EmbeddedCryopodData(self.object.get_array_property_value("ByteArrays"), [])
-
-        if len(self.embedded_data) != 4 and len(self.embedded_data) != 0:
-            raise ValueError("Expected 4 or no byte arrays, got ", len(self.embedded_data))
+    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
+        super().__init__(uuid, binary)
+        self.dino = None
+        self.saddle = None
+        self.costume = None
+        self.embedded_data = EmbeddedCryopodData(self.object.get_array_property_value("ByteArrays", default=[]))
         
         dino_obj, status_obj = self.embedded_data.get_dino_obj()
-        self.dino = TamedDino.from_object(dino_obj, status_obj)
-        self.saddle = Saddle.from_object(self.embedded_data.get_saddle_obj())
-        self.costume = None     
+        
+        if dino_obj is not None and status_obj is not None:
+            self.dino = TamedDino.from_object(dino_obj, status_obj, self)
+
+        saddle_obj = self.embedded_data.get_saddle_obj()
+        if saddle_obj is not None:
+            self.saddle = Saddle.from_object(saddle_obj)
+
+        self.costume = None   
+
+    def is_empty(self):
+        return self.dino is None 
+
+    def __str__(self):
+        if self.is_empty():
+            return "Cryopod(empty)"
+        
+        return "Cryopod(dino={}, lv={}, saddle={})".format(self.dino.get_short_name(), self.dino.stats.current_level, "no saddle" if self.saddle is None else self.saddle.get_short_name())

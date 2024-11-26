@@ -18,3 +18,6 @@ class ParsedObjectBase:
             self.binary = binary
             bp = self.__get_class_name()
             self.__init_props__(ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary))
+
+    def get_short_name(self):
+        return self.object.blueprint.split('/')[-1].split('.')[-1]
