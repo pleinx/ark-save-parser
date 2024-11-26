@@ -1,10 +1,10 @@
-from ..abstract_game_object import AbstractGameObject
+from ..ark_game_object import ArkGameObject
 from uuid import UUID
 from arkparse.parsing import ArkBinaryParser
 
 class InventoryItem:
     binary: ArkBinaryParser
-    object: AbstractGameObject
+    object: ArkGameObject
 
     inventory_uuid: UUID
     container_uuid: UUID
@@ -17,7 +17,7 @@ class InventoryItem:
     def __init__(self, uuid: UUID, binary: ArkBinaryParser, container_type: str = None):
         self.binary = binary
         bp = self._get_class_name()
-        self.object = AbstractGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+        self.object = ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
         self.quantity = self.object.get_property_value("ItemQuantity")
 
     def set_quantity(self, quantity: int):

@@ -36,6 +36,13 @@ class BaseValueParser(BinaryReaderBase):
         result = struct.unpack_from('<Q', self.byte_buffer, self.position)[0]
         self.position += 8
         return result
+    
+    def read_int64(self) -> int:
+        if self.position + 8 > len(self.byte_buffer):
+            raise IndexError("Buffer underflow: not enough bytes to read a long.")
+        result = struct.unpack_from('<q', self.byte_buffer, self.position)[0]
+        self.position += 8
+        return result
 
     def read_bytes(self, count: int) -> bytes:
         if count > len(self.byte_buffer) - self.position:

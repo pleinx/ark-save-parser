@@ -11,7 +11,7 @@ from arkparse.parsing.ark_binary_parser import ArkBinaryParser
 
 from .header_location import HeaderLocation
 from .game_objects.ark_game_object import ArkGameObject
-from .game_objects.abstract_game_object import AbstractGameObject
+from .game_objects.ark_game_object import ArkGameObject
 from .save_context import SaveContext
 
 logger = logging.getLogger(__name__)
@@ -227,7 +227,7 @@ class AsaSave:
         
         logger.info(f"Database successfully backed up to {path}")
 
-    def get_game_objects(self, reader_config: GameObjectReaderConfiguration) -> Dict[uuid.UUID, 'AbstractGameObject']:
+    def get_game_objects(self, reader_config: GameObjectReaderConfiguration) -> Dict[uuid.UUID, 'ArkGameObject']:
         query = "SELECT key, value FROM game"
         game_objects = {}
         row_index = 0
@@ -302,7 +302,7 @@ class AsaSave:
     def get_game_object_by_id(self, obj_uuid: uuid.UUID) -> Optional['ArkGameObject']:
         bin = self.get_game_obj_binary(obj_uuid)
         reader = ArkBinaryParser(bin, self.save_context)
-        obj = AbstractGameObject(obj_uuid, reader.read_name(), reader)
+        obj = ArkGameObject(obj_uuid, reader.read_name(), reader)
         return obj
 
     def get_custom_value(self, key: str) -> Optional['ArkBinaryParser']:
@@ -354,5 +354,5 @@ class AsaSave:
         if class_name in skip_list:
             return None
     
-        return AbstractGameObject(obj_uuid, class_name, byte_buffer)
+        return ArkGameObject(obj_uuid, class_name, byte_buffer)
         

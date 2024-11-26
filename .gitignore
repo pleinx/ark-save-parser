@@ -167,3 +167,6 @@ out/*
 *.bin
 *.arkprofile
 *.ark
+/*.arkprofile
+/*.ark
+test_saves/*

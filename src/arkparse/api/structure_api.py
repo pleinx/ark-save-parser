@@ -5,7 +5,7 @@ from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
 from arkparse.logging import ArkSaveLogger
 
-from arkparse.objects.saves.game_objects import ArkGameObject, AbstractGameObject
+from arkparse.objects.saves.game_objects import ArkGameObject, ArkGameObject
 from arkparse.objects.saves.game_objects.misc import ObjectOwner
 from arkparse.objects.saves.game_objects.structures import SimpleStructure, StructureWithInventory
 from arkparse.struct.actor_transform import MapCoords
@@ -15,7 +15,7 @@ class StructureApi:
     def __init__(self, save: AsaSave):
         self.save = save
 
-    def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, AbstractGameObject]:
+    def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         if config is None:
             reader_config = GameObjectReaderConfiguration(
                 blueprint_name_filter=lambda name: name is not None and "/Structures" in name and not "PrimalItemStructure_" in name

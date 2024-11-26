@@ -4,7 +4,7 @@ from uuid import UUID
 
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
-from arkparse.objects.saves.game_objects.abstract_game_object import AbstractGameObject
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.parsing.ark_archive import ArkArchive
 from arkparse.struct.actor_transform import ActorTransform
@@ -38,7 +38,7 @@ class ArkProfile:
         self._archive = _archive
         self.inventory = {}
 
-    def get_location_and_inventory(self, save: AsaSave, pawns: Dict[UUID, AbstractGameObject] = None):
+    def get_location_and_inventory(self, save: AsaSave, pawns: Dict[UUID, ArkGameObject] = None):
         if pawns is None:
             pawn_bps = [Player.pawn_female, Player.pawn_male]
 

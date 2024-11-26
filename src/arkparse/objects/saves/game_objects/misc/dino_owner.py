@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from arkparse.objects.saves.game_objects.abstract_game_object import AbstractGameObject
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 
 @dataclass
 class DinoOwner:
@@ -11,7 +11,7 @@ class DinoOwner:
     imprinter_unique_id: int #ImprinterPlayerUniqueNetId
     id_: int #OwningPlayerID
 
-    def __init__(self, obj: AbstractGameObject):
+    def __init__(self, obj: ArkGameObject):
         self.tribe = obj.get_property_value("TribeName")
         self.tribe_id = obj.get_property_value("TamingTeamID")
         self.tamer_string = obj.get_property_value("TamerString")

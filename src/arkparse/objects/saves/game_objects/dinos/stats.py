@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
-from arkparse.objects.saves.game_objects.abstract_game_object import AbstractGameObject
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 
 STAT_POSITION_MAP = {
     0: 'health',
@@ -35,7 +35,7 @@ class StatPoints:
     fortitude: int = 0
     crafting_speed: int = 0
 
-    def __init__(self, object: AbstractGameObject = None):
+    def __init__(self, object: ArkGameObject = None):
         if object is None:
             return
 
@@ -91,7 +91,7 @@ class StatValues:
     fortitude: float = 0
     crafting_speed: float = 0
 
-    def __init__(self, object: AbstractGameObject = None):
+    def __init__(self, object: ArkGameObject = None):
         if object is None:
             return
         
@@ -146,7 +146,7 @@ class DinoStats:
         
         self.binary = binary
         bp = self._get_class_name()
-        self.object = AbstractGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+        self.object = ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
 
         base_lvl = self.object.get_property_value("BaseCharacterLevel")
         self.base_level = 0 if base_lvl is None else base_lvl
@@ -154,6 +154,18 @@ class DinoStats:
         self.stat_points = StatPoints(self.object)
         self.stat_values = StatValues(self.object)
         self.current_level = self.stat_points.get_level()
+
+    @staticmethod
+    def from_object(obj: ArkGameObject):
+        s: DinoStats = DinoStats()
+
+        s.object = obj
+        s.base_level = obj.get_property_value("BaseCharacterLevel")
+        s.stat_points = StatPoints(obj)
+        s.stat_values = StatValues(obj)
+        s.current_level = s.stat_points.get_level()
+
+        return s
 
     def __str__(self):
         return f"DinoStats(level={self.current_level}"

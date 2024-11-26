@@ -3,7 +3,7 @@ from uuid import UUID
 from typing import List, Dict
 
 from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects import AbstractGameObject
+from arkparse.objects.saves.game_objects import ArkGameObject
 from arkparse.struct import get_uuid_reference_bytes
 from arkparse.parsing import ArkBinaryParser
 
@@ -13,7 +13,7 @@ from .inventory_item import InventoryItem
 @dataclass
 class Inventory:
     binary: ArkBinaryParser
-    object: AbstractGameObject
+    object: ArkGameObject
     items: Dict[UUID, InventoryItem]
 
     container_uuid: UUID
@@ -27,7 +27,7 @@ class Inventory:
     def __init__(self, uuid: UUID, binary: ArkBinaryParser, container_type: str = None, save: AsaSave = None):
         self.binary = binary
         bp = self._get_class_name()
-        self.object: AbstractGameObject = AbstractGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+        self.object: ArkGameObject = ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
         self.items = {}
 
         item_arr = self.object.get_array_property_value("InventoryItems")

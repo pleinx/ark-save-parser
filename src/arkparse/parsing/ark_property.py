@@ -350,7 +350,7 @@ class ArkProperty:
         elif value_type == ArkValueType.Int16:
             return byte_buffer.read_short()
         elif value_type == ArkValueType.Int64:
-            return byte_buffer.read_long()
+            return byte_buffer.read_int64()
         elif value_type == ArkValueType.Name:
             return byte_buffer.read_name()
         elif value_type == ArkValueType.Boolean:

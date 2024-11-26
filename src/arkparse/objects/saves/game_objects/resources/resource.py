@@ -3,13 +3,13 @@ from uuid import UUID
 
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.objects.saves.game_objects.misc.inventory import Inventory
-from arkparse.objects.saves.game_objects.abstract_game_object import AbstractGameObject
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.struct.ark_item_net_id import ArkItemNetId
 
 class Resource:
     binary: ArkBinaryParser
-    object: AbstractGameObject
+    object: ArkGameObject
 
     net_id: ArkItemNetId
 
@@ -24,7 +24,7 @@ class Resource:
     def __init__(self, uuid: UUID, binary: ArkBinaryParser):
         self.binary = binary
         bp = self._get_class_name()
-        self.object = AbstractGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
+        self.object = ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary)
 
         self.net_id = self.object.get_property_value("ItemID")
         self.owner_inventory = UUID(self.object.get_property_value("OwnerInventory").value)

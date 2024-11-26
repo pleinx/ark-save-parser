@@ -7,12 +7,12 @@ from arkparse.parsing import ArkPropertyContainer
 from arkparse.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
 from arkparse.objects.saves.asa_save import AsaSave
-from ..abstract_game_object import AbstractGameObject
+from ..ark_game_object import ArkGameObject
 
 @dataclass
 class SimpleStructure:
     binary: ArkBinaryParser
-    object: AbstractGameObject
+    object: ArkGameObject
 
     blueprint: str
 
@@ -60,7 +60,7 @@ class SimpleStructure:
     def __init__(self, uuid: UUID, binary: ArkBinaryParser):
         self.binary = binary
         self.blueprint = self._get_class_name()
-        self.object = AbstractGameObject(uuid=uuid, blueprint=self.blueprint, binary_reader=binary)
+        self.object = ArkGameObject(uuid=uuid, blueprint=self.blueprint, binary_reader=binary)
 
         properties = self.object
 

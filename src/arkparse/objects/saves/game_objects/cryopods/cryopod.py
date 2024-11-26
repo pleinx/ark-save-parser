@@ -1,10 +1,5 @@
 import logging
-import uuid
-from pathlib import Path
-from typing import List, Dict, Optional
 from io import BytesIO
-from zipfile import ZipFile
-import os
 import zlib
 
 from arkparse.parsing import ArkBinaryParser
@@ -12,8 +7,6 @@ from arkparse.objects.saves.game_objects import ArkGameObject
 from arkparse.parsing import ArkPropertyContainer
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.logging import ArkSaveLogger
-
-from arkparse.utils import WildcardInflaterInputStream
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +16,6 @@ class Cryopod:
         self.dinoAndStatusComponent = []
         self.saddle = None
         self.costume = None
-
-        
 
     def parseDinoAndStatusComponentData(self, bytes_data: List[int]):
         try:

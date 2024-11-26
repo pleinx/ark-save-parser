@@ -5,7 +5,7 @@ from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.classes.dinos import Dinos
 from arkparse.logging import ArkSaveLogger
-from arkparse.objects.saves.game_objects.abstract_game_object import AbstractGameObject
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.parsing.ark_property import ArkProperty
 
@@ -21,7 +21,7 @@ bps = [
 ]
 
 config = GameObjectReaderConfiguration(
-    blueprint_name_filter=lambda name: name is not None and name in bps,
+    blueprint_name_filter=lambda name: name is not None and "Saddle_C" in name,
 )
 
 objects = save.get_game_objects(config)
@@ -44,11 +44,19 @@ print(unique_props)
 print("\nProperty counts:")
 print(prop_counts)
 
+print_values = ["CrafterCharacterName"]
+print_obj = True
+
 for prop in unique_props:
-    print(f"\nProperty: {prop}")
-    for obj in objects.values():
-        if prop in obj.get_properties():
-            prop : ArkProperty = prop
-            print(f"Object: {obj.blueprint}, Value: {obj.get_property_value(prop.split('(')[0])}")
+    if prop.split('(')[0] in print_values:
+        print(f"\nProperty: {prop}")
+        for obj in objects.values():
+            if prop in obj.get_properties():
+                if not print_obj:
+                    prop : ArkProperty = prop
+                    print(f"Object: {obj.blueprint}, Value: {obj.get_property_value(prop.split('(')[0])}")
+                else:
+                    print(f"\nObject: {obj.blueprint}")
+                    obj.print_properties()
 
 ArkSaveLogger.temp_file_path = Path.cwd()
