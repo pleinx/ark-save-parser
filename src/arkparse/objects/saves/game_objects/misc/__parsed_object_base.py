@@ -3,8 +3,8 @@ from uuid import UUID
 from arkparse.parsing import ArkBinaryParser
 
 class ParsedObjectBase:
-    binary: ArkBinaryParser
-    object: ArkGameObject
+    binary: ArkBinaryParser = None
+    object: ArkGameObject = None
 
     def __get_class_name(self):
         self.binary.set_position(0)

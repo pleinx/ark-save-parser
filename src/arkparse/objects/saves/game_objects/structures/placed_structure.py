@@ -4,6 +4,7 @@ from uuid import UUID
 
 from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
+from arkparse.struct.object_reference import ObjectReference
 from arkparse.parsing import ArkPropertyContainer
 from arkparse.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
@@ -59,7 +60,8 @@ class SimpleStructure(ParsedObjectBase):
         self.location = None
         self.binary_data = None
 
-        self.linked_structure_uuids = properties.get_array_property_value("LinkedStructures", [])
+        linked: List[ObjectReference] = properties.get_array_property_value("LinkedStructures", [])
+        self.linked_structure_uuids = [UUID(link.value) for link in linked]
         self.linked_structures = []
 
         self.original_creation_time = properties.get_property_value("OriginalCreationTime")

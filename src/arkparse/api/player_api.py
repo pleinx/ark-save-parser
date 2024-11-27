@@ -22,7 +22,7 @@ class PlayerApi:
         LEVEL = 1
         XP = 2
 
-    def __init__(self, ftp_config: dict, map: ArkMaps, update_frequency = 900, save: AsaSave = None):
+    def __init__(self, ftp_config: Path, map: ArkMaps, update_frequency = 900, save: AsaSave = None):
         self.players : List[ArkProfile] = []
         self.tribes : List[ArkTribe] = []
         self.save: AsaSave = save
@@ -162,4 +162,16 @@ class PlayerApi:
                 break
         
         return player, value
+    
+    def get_player_by_platform_name(self, name: str):
+        for p in self.players:
+            if p.player_data.name == name:
+                return p
+        return None
+    
+    def get_tribe_of(self, player: ArkProfile):
+        for t in self.tribes:
+            if player.player_data.tribe == t.tribe_data.tribe_id:
+                return t
+        return None
 

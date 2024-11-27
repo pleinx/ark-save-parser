@@ -42,7 +42,8 @@ class ArkPropertyContainer:
                 property: ArkPropertyContainer
                 property.value.print_properties()
             else:
-                print(f"Property: {property.name} = {property.value}")
+                property: ArkProperty = property
+                print(f"Property ({property.type}): {property.name} = {property.value}")
 
     def has_property(self, name: str) -> bool:
         return any(property.name == name for property in self.properties)

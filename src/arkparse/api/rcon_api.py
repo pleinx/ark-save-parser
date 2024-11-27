@@ -1,9 +1,11 @@
 from rcon import source
 from pathlib import Path
 import json
-from typing import List
+from typing import List, Dict
 from datetime import datetime
 import re
+import threading
+import uuid
 
 class PlayerDataFiles:
     players_files_path = None
@@ -134,6 +136,10 @@ class RconApi:
         self.game_log: List[GameLogEntry] = []
         self.last_game_log_entry = None
 
+        # Dictionary to track last seen index for each user
+        self.subscribers: Dict[str, int] = {}
+        self.lock = threading.Lock()  # To handle concurrent access
+
     def from_config(config: Path) -> "RconApi":
         with open(config, 'r') as config_file:
             config = json.load(config_file)
@@ -167,11 +173,7 @@ class RconApi:
 
         return players 
     
-    def get_chat(self):
-        self.update_game_log()
-        return [entry for entry in self.game_log if entry.type == GameLogEntry.EntryType.CHAT]
-    
-    def update_game_log(self):
+    def __update_game_log(self):
         response = self.send_cmd("getgamelog")
         if response is None:
             print("Server not responding")
@@ -180,17 +182,72 @@ class RconApi:
             return
         entries = response.split("\n")
         entries = [e for e in entries if e.strip() != ""]
-        log_entries = [GameLogEntry(time=e.split(" ")[0].strip(':'), message=" ".join(e.split(" ")[1:])) for e in entries]
-        new_entries = [e for e in log_entries if self.last_game_log_entry is None or e.is_newer_than(self.last_game_log_entry)]
+        new_entries = [GameLogEntry(time=e.split(" ")[0].strip(':'), message=" ".join(e.split(" ")[1:])) for e in entries]
         self.game_log.extend(new_entries)
-        self.last_game_log_entry = log_entries[-1] if len(log_entries) else None
+        self.last_game_log_entry = new_entries[-1] if len(new_entries) else None
         return new_entries
     
-    def get_new_chat(self):
-        chat = self.get_chat()
-        self.update_game_log()
-        return [entry for entry in self.game_log if entry.type == GameLogEntry.EntryType.CHAT and entry not in chat]
+    def subscribe(self):
+        """Subscribe a user to the game log."""
+        with self.lock:
+            handle = str(uuid.uuid4())
+            self.subscribers[handle] = len(self.game_log)
+            return handle
+
+    def unsubscribe(self, handle: str):
+        """Unsubscribe a user from the game log."""
+        with self.lock:
+            if handle in self.subscribers:
+                del self.subscribers[handle]
+
+    def get_new_entries(self, handle: str) -> List[GameLogEntry]:
+        """Retrieve new game log entries for a specific user."""
+        with self.lock:
+            if handle not in self.subscribers:
+                raise ValueError(f"Handle '{handle}' is not valid.")
+
+            # Ensure the latest game log is updated
+            self.__update_game_log()
+
+            last_seen = self.subscribers[handle]
+            new_entries = self.game_log[last_seen:]
+
+            # Update the last seen index for the user
+            self.subscribers[handle] = len(self.game_log)
+
+        return new_entries
     
-    def get_chat_since(self, since: datetime):
-        self.update_game_log()
-        return [entry for entry in self.game_log if entry.type == GameLogEntry.EntryType.CHAT and entry.time > since]
+    def import_log(self, path: Path):
+        with self.lock:
+            try:
+                with open(path, 'r') as f:
+                    for line_number, line in enumerate(f, start=1):
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if ":" not in line:
+                            print(f"Skipping malformed line {line_number}: '{line}'")
+                            continue
+                        time_str, message = line.split(":", 1)
+                        time_str = time_str.strip()
+                        message = message.strip()
+                        try:
+                            time = datetime.strptime(time_str, "%H:%M:%S")
+                        except ValueError:
+                            raise ValueError(f"Invalid time format on line {line_number}: '{time_str}'")
+                        entry = GameLogEntry(time=time, message=message)
+                        self.game_log.append(entry)
+                # Sort the game_log chronologically after import
+                self.game_log.sort(key=lambda entry: entry.time)
+                # Update the last_game_log_entry
+                if self.game_log:
+                    self.last_game_log_entry = self.game_log[-1]
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Log file '{path}' not found.")
+            except Exception as e:
+                raise ValueError(f"An error occurred while importing the log: {e}")
+    
+    def export_log(self, path: Path):
+        with open(path, 'w') as f:
+            for entry in self.game_log:
+                f.write(str(entry) + "\n")

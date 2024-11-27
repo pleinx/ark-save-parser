@@ -22,7 +22,14 @@ class AsaSave:
     parsed_objects: Dict[uuid.UUID, ArkGameObject] = {}   
 
     def __init__(self, ark_file: Path, read_only: bool = True):
-        self.sqlite_db = ark_file
+
+        # create temp copy of file
+        temp_save_path = Path.cwd() / "temp_save.ark"
+        with open(ark_file, 'rb') as file:
+            with open(temp_save_path, 'wb') as temp_file:
+                temp_file.write(file.read())
+
+        self.sqlite_db = temp_save_path
         self.save_context = SaveContext()
         self.var_objects = {}
         self.var_objects["placed_structs"] = {}
@@ -43,6 +50,13 @@ class AsaSave:
         self.read_actor_locations()
         ArkSaveLogger.debug_log("Actor locations read")
         ArkSaveLogger.exit_struct()
+
+    def __del__(self):
+        self.close()
+
+        # clean up temp file
+        if self.sqlite_db.exists():
+            self.sqlite_db.unlink()
 
     def list_all_items_in_db(self):
         ArkSaveLogger.enter_struct("Database")

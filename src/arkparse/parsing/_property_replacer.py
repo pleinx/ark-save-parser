@@ -24,25 +24,37 @@ class PropertyReplacer(PropertyInsertor):
                 ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                 self.set_position(i)
                 return i
-        return None
+        return None   
 
-    def replace_string(self, names: Dict[int, str], property_name : str, value: str):
+    def replace_string(self, property_position : int, value: str):
         original_position = self.get_position()
-        property_position = self.set_property_position(property_name)
-        self.read_name()
-        self.read_name()
-        self.read_byte() # length?
+        self.set_position(property_position)
+
+        new_length = len(value) + 1
+        new_length_byte = (new_length + 4).to_bytes(1, byteorder="little")
+
+        # ArkSaveLogger.enable_debug = True
+        # ArkSaveLogger.set_file(self, "debug.bin")
+        # ArkSaveLogger.open_hex_view(True)
+
+        self.read_name() # skip prop name
+        self.validate_name("StrProperty")
+        full_length_pos = self.position
+        self.read_byte() # full length
         self.validate_uint64(0)
+        string_pos = self.position
         current_string = self.read_string()
         current_nr_of_bytes = len(current_string) + 4
-        value_pos = property_position + 8 + 8 + 1 + 8
-        # length as 32 bit int
-        total_length_u32 = (current_nr_of_bytes + 1).to_bytes(4, byteorder="little")
-        self.replace_bytes(property_position + 8 + 8, total_length_u32)
-        lengthu32 = (len(value) + 1).to_bytes(4, byteorder="little")
-        self.replace_bytes(value_pos, lengthu32 + value.encode("utf-8"), current_nr_of_bytes)
+
+        # replace total length
+        self.replace_bytes(full_length_pos, new_length_byte, 1)
+
+        # replace string
+        lengthu32 = new_length.to_bytes(4, byteorder="little")
+        self.replace_bytes(string_pos, lengthu32 + value.encode("utf-8"), current_nr_of_bytes)
+
         self.set_position(original_position)
-        print(f"Replaced string {current_string} (length={current_nr_of_bytes}) at {property_position} with {value} at {value_pos}")
+        # print(f"Replaced string {current_string} (length={current_nr_of_bytes}) at {property_position} with {value} at {string_pos}")
 
     def replace_u32(self, property_position : int, new_value: int):
         value_pos = property_position + 8 + 8 + 1 + 8

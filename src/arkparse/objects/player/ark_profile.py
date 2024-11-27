@@ -54,4 +54,4 @@ class ArkProfile:
                 self.location = ActorTransform(vector = pawn.get_property_value("SavedBaseWorldLocation"))
                 inv_uuid = UUID(pawn.get_property_value("MyInventoryComponent").value)
                 reader = ArkBinaryParser(save.get_game_obj_binary(inv_uuid), save.save_context)
-                self.inventory = {inv_uuid: Inventory(inv_uuid, reader, container_type="Player inventory", save=save)}
+                self.inventory = {inv_uuid: Inventory(inv_uuid, reader, save=save)}
