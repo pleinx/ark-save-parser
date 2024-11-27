@@ -40,7 +40,7 @@ class ArkSaveLogger:
 
     @staticmethod
     def set_file(reader, name):
-        if ArkSaveLogger.temp_file_path != "":
+        if ArkSaveLogger.temp_file_path != "" and ArkSaveLogger.enable_debug:
             ArkSaveLogger.byte_buffer = reader
             ArkSaveLogger.file = ArkSaveLogger.temp_file_path / name
             with open(ArkSaveLogger.file, 'wb') as file:

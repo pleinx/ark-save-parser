@@ -1,53 +1,58 @@
 from pathlib import Path
 import json
 
-from arkparse.api.structure_api import StructureApi
-from arkparse.api.player_api import PlayerApi, ArkMaps
+from arkparse.api.structure_api import StructureApi, ArkMap, MapCoords
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
 from arkparse.objects.saves.game_objects.structures.placed_structure import SimpleStructure
+from arkparse.api.player_api import PlayerApi
+
+
 
 from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.classes.placed_structures import PlacedStructures
 from arkparse.logging import ArkSaveLogger
 
 ArkSaveLogger.temp_file_path = Path.cwd()
 
-
-path = Path.cwd() / "test_saves" / "server.ark"
+path = Path.cwd() / "test_saves"
 ftp = Path.cwd().parent / "ftp_config.json"
 
-save = AsaSave(path, read_only=False)
+client = ArkFtpClient.from_config(ftp, FtpArkMap.ABERRATION)
+client.connect()
+client.download_save_file(path)
+client.close()
+
+save = AsaSave(path / "Aberration_WP.ark", read_only=False)
 structure_api = StructureApi(save)
-# player_api = PlayerApi(ftp_config=ftp, map=ArkMaps.ABERRATION, save=save)
+player_api = PlayerApi(ftp_config=ftp, map=FtpArkMap.ABERRATION, save=save)
 
-structures = structure_api.get_by_class(PlacedStructures.stone.floor)
-
+structures = structure_api.get_at_location(ArkMap.ABERRATION, MapCoords(20.6, 29.3), 0.3)
 print(f"Found {len(structures)} structures\n")
 
-bobette_owned = {}
-for key, structure in structures.items():
-    if structure.owner.player_name == "Bobette":
-        bobette_owned[structure.object.uuid] = structure
-        print(structure.to_string_complete())
-        print("\n")
-        break
 
-new_owner = ObjectOwner.from_profile(276678343, "123", "Tribe of 123")
+new_owner = player_api.get_as_owner(347473876, PlayerApi.OwnerType.OBJECT)
 
-bobette_owned = structure_api.get_connected_structures(bobette_owned)
-print("Connected building structure count: ", len(bobette_owned))
+all_structures = structure_api.get_connected_structures(structures)
+print("Connected building structure count: ", len(all_structures))
 
-if bobette_owned is not None:
-    print("Replacing owner to '123':")
-    structure_api.transfer_ownership(new_owner, bobette_owned)
+# for key, structure in all_structures.items():
+#     print("\n")
+#     structure.object.print_properties()
+
+if all_structures is not None:
+    print("Replacing owner to 'Human':")
+    structure_api.modify_structures(all_structures, new_owner=new_owner, new_max_health=100000.0)
     print("Done")
 
     print("\nReparsing binary")
-    for key, structure in bobette_owned.items():
+    for key, structure in all_structures.items():
         structure : SimpleStructure = structure
         new_structure = SimpleStructure(key, structure.binary)
         print(structure.to_string_complete())
         print("\n")
+    print("Done")
 
-save.store_db(Path.cwd() / "modified.ark")
-    
+    save.store_db(Path.cwd() / "Aberration_WP.ark")
+    client.connect()
+    client.upload_save_file(path=Path.cwd() / "Aberration_WP.ark")
+    client.close()

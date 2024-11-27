@@ -3,7 +3,8 @@ from uuid import UUID
 
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
-from arkparse.logging import ArkSaveLogger
+from arkparse.ftp.ark_ftp_client import ArkFtpClient
+from arkparse.utils import TEMP_FILES_DIR
 
 from arkparse.objects.saves.game_objects import ArkGameObject, ArkGameObject
 from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
@@ -140,12 +141,22 @@ class StructureApi:
 
         return result
      
-    def transfer_ownership(self, owner: ObjectOwner, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]]):
+    def modify_structures(self, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None, ftp_client: ArkFtpClient = None):
         for key, obj in structures.items():
             for uuid in obj.linked_structure_uuids:
                 if uuid not in structures.keys():
                     raise ValueError(f"Linked structure {uuid} is not in the structures list, please change owner of all linked structures")
 
-            obj.owner.replace_self_with(owner)
-            obj.binary = obj.owner.set_in_binary(obj.binary)
-            self.save.modify_obj_in_db(obj.object.uuid, obj.binary.byte_buffer)
+            if new_max_health is not None:
+                obj.overwrite_health(new_max_health)
+            
+            if new_owner is not None:
+                obj.owner.replace_self_with(new_owner, binary=obj.binary)
+
+            self.save.modify_obj_in_db(key, obj.binary.byte_buffer)
+
+        if ftp_client is not None:
+            self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
+            ftp_client.connect()
+            ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
+            ftp_client.close()

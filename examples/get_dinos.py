@@ -6,14 +6,15 @@ from arkparse.struct.actor_transform import ActorTransform, MapCoords
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.api.dino_api import DinoApi
 from arkparse.classes.dinos import Dinos
+from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
 
 
-class_ = Dinos.alpha_reaper_king
+class_ = None
 lower_lvl = None
 upper_lvl = None
-tamed = None
+tamed = True
 
-save_path = Path.cwd() / "test_saves" / "server.ark"
+save_path = Path.cwd() / "test_saves" / "Aberration_WP.ark"
 save = AsaSave(save_path)
 dApi = DinoApi(save)
 
@@ -37,4 +38,10 @@ print(json.dumps(dApi.count_by_class(dinos), indent=4))
 
 print("\n")
 for key, dino in dinos.items():
-    print(f"{key}: location = {dino.location.as_map_coords(ArkMap.ABERRATION)}")
+    if isinstance(dino, TamedDino) and dino.cryopod is not None:
+        print(f"{key}: location = Cryopod")
+    else:
+        print(f"{key}: location = {dino.location.as_map_coords(ArkMap.ABERRATION)}")
+
+for key, dino in dinos.items():
+    dino.object.print_properties()

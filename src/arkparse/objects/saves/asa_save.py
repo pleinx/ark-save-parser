@@ -13,6 +13,7 @@ from .header_location import HeaderLocation
 from .game_objects.ark_game_object import ArkGameObject
 from .game_objects.ark_game_object import ArkGameObject
 from .save_context import SaveContext
+from arkparse.utils import TEMP_FILES_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class AsaSave:
     def __init__(self, ark_file: Path, read_only: bool = True):
 
         # create temp copy of file
-        temp_save_path = Path.cwd() / "temp_save.ark"
+        temp_save_path = TEMP_FILES_DIR / "temp_save.ark"
         with open(ark_file, 'rb') as file:
             with open(temp_save_path, 'wb') as temp_file:
                 temp_file.write(file.read())
@@ -39,17 +40,8 @@ class AsaSave:
         self.connection = sqlite3.connect(conn_str, uri=True)
         
         self.list_all_items_in_db()
-
-        # print("Connection to", ark_file, "established")
-        ArkSaveLogger.enter_struct("Header")
         self.read_header()
-        ArkSaveLogger.debug_log("Header read")
-        ArkSaveLogger.exit_struct()
-
-        ArkSaveLogger.enter_struct("Actor Locations")
         self.read_actor_locations()
-        ArkSaveLogger.debug_log("Actor locations read")
-        ArkSaveLogger.exit_struct()
 
     def __del__(self):
         self.close()
@@ -59,8 +51,6 @@ class AsaSave:
             self.sqlite_db.unlink()
 
     def list_all_items_in_db(self):
-        ArkSaveLogger.enter_struct("Database")
-        ArkSaveLogger.enter_struct("Game table")
         query = "SELECT key, value FROM game"
         with self.connection as conn:
             cursor = conn.execute(query)
@@ -70,9 +60,6 @@ class AsaSave:
                 rowCount += 1
             ArkSaveLogger.debug_log("Found %d items in game table", rowCount)
 
-        ArkSaveLogger.exit_struct()
-        ArkSaveLogger.enter_struct("Custom table")
-
         # get custom values
         query = "SELECT key, value FROM custom"
         with self.connection as conn:
@@ -80,30 +67,15 @@ class AsaSave:
             for row in cursor:
                 ArkSaveLogger.debug_log("Custom key: %s", row[0])
 
-        ArkSaveLogger.exit_struct()
-        ArkSaveLogger.exit_struct()
-
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")
-        if ArkSaveLogger.temp_file_path != "":
-            ArkSaveLogger.byte_buffer = actor_transforms
-            ArkSaveLogger.file = ArkSaveLogger.temp_file_path / "actor_transforms"
-            with open(ArkSaveLogger.file, 'wb') as file:
-                file.write(actor_transforms.byte_buffer)
-
         ArkSaveLogger.debug_log("Actor transforms table retrieved")
         if actor_transforms:
             self.save_context.actor_transforms = actor_transforms.read_actor_transforms()   
 
     def read_header(self):
         header_data = self.get_custom_value("SaveHeader")
-        
-        if ArkSaveLogger.temp_file_path != "":
-            ArkSaveLogger.byte_buffer = header_data
-            ArkSaveLogger.file = ArkSaveLogger.temp_file_path / "save_header"
-            with open(ArkSaveLogger.file, 'wb') as file:
-                file.write(header_data.byte_buffer)
-                
+                       
         self.save_context.save_version = header_data.read_short()
         ArkSaveLogger.debug_log("Save version: %d", self.save_context.save_version)
         name_table_offset = header_data.read_int()
@@ -119,15 +91,11 @@ class AsaSave:
         
         # check_uint64(header_data, 0)
         header_data.set_position(name_table_offset)
-
-        ArkSaveLogger.enter_struct("NameTable")
-        ArkSaveLogger.debug_log("Reading name table")
         self.save_context.names = self.read_table(header_data)
-        ArkSaveLogger.exit_struct()
 
     def read_table(self, header_data: 'ArkBinaryParser') -> Dict[int, str]:
         count = header_data.read_int()
-        ArkSaveLogger.debug_log("Reading %d entries", count)
+
         result = {}
         for _ in range(count):
             key = header_data.read_uint32()
@@ -136,15 +104,12 @@ class AsaSave:
 
     def read_locations(self, header_data: 'ArkBinaryParser') -> list:
         parts = []
-        ArkSaveLogger.enter_struct("Locations")
         num_parts = header_data.read_uint32()
-        ArkSaveLogger.debug_log("Number of locations: %d", num_parts)
         for _ in range(num_parts):
             part = header_data.read_string()
             if not part.endswith("_WP"):
                 parts.append(HeaderLocation(part))
             header_data.validate_uint32(0xFFFFFFFF)
-        ArkSaveLogger.exit_struct()
         return parts
     
     def get_game_obj_binary(self, obj_uuid: uuid.UUID) -> Optional[bytes]:
@@ -349,11 +314,8 @@ class AsaSave:
     def parse_as_predefined_object(self, obj_uuid, class_name, byte_buffer):
         self.nr_parsed += 1
 
-        debug = ArkSaveLogger.enable_debug
-        ArkSaveLogger.enable_debug = True
         if self.nr_parsed % 2500 == 0:
             ArkSaveLogger.debug_log(f"Nr parsed: {self.nr_parsed}")
-        ArkSaveLogger.enable_debug = debug
 
         skip_list = [
             "/QoLPlus/Items/OmniTool/PrimalItem_OmniTool.PrimalItem_OmniTool_C",

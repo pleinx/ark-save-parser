@@ -78,16 +78,18 @@ class SimpleStructure(ParsedObjectBase):
     def set_binary_data(self, binary_data: bytes):
         self.binary_data = binary_data
 
-    def debug_unkown_properties(self, properties: ArkPropertyContainer):
-        print(f"MyInventoryComponent: {properties.get_property_value('MyInventoryComponent')}")
-        print(f"NetDestructionTime: {properties.get_property_value('NetDestructionTime')}")
+    def overwrite_health(self, health: float):
+        self.max_health = health
+        self.binary.replace_float(self.binary.set_property_position("MaxHealth"), float(health))
 
     def is_owned_by(self, owner: ObjectOwner):
         if self.owner.id_ is not None and self.owner.id_ == owner.id_:
             return True
         elif self.owner.player_name is not None and self.owner.player_name == owner.player_name:
             return True
-        elif self.owner.name is not None and self.owner.name == owner.name:
+        elif self.owner.tribe_name is not None and self.owner.tribe_name == owner.tribe_name:
+            return True
+        elif self.owner.tribe_id is not None and self.owner.tribe_id == owner.tribe_id:
             return True
         elif self.owner.original_placer_id is not None and self.owner.original_placer_id == owner.original_placer_id:
             return True

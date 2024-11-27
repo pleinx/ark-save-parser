@@ -57,12 +57,12 @@ class MapCoords:
 
 @dataclass
 class ActorTransform:
-    x: float
-    y: float
-    z: float
-    pitch: float
-    yaw: float
-    roll: float
+    x: float = 0
+    y: float = 0
+    z: float = 0
+    pitch: float = 0
+    yaw: float = 0
+    roll: float = 0
 
     unknown: int = 0
 

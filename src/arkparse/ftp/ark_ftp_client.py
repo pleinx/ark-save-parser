@@ -50,7 +50,7 @@ class ArkFile:
         return False  # Handle cases where last_modified might be None
 
 
-class ArkMaps:
+class FtpArkMap:
     ISLAND = {"folder": "TheIsland"}
     ABERRATION = {"folder": "Aberration"}
 
@@ -231,8 +231,10 @@ class ArkFtpClient:
             self.download_file(file_name, local_file)
             return local_file
 
-    def download_save_file(self, file_name, output_directory=None, map: dict = None):
+    def download_save_file(self, output_directory=None, map: dict = None):
         self.nav_to_save_files(self._check_map(map))
+        map = self._check_map(map)
+        file_name = map["folder"] + SAVE_FOLDER_EXTENSION + SAVE_FILE_EXTENSION
 
         if output_directory is None:
             return self.get_file_contents(file_name)
@@ -240,6 +242,16 @@ class ArkFtpClient:
             local_file = output_directory / file_name
             self.download_file(file_name, local_file)
             return local_file
+        
+    def upload_save_file(self, path: Path = None, file_contents: bytes = None, map: dict = None):
+        if path is not None:
+            file_contents = path.read_bytes()
+
+        map = self._check_map(map)
+        file_name = map["folder"] + SAVE_FOLDER_EXTENSION + SAVE_FILE_EXTENSION
+
+        self.nav_to_save_files(self._check_map(map))
+        self.write_file_contents(file_name, file_contents)
     
     def change_ini_setting(self, setting: str, value: str, file_name: INI):
         self.__nav_to_ini_files()

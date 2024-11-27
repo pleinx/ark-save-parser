@@ -3,12 +3,16 @@ from pathlib import Path
 import time
 import threading
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMaps
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.objects.player.ark_profile import ArkProfile
 from arkparse.objects.tribe.ark_tribe import ArkTribe
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.classes.player import Player
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
+from arkparse.utils import TEMP_FILES_DIR
+
+from arkparse.objects.saves.game_objects.misc.dino_owner import DinoOwner
+from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
 
 class PlayerApi:
     class StatType:
@@ -22,7 +26,11 @@ class PlayerApi:
         LEVEL = 1
         XP = 2
 
-    def __init__(self, ftp_config: Path, map: ArkMaps, update_frequency = 900, save: AsaSave = None):
+    class OwnerType:
+        OBJECT = 0
+        DINO = 1
+
+    def __init__(self, ftp_config: Path, map: FtpArkMap, update_frequency = 900, save: AsaSave = None):
         self.players : List[ArkProfile] = []
         self.tribes : List[ArkTribe] = []
         self.save: AsaSave = save
@@ -66,7 +74,7 @@ class PlayerApi:
         player_files = self.ftp_client.list_all_profile_files()
         tribe_files = self.ftp_client.list_all_tribe_files()
 
-        output_dir = Path.cwd()
+        output_dir = TEMP_FILES_DIR
 
         for file in player_files:
             path = self.ftp_client.download_profile_file(file.name, output_dir)
@@ -77,7 +85,7 @@ class PlayerApi:
             Path(output_dir / file.name).unlink()
 
         for file in tribe_files:
-            output_dir = Path.cwd()
+            output_dir = TEMP_FILES_DIR
             path = self.ftp_client.download_tribe_file(file.name, output_dir)
             new_tribes.append(ArkTribe(path))
             Path(output_dir / file.name).unlink()
@@ -173,5 +181,28 @@ class PlayerApi:
         for t in self.tribes:
             if player.player_data.tribe == t.tribe_data.tribe_id:
                 return t
+        return None
+    
+    def get_as_owner(self, player_id: int, owner_type: int):
+        player = None
+        tribe = None
+
+        for p in self.players:
+            if p.player_data.id_ == player_id:
+                player = p
+                break
+        
+        if player is None:
+            raise ValueError("Player not found")
+        
+        tribe = self.get_tribe_of(player)
+
+        tribe_name = None if tribe is None else tribe.tribe_data.name
+        tribe_id = None if tribe is None else tribe.tribe_data.owner_id
+
+        if owner_type == self.OwnerType.OBJECT:
+            return ObjectOwner.from_profile(player.player_data.id_, player.player_data.name, tribe_name, tribe_id)
+        elif owner_type == self.OwnerType.DINO:
+            return DinoOwner.from_profile(tribe, player)
         return None
 

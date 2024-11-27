@@ -5,9 +5,15 @@ from arkparse.objects.saves.game_objects.cryopods.cryopod import Cryopod
 from arkparse.objects.saves.game_objects.dinos.dino import Dino
 from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
 from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.objects.saves.game_objects.misc.dino_owner import DinoOwner
+from arkparse.ftp.ark_ftp_client import ArkFtpClient
+
 from arkparse.parsing import ArkBinaryParser
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
+from arkparse.struct.actor_transform import MapCoords
+from arkparse.enums.ark_map import ArkMap
+from arkparse.utils import TEMP_FILES_DIR
 
 class DinoApi:
     def __init__(self, save: AsaSave):
@@ -55,6 +61,21 @@ class DinoApi:
                 dinos[key] = dino
 
         return dinos
+    
+    def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, tamed: bool = True, untamed: bool = True) -> Dict[UUID, Dino]:
+        dinos = self.get_all()
+
+        filtered_dinos = {}
+
+        for key, dino in dinos.items():
+            if isinstance(dino, TamedDino) and dino.cryopod is not None:
+                continue
+
+            if dino.location.is_at_map_coordinate(map, coords, tolerance=radius):
+                if (tamed and isinstance(dino, TamedDino)) or (untamed and not isinstance(dino, TamedDino)):
+                    filtered_dinos[key] = dino
+
+        return filtered_dinos
     
     def get_all_wild(self) -> Dict[UUID, Dino]:
         dinos = self.get_all()
@@ -203,3 +224,14 @@ class DinoApi:
 
         return cryopodded
     
+    def modify_dinos(self, dinos: Dict[UUID, TamedDino], new_owner: DinoOwner = None, ftp_client: ArkFtpClient = None):
+        for key, dino in dinos.items():
+            if new_owner is not None:
+                dino.owner.replace_with(new_owner, dino.binary)
+                self.save.modify_obj_in_db(key, dino.binary.byte_buffer)
+
+        if ftp_client is not None:
+            self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
+            ftp_client.connect()
+            ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
+            ftp_client.close()
