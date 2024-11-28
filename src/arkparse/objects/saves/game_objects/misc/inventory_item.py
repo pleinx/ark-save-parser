@@ -22,7 +22,7 @@ class InventoryItem(ParsedObjectBase):
         self.id_ = self.object.get_property_value("ItemID")
         self.quantity = self.object.get_property_value("ItemQuantity", default=1)
         owner_in: ObjectReference = self.object.get_property_value("OwnerInventory", default=ObjectReference())
-        self.owner_inv_uuid = owner_in.value
+        self.owner_inv_uuid = UUID(owner_in.value)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
@@ -32,6 +32,9 @@ class InventoryItem(ParsedObjectBase):
 
     def __str__(self):
         return f"InventoryItem(item={self.object.blueprint.split('/')[-1].split('.')[0]}, quantity={self.quantity})"
+    
+    def to_string(self, name = "InventoryItem"):
+        return f"{name}({self.get_short_name()}, quantity={self.quantity})"
 
     def set_quantity(self, quantity: int):
         self.binary.set_property_position("ItemQuantity")
@@ -43,3 +46,8 @@ class InventoryItem(ParsedObjectBase):
         parser = ArkBinaryParser(bin, save.save_context)
         
         return Inventory(self.owner_inv_uuid, parser, save=save)
+    
+    # def get_owner(self, save: AsaSave):
+    #     from .inventory import Inventory # placed here to avoid circular import
+    #     inv: Inventory = self.get_inventory(save)
+    #     return inv.

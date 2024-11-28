@@ -6,7 +6,7 @@ from arkparse.classes import Classes
 # Define paths using pathlib for better readability and cross-platform support
 current_dir = Path.cwd()
 # save_path = current_dir.parent / "test_saves" / "solo.ark"
-save_path = current_dir.parent / "Aberration_WP.ark"
+save_path = current_dir.parent / "test_saves" / "server.ark"
 new_folder = current_dir / "uncategorized"
 
 # Ensure the new_folder exists

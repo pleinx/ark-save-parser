@@ -20,4 +20,23 @@ class ParsedObjectBase:
             self.__init_props__(ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary))
 
     def get_short_name(self):
-        return self.object.blueprint.split('/')[-1].split('.')[-1]
+        to_strip_end = [
+            "_C",
+        ]
+
+        to_strip_start = [
+            "PrimalItemResource_",
+            "PrimalItemAmmo_",
+        ]
+
+        short = self.object.blueprint.split('/')[-1].split('.')[0]
+
+        for strip in to_strip_end:
+            if short.endswith(strip):
+                short = short[:-len(strip)]
+
+        for strip in to_strip_start:
+            if short.startswith(strip):
+                short = short[len(strip):]
+
+        return short

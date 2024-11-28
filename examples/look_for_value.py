@@ -2,7 +2,7 @@ from pathlib import Path
 from uuid import UUID
 
 from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.api.resource_api import ResourceApi
+from arkparse.api.stackable_api import ResourceApi
 from arkparse.classes.resources import Resources
 
 save_path = Path.cwd() / "test_saves" / "server.ark"
