@@ -184,14 +184,14 @@ class StructureApi:
                 continue
 
             coords: MapCoords = obj.location.as_map_coords(ArkMap.ABERRATION)
-            x = math.floor(coords.long)
-            y = math.floor(coords.lat)
-            heatmap[y][x] += 1
+            y = math.floor(coords.long)
+            x = math.floor(coords.lat)
+            heatmap[x][y] += 1
 
         heatmap = np.array(heatmap)
         mask = heatmap == 0
 
-        img = mpimg.imread(r'C:\data\personal\git\ark-save-parser\assets\Abberation.PNG')
+        img = mpimg.imread(r'D:\ARK servers\Ascended\ark-save-parser\assets\Abberation.PNG') # todo fix absolute path
         plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
         plt.colorbar()
 

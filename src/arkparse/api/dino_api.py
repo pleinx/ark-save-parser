@@ -164,7 +164,7 @@ class DinoApi:
                 filtered_dinos = {k: v for k, v in filtered_dinos.items() if not isinstance(v, TamedDino)}
 
         if not include_cryopodded:
-            filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino) and v.cryopod is None}
+            filtered_dinos = {k: v for k, v in filtered_dinos.items() if not(isinstance(v, TamedDino) and v.cryopod is None)}
 
         if only_cryopodded:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino) and v.cryopod is not None}
@@ -235,3 +235,42 @@ class DinoApi:
             ftp_client.connect()
             ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
             ftp_client.close()
+
+    def create_heatmap(self, resolution: int = 100, dinos: Dict[UUID, TamedDino] = None, classes: List[str] = None, owner: DinoOwner = None, only_tamed: bool = False):
+        import math
+        import matplotlib.pyplot as plt
+        import matplotlib.image as mpimg
+        import numpy as np
+
+        tamed = None if not only_tamed else True
+        dinos = self.get_all_filtered(class_name=classes, tamed=tamed, include_cryopodded=False)
+        # if dinos is None:
+        #     dinos = self.get_all_filtered(class_name=classes, tamed=tamed, include_cryopodded=False)
+
+        heatmap = [[0 for _ in range(resolution)] for _ in range(resolution)]
+        print(f"Found {len(dinos)} dinos")
+
+        for key, dino in dinos.items():
+            if dino.location is None:
+                continue
+
+            coords: MapCoords = dino.location.as_map_coords(ArkMap.ABERRATION)
+
+            y = math.floor(coords.long)
+            x = math.floor(coords.lat)
+
+            if x < 0 or x >= resolution or y < 0 or y >= resolution:
+                continue
+
+            heatmap[x][y] += 1
+
+        heatmap = np.array(heatmap)
+        mask = heatmap == 0
+
+        img = mpimg.imread(r'D:\ARK servers\Ascended\ark-save-parser\assets\Abberation.PNG') # todo fix absolute path
+        plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
+        plt.colorbar()
+
+        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.7, vmin=0.1)
+        heatmap_display.set_alpha(np.where(mask, 0, 0.7))
+        plt.show()

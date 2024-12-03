@@ -9,10 +9,10 @@ from arkparse.classes.dinos import Dinos
 from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
 
 
-class_ = None
+class_ = Dinos.surface_reaper
 lower_lvl = None
 upper_lvl = None
-tamed = True
+tamed = None
 
 save_path = Path.cwd() / "test_saves" / "Aberration_WP.ark"
 save = AsaSave(save_path)

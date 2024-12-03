@@ -1,12 +1,14 @@
 from pathlib import Path
 
 from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.classes import Classes
 
 # Define paths using pathlib for better readability and cross-platform support
 current_dir = Path.cwd()
 # save_path = current_dir.parent / "test_saves" / "solo.ark"
-save_path = current_dir.parent / "test_saves" / "server.ark"
+# save_path = current_dir.parent / "test_saves" / "Aberration_WP.ark"
+save_path = ArkFtpClient.from_config(Path("../../ftp_config.json"), FtpArkMap.ABERRATION).download_save_file(Path.cwd())
 new_folder = current_dir / "uncategorized"
 
 # Ensure the new_folder exists
