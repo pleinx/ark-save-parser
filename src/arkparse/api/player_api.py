@@ -183,7 +183,7 @@ class PlayerApi:
                 return t
         return None
     
-    def get_as_owner(self, owner_type: int, player_id: int= None, ue5_id: str = None):
+    def get_as_owner(self, owner_type: int, player_id: int= None, ue5_id: str = None, tribe_id: int = None, tribe_name: str = None):
         player = None
         tribe = None
 
@@ -195,10 +195,22 @@ class PlayerApi:
                 player = p
                 break
         
-        if player is None:
+        if player is None and tribe_id is None and tribe_name is None:
             raise ValueError("Player not found")
         
-        tribe = self.get_tribe_of(player)
+        if player:
+            tribe = self.get_tribe_of(player)
+        else:
+            for t in self.tribes:
+                if tribe_id is not None and t.tribe_data.tribe_id == tribe_id:
+                    tribe = t
+                    break
+                elif tribe_name is not None and t.tribe_data.name == tribe_name:
+                    tribe = t
+                    break
+        
+        if tribe is None:
+            raise ValueError("Tribe not found")
 
         if owner_type == self.OwnerType.OBJECT:
             return ObjectOwner.from_profile(player, tribe)

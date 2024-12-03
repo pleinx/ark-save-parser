@@ -12,7 +12,7 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.struct.actor_transform import MapCoords
-from arkparse.enums.ark_map import ArkMap
+from arkparse.enums import ArkMap, ArkStat
 from arkparse.utils import TEMP_FILES_DIR
 
 class DinoApi:
@@ -135,7 +135,22 @@ class DinoApi:
 
         return tamed_dinos
     
-    def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, class_name: List[str] = None, tamed: bool = None, include_cryopodded: bool = True, only_cryopodded: bool = False) -> Dict[UUID, Dino]:
+    def get_all_with_stat_of_at_least(self, value: int, stat: List[ArkStat] = None) -> Dict[UUID, Dino]:
+        dinos = self.get_all()
+        filtered_dinos = {}
+        
+        for key, dino in dinos.items():
+            stats_above = dino.stats.get_of_at_least(value)
+            if len(stats_above) and (stat is None or any(s in stats_above for s in stat)):
+                filtered_dinos[key] = dinos[key]
+
+        return filtered_dinos
+    
+    def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, 
+                         class_name: List[str] = None, 
+                         tamed: bool = None, 
+                         include_cryopodded: bool = True, only_cryopodded: bool = False, 
+                         stat_minimum: int = None, stats: List[ArkStat] = None) -> Dict[UUID, Dino]:
         dinos = None
 
         if class_name is not None:
@@ -150,24 +165,40 @@ class DinoApi:
 
         if level_lower_bound is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level >= level_lower_bound}
+            # print(f"LowerLvBound - Filtered to {len(filtered_dinos)} dinos")
         
         if level_upper_bound is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level <= level_upper_bound}
+            # print(f"UpperLvBound - Filtered to {len(filtered_dinos)} dinos")
         
         if class_name is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.object.blueprint == class_name}
+            # print(f"Class - Filtered to {len(filtered_dinos)} dinos")
 
         if tamed is not None:
             if tamed:
                 filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino)}
+                # print(f"Tamed - Filtered to {len(filtered_dinos)} dinos")
             else:
                 filtered_dinos = {k: v for k, v in filtered_dinos.items() if not isinstance(v, TamedDino)}
+                # print(f"Untamed - Filtered to {len(filtered_dinos)} dinos")
 
         if not include_cryopodded:
-            filtered_dinos = {k: v for k, v in filtered_dinos.items() if not(isinstance(v, TamedDino) and v.cryopod is None)}
+            filtered_dinos = {k: v for k, v in filtered_dinos.items() if not(isinstance(v, TamedDino) and v.cryopod is not None)}
+            # print(f"IncludeCryopodded - Filtered to {len(filtered_dinos)} dinos")
 
         if only_cryopodded:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino) and v.cryopod is not None}
+            # print(f"OnlyCryopodded - Filtered to {len(filtered_dinos)} dinos")
+
+        if stat_minimum is not None:
+            new_filtered_dinos = {}
+            for key, dino in filtered_dinos.items():
+                stats_above = dino.stats.get_of_at_least(stat_minimum)
+                if len(stats_above) and (stats is None or any(s in stats_above for s in stats)):
+                    new_filtered_dinos[key] = dinos[key]
+            filtered_dinos = new_filtered_dinos
+            # print(f"StatMin - Filtered to {len(filtered_dinos)} dinos")
 
         return filtered_dinos
     
@@ -238,14 +269,11 @@ class DinoApi:
 
     def create_heatmap(self, resolution: int = 100, dinos: Dict[UUID, TamedDino] = None, classes: List[str] = None, owner: DinoOwner = None, only_tamed: bool = False):
         import math
-        import matplotlib.pyplot as plt
-        import matplotlib.image as mpimg
         import numpy as np
 
         tamed = None if not only_tamed else True
-        dinos = self.get_all_filtered(class_name=classes, tamed=tamed, include_cryopodded=False)
-        # if dinos is None:
-        #     dinos = self.get_all_filtered(class_name=classes, tamed=tamed, include_cryopodded=False)
+        if dinos is None:
+            dinos = self.get_all_filtered(class_name=classes, tamed=tamed, include_cryopodded=False)
 
         heatmap = [[0 for _ in range(resolution)] for _ in range(resolution)]
         print(f"Found {len(dinos)} dinos")
@@ -264,13 +292,5 @@ class DinoApi:
 
             heatmap[x][y] += 1
 
-        heatmap = np.array(heatmap)
-        mask = heatmap == 0
-
-        img = mpimg.imread(r'D:\ARK servers\Ascended\ark-save-parser\assets\Abberation.PNG') # todo fix absolute path
-        plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
-        plt.colorbar()
-
-        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.7, vmin=0.1)
-        heatmap_display.set_alpha(np.where(mask, 0, 0.7))
-        plt.show()
+        return np.array(heatmap)
+        

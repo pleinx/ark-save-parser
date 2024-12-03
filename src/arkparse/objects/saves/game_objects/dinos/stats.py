@@ -5,6 +5,7 @@ from uuid import UUID
 from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
 from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.enums import ArkStat
 
 STAT_POSITION_MAP = {
     0: 'health',
@@ -160,6 +161,22 @@ class DinoStats(ParsedObjectBase):
 
     def __str__(self):
         return f"DinoStats(level={self.current_level}"
+    
+    def get(self, stat: ArkStat):
+        return getattr(self.stat_points, STAT_POSITION_MAP[stat.value])
+
+    def get_of_at_least(self, value: float):
+        stats = []
+        for stat in ArkStat:
+            if self.get(stat) >= value:
+                stats.append(stat)
+        return stats
+    
+    def stat_to_string(self, stat: ArkStat):
+        return f"{self.stat_name_string(stat)}={self.get(stat)}"
+    
+    def stat_name_string(self, stat: ArkStat):
+        return f"{STAT_POSITION_MAP[stat.value]}"
     
     def to_string_all(self):
         return f"DinoStats(base_level={self.base_level}, level={self.current_level}, \nstat_points={self.stat_points.to_string_all()}, \nstat_values={self.stat_values.to_string_all()})"

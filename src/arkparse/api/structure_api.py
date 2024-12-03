@@ -188,16 +188,7 @@ class StructureApi:
             x = math.floor(coords.lat)
             heatmap[x][y] += 1
 
-        heatmap = np.array(heatmap)
-        mask = heatmap == 0
-
-        img = mpimg.imread(r'D:\ARK servers\Ascended\ark-save-parser\assets\Abberation.PNG') # todo fix absolute path
-        plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
-        plt.colorbar()
-
-        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.7, vmin=0.1)
-        heatmap_display.set_alpha(np.where(mask, 0, 0.7))
-        plt.show()
+        return np.array(heatmap)
 
     # def get_building_arround(self, key_piece: UUID) -> Dict[UUID, ArkGameObject]:
     #     result = {}
