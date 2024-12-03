@@ -35,8 +35,8 @@ if dinos is not None:
 
     print("\nReparsing binary")
     for key, dino in dinos.items():
-        dino.object.print_properties()
         print("\n")
         dino : TamedDino = dino
         new_dino = TamedDino(key, dino.binary, save)
+        dino.object.print_properties()
     print("Done")

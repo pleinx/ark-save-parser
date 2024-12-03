@@ -170,3 +170,4 @@ out/*
 /*.arkprofile
 /*.ark
 test_saves/*
+temp

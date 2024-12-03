@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from uuid import UUID
-from typing import Dict, TYPE_CHECKING
+from typing import Dict
+from pathlib import Path
 
 from arkparse.objects.saves.game_objects.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.objects.saves.asa_save import AsaSave
@@ -64,6 +65,11 @@ class Inventory(ParsedObjectBase):
         self.items = []
         self.binary.set_property_position("InventoryItems")
         self.binary.replace_array("InventoryItems", "ObjectProperty", None)
+
+    def store_binary(self, path: Path):
+        super().store_binary(path)
+        for key, item in self.items.items():
+            item.store_binary(path)
 
     def __str__(self):
         out = f"Inventory(container={self.container_uuid}, items={len(self.items)})"

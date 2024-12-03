@@ -73,10 +73,11 @@ class ArkTribeData:
         # Parse 'LogIndex' -> log_index
         log_index_prop = tribe_data.find_property("LogIndex")
         if not log_index_prop:
-            raise ValueError("Missing 'LogIndex' property.")
-        if log_index_prop.type != "Int":
-            raise ValueError("'LogIndex' property is not of type 'Int'.")
-        self.log_index = log_index_prop.value
+            self.log_index = 0
+        else:
+            if log_index_prop.type != "Int":
+                raise ValueError("'LogIndex' property is not of type 'Int'.")
+            self.log_index = log_index_prop.value
 
         # Parse 'NumTribeDinos' -> nr_of_dinos
         nr_of_dinos_prop = tribe_data.find_property("NumTribeDinos")

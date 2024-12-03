@@ -2,12 +2,14 @@ import logging
 import subprocess
 from pathlib import Path
 
+from arkparse.utils.temp_files import TEMP_FILES_DIR
+
 class ArkSaveLogger:
     enable_debug = False
     current_struct_path = []
     file = ""
     byte_buffer = None
-    temp_file_path = ""
+    temp_file_path = TEMP_FILES_DIR
     log_limit = 0
     log_limit_enabled = False
 

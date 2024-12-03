@@ -36,7 +36,7 @@ class AsaSave:
         self.var_objects["placed_structs"] = {}
         self.var_objects["g_placed_structs"] = {}
 
-        conn_str = f"file:{ark_file}?mode={'ro' if read_only else 'rw'}"
+        conn_str = f"file:{temp_save_path}?mode={'ro' if read_only else 'rw'}"
         self.connection = sqlite3.connect(conn_str, uri=True)
         
         self.list_all_items_in_db()
@@ -171,6 +171,12 @@ class AsaSave:
         cursor.execute(query)
         for row in cursor:
             print(f"Key: {row[0]}, size: {row[1]}")
+    
+    def is_in_db(self, obj_uuid: uuid.UUID) -> bool:
+        query = "SELECT key FROM game WHERE key = ?"
+        cursor = self.connection.cursor()
+        cursor.execute(query, (self.uuid_to_byte_array(obj_uuid),))
+        return cursor.fetchone() is not None
         
     def add_obj_to_db(self, obj_uuid: uuid.UUID, obj_data: bytes):
         query = "INSERT INTO game (key, value) VALUES (?, ?)"

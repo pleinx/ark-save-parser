@@ -183,12 +183,15 @@ class PlayerApi:
                 return t
         return None
     
-    def get_as_owner(self, player_id: int, owner_type: int):
+    def get_as_owner(self, owner_type: int, player_id: int= None, ue5_id: str = None):
         player = None
         tribe = None
 
         for p in self.players:
-            if p.player_data.id_ == player_id:
+            if player_id is not None and p.player_data.id_ == player_id:
+                player = p
+                break
+            elif ue5_id is not None and p.player_data.unique_id == ue5_id:
                 player = p
                 break
         
@@ -197,11 +200,8 @@ class PlayerApi:
         
         tribe = self.get_tribe_of(player)
 
-        tribe_name = None if tribe is None else tribe.tribe_data.name
-        tribe_id = None if tribe is None else tribe.tribe_data.owner_id
-
         if owner_type == self.OwnerType.OBJECT:
-            return ObjectOwner.from_profile(player.player_data.id_, player.player_data.name, tribe_name, tribe_id)
+            return ObjectOwner.from_profile(player, tribe)
         elif owner_type == self.OwnerType.DINO:
             return DinoOwner.from_profile(tribe, player)
         return None

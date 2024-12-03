@@ -242,8 +242,6 @@ class Gathering:
 
 class Primitive:
     bow: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponBow.PrimalItem_WeaponBow_C"
-    bola: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponBola.PrimalItem_WeaponBola_C"
-    spear: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponSpear.PrimalItem_WeaponSpear_C"
     slingshot: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponSlingshot.PrimalItem_WeaponSlingshot_C"
     stone_club: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponStoneClub.PrimalItem_WeaponStoneClub_C"
     torch: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponTorch.PrimalItem_WeaponTorch_C"
@@ -254,7 +252,7 @@ class Primitive:
     shotgun: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponShotgun.PrimalItem_WeaponShotgun_C"
     simple_pistol: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponGun.PrimalItem_WeaponGun_C"
     crossbow: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow_C"
-    all_bps = [bow, bola, spear, slingshot, stone_club, torch, fists, lance, pike, sword, shotgun, simple_pistol, crossbow]
+    all_bps = [bow, slingshot, stone_club, torch, fists, lance, pike, sword, shotgun, simple_pistol, crossbow]
 
 class Advanced:
     compound_bow: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCompoundBow.PrimalItem_WeaponCompoundBow_C"
@@ -273,7 +271,9 @@ class Throwables:
     tek_grenade: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_TekGrenade.PrimalItem_TekGrenade_C"
     c4: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponC4.PrimalItem_WeaponC4_C"
     grenade: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponGrenade.PrimalItem_WeaponGrenade_C"
-    all_bps = [gas_grenade, poison_grenade, tek_grenade, c4, grenade]
+    bola: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponBola.PrimalItem_WeaponBola_C"
+    spear: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponSpear.PrimalItem_WeaponSpear_C"
+    all_bps = [gas_grenade, poison_grenade, tek_grenade, c4, grenade, bola, spear]
 
 class Misc:
     climb_pick: str = "/Game/Aberration/CoreBlueprints/Weapons/PrimalItem_WeaponClimbPick.PrimalItem_WeaponClimbPick_C"

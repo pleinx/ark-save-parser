@@ -253,6 +253,7 @@ class ArkProperty:
     def read_array_property(key: str, type_: str, position: int, byte_buffer: 'ArkBinaryParser', data_size: int) -> 'ArkProperty':
         array_type = byte_buffer.read_name()
         end_of_struct = byte_buffer.read_byte()
+        data_start_postion = byte_buffer.get_position()
         array_length = byte_buffer.read_int()
         start_of_array_values_position = byte_buffer.get_position()
 
@@ -294,6 +295,11 @@ class ArkProperty:
             p = ArkProperty(key, type_, position, end_of_struct, struct_array)
 
             ArkSaveLogger.debug_log(f"============ END {array_name}[{array_content_type}] ============")
+
+            # if(byte_buffer.position != data_start_postion + data_size):
+            #     ArkSaveLogger.open_hex_view()
+            #     raise ValueError(f"Array read incorrectly, bytes left to read: {data_start_postion + data_size - byte_buffer.position}")
+            
             ArkSaveLogger.exit_struct()
             return p
     
@@ -321,6 +327,11 @@ class ArkProperty:
                 p = ArkProperty(key, type_, position, end_of_struct, array)
 
             ArkSaveLogger.debug_log(f"============ END Arr({array_type}) ============")
+
+            # if(byte_buffer.position != data_start_postion + data_size):
+            #     ArkSaveLogger.open_hex_view()
+            #     raise ValueError(f"Array read incorrectly, bytes left to read: {data_start_postion + data_size - byte_buffer.position}")
+            
             ArkSaveLogger.exit_struct()
         
             return p

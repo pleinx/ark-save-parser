@@ -30,7 +30,7 @@ class PropertyInsertor(BaseValueValidator):
         if position is not None:
             self.position = position
 
-        array_length = len(item_bytes) * len(item_bytes[0])
+        array_length = len(item_bytes) * len(item_bytes[0]) + 4 # 4 bytes for array length
 
         self.insert_name(array_name)
         self.insert_name("ArrayProperty")

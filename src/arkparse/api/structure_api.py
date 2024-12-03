@@ -160,3 +160,57 @@ class StructureApi:
             ftp_client.connect()
             ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
             ftp_client.close()
+
+    def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None):
+        import math
+        import matplotlib.pyplot as plt
+        import matplotlib.image as mpimg
+        import numpy as np
+
+        structs = structures
+
+        if classes is not None:
+            structs = self.get_by_class(classes)
+        elif structures is None:
+            structs = self.get_all()
+        heatmap = [[0 for _ in range(resolution)] for _ in range(resolution)]
+
+        for key, obj in structs.items():
+            obj: SimpleStructure = obj
+            if obj.location is None:
+                continue
+
+            if owner is not None and not obj.is_owned_by(owner):
+                continue
+
+            coords: MapCoords = obj.location.as_map_coords(ArkMap.ABERRATION)
+            x = math.floor(coords.long)
+            y = math.floor(coords.lat)
+            heatmap[y][x] += 1
+
+        heatmap = np.array(heatmap)
+        mask = heatmap == 0
+
+        img = mpimg.imread(r'C:\data\personal\git\ark-save-parser\assets\Abberation.PNG')
+        plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
+        plt.colorbar()
+
+        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.7, vmin=0.1)
+        heatmap_display.set_alpha(np.where(mask, 0, 0.7))
+        plt.show()
+
+    # def get_building_arround(self, key_piece: UUID) -> Dict[UUID, ArkGameObject]:
+    #     result = {}
+    #     new_found = True
+    #     current = start
+
+    #     while new_found:
+    #         new_found = False
+    #         result[current] = objects[current]
+    #         for uuid in objects[current].linked_structure_uuids:
+    #             if uuid not in result.keys():
+    #                 new_found = True
+    #                 current = uuid
+    #                 break
+
+    #     return result

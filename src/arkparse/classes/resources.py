@@ -25,10 +25,13 @@ class Resources:
         black_pearl = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_BlackPearl.PrimalItemResource_BlackPearl_C"
         sap = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Sap.PrimalItemResource_Sap_C"
         silica_pearl = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Silicon.PrimalItemResource_Silicon_C"
+        polymer_organic = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic_C"
+        oil = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Oil.PrimalItemResource_Oil_C"
 
         all_bps = [fungal_wood,gas,chitin,crystal,blue_gem,red_gem,green_gem,\
                    element,element_shard,fiber,flint,hide,keratin,metal,obsidian,pelt,\
-                    rare_flower,rare_mushroom,stone,thatch,wood,clay, black_pearl, sap, silica_pearl]
+                    rare_flower,rare_mushroom,stone,thatch,wood,clay, black_pearl, sap, silica_pearl,
+                    polymer_organic, oil]
 
     class Crafted:
         charcoal = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Charcoal.PrimalItemResource_Charcoal_C"
@@ -38,16 +41,14 @@ class Resources:
         gasoline = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Gasoline.PrimalItemResource_Gasoline_C"
         gunpowder = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Gunpowder.PrimalItemResource_Gunpowder_C"
         metal_ingot = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_MetalIngot.PrimalItemResource_MetalIngot_C"
-        oil = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Oil.PrimalItemResource_Oil_C"
         polymer = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer.PrimalItemResource_Polymer_C"
-        polymer_organic = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Polymer_Organic.PrimalItemResource_Polymer_Organic_C"
         sparkpowder = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Sparkpowder.PrimalItemResource_Sparkpowder_C"
         preserving_salt = "/Game/ScorchedEarth/CoreBlueprints/Resources/PrimalItemResource_PreservingSalt.PrimalItemResource_PreservingSalt_C"
         propellant = "/Game/ScorchedEarth/CoreBlueprints/Resources/PrimalItemResource_Propellant.PrimalItemResource_Propellant_C"
         absorbent_substrate = "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_SubstrateAbsorbent.PrimalItemResource_SubstrateAbsorbent_C"
 
         all_bps = [ charcoal, chitin_paste, electronics, element_power_node, \
-                   gasoline, gunpowder, metal_ingot, oil, polymer, polymer_organic, \
+                   gasoline, gunpowder, metal_ingot, polymer, \
                     sparkpowder, preserving_salt, propellant, absorbent_substrate ]
 
     class ApexDrop:

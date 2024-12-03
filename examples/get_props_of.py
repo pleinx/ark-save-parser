@@ -10,15 +10,16 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.parsing.ark_property import ArkProperty
 from arkparse.objects.saves.game_objects.misc.inventory import Inventory
 
-save_path = Path.cwd() / "test_saves" / "server.ark"
+save_path = Path.cwd() / "test_saves" / "original.ark"
 save = AsaSave(save_path)
 
-bps = Classes.structures.placed.utility.small_storage_box
+bps = Classes.equipment.weapons.ammo.advanced_rifle_bullet
 
 config = GameObjectReaderConfiguration(
     blueprint_name_filter=lambda name: name is not None and name in bps,
 )
 
+ArkSaveLogger.enable_debug = True
 objects = save.get_game_objects(config)
 
 unique_props = set()
@@ -36,30 +37,9 @@ print(unique_props)
 print("\nProperty counts:")
 print(prop_counts)
 
-key=UUID("35b9723e-6e85-2a4d-a178-d242e29e90d4")
-ArkSaveLogger.enable_debug = True
-bin = save.get_game_obj_binary(key)
-reader = ArkBinaryParser(bin, save_context=save.save_context)
-obj = ArkGameObject(key, binary_reader=reader)
-
-reader.find_names()
-reader.position = 0
-ArkSaveLogger.set_file(reader, "f1.bin")
-ArkSaveLogger.open_hex_view()
-inv = Inventory(key, binary=reader, save=save)
-inv.remove_item(UUID("79369848-4ce5-1843-b8e4-728d05d84d24"))
-
-reader = ArkBinaryParser(inv.binary.byte_buffer, save_context=save.save_context)
-obj = ArkGameObject(key, binary_reader=reader)
-reader.position = 0
-ArkSaveLogger.set_file(reader, "f2.bin")
-ArkSaveLogger.open_hex_view()
-
-reader.find_names()
-
-print_all = False
+print_all = True
 print_values = []
-print_obj = False
+print_obj = True
 avoid_values = ["ByteArrays", "CustomDataBytes"]
 
 for prop in unique_props:

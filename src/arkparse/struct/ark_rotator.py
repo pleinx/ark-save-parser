@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-# from ..ark_binary_data import ArkBinaryParser
+if TYPE_CHECKING:
+    from arkparse.parsing import ArkBinaryParser
 
 @dataclass
 class ArkRotator:

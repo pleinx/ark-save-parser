@@ -90,8 +90,9 @@ class ArkCharacterStats:
         # Parse level
         level_prop = main_properties.find_property("CharacterStatusComponent_ExtraCharacterLevel")
         if not level_prop:
-            raise ValueError("Missing 'CharacterStatusComponent_ExtraCharacterLevel' property.")
-        self.level = 1 + level_prop.value if level_prop.type in ["UInt16", "Int"] else 0
+            self.level = 1
+        else:
+            self.level = 1 + level_prop.value if level_prop.type in ["UInt16", "Int"] else 0
 
         # Parse experience
         experience_prop = main_properties.find_property("CharacterStatusComponent_ExperiencePoints")
@@ -102,8 +103,9 @@ class ArkCharacterStats:
         # Parse engram_points
         engram_points_prop = main_properties.find_property("PlayerState_TotalEngramPoints")
         if not engram_points_prop:
-            raise ValueError("Missing 'PlayerState_TotalEngramPoints' property.")
-        self.engram_points = engram_points_prop.value if engram_points_prop.type == "Int" else 0
+            self.engram_points = 0
+        else:
+            self.engram_points = engram_points_prop.value if engram_points_prop.type == "Int" else 0
 
         # Parse explorer_notes
         explorer_notes_prop = main_properties.find_property("PerMapExplorerNoteUnlocks")

@@ -94,6 +94,17 @@ class GameLogEntry:
                             return p["real_name"]
         return steam_name
     
+    def get_player_ue5_id(self):
+        steam_name = self.message_prefix.split(" ")[0]
+        if PlayerDataFiles.players_files_path is not None:
+            with open(PlayerDataFiles.players_files_path, 'r') as f:
+                players = json.load(f)
+                for id in players.keys():
+                    p = players[id]
+                    if p["steam_name"] == steam_name:
+                        return id
+        return None
+    
     def __get_type(self, message: str) -> EntryType:       
         if message.startswith("SERVER:"):
             return self.EntryType.GAME
