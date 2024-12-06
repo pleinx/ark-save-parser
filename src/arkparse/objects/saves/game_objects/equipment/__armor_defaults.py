@@ -1,0 +1,190 @@
+from arkparse.classes.equipment import Armor as ArmorBps
+from arkparse.classes.equipment import Shields as ShieldBps
+
+def _get_default_dura(bp: str):
+    if bp in ArmorBps.chitin.all_bps:
+        return 50
+    elif bp in ArmorBps.ghillie.all_bps or bp in ArmorBps.leather.all_bps or bp in ArmorBps.desert.all_bps:
+        return 45
+    elif bp in ArmorBps.fur.all_bps:
+        return 125
+    elif bp in ArmorBps.cloth.all_bps:
+        return 25
+    elif bp in ArmorBps.riot.all_bps or bp in ArmorBps.flak.all_bps or bp in ArmorBps.tek.all_bps:
+        return 120
+    elif bp in ArmorBps.scuba.all_bps:
+        return 185
+    elif bp in ArmorBps.hazard.all_bps:
+        return 85.5
+    elif bp == ShieldBps.metal:
+        return 1250
+    elif bp == ShieldBps.riot:
+        return 2300
+    elif bp == ShieldBps.wood:
+        return 350
+    elif bp == ArmorBps.misc.gas_mask:
+        return 50
+    elif bp == ArmorBps.misc.miners_helmet:
+        return 120
+    elif bp == ArmorBps.misc.night_vision_goggles:
+        return 45
+    else:
+        print(f"WARNING: No durability found for armor {bp}")
+        return 0
+    
+def _get_default_armor(bp: str):
+    if bp in ArmorBps.chitin.all_bps:
+        return 50
+    elif bp in ArmorBps.ghillie.all_bps:
+        return 32
+    elif bp in ArmorBps.leather.all_bps:
+        return 20
+    elif bp in ArmorBps.desert.all_bps:
+        return 40
+    elif bp in ArmorBps.fur.all_bps:
+        return 40
+    elif bp in ArmorBps.cloth.all_bps:
+        return 10
+    elif bp in ArmorBps.riot.all_bps:
+        return 115
+    elif bp in ArmorBps.flak.all_bps:
+        return 100
+    elif bp in ArmorBps.tek.all_bps:
+        return 180
+    elif bp in ArmorBps.scuba.all_bps:
+        return 1
+    elif bp in ArmorBps.hazard.all_bps:
+        return 65
+    elif bp == ArmorBps.misc.gas_mask:
+        return 0.0
+    elif bp == ArmorBps.misc.miners_helmet:
+        return 120
+    elif bp == ArmorBps.misc.night_vision_goggles:
+        return 0.0
+    else:
+        print(f"WARNING: No armor found for armor {bp}")
+        return 0
+    
+def _get_default_hypoT(bp: str):
+    resistances = {
+        ArmorBps.cloth.shirt: 8,
+        ArmorBps.cloth.pants: 8,
+        ArmorBps.cloth.helmet: 4,
+        ArmorBps.cloth.boots: 5,
+        ArmorBps.cloth.gloves: 5,
+        ArmorBps.chitin.shirt: 10,
+        ArmorBps.chitin.pants: 10,
+        ArmorBps.chitin.helmet: 6,
+        ArmorBps.chitin.boots: 7,
+        ArmorBps.chitin.gloves: 7,
+        ArmorBps.desert.shirt: 8,
+        ArmorBps.desert.pants: 8,
+        ArmorBps.desert.goggles: 5,
+        ArmorBps.desert.boots: 5,
+        ArmorBps.desert.gloves: 5,
+        ArmorBps.leather.shirt:20,
+        ArmorBps.leather.pants: 20,
+        ArmorBps.leather.helmet: 15,
+        ArmorBps.leather.boots: 15,
+        ArmorBps.leather.gloves: 15,
+        ArmorBps.ghillie.shirt: 8,
+        ArmorBps.ghillie.pants: 8,
+        ArmorBps.ghillie.helmet: 4,
+        ArmorBps.ghillie.boots: 2,
+        ArmorBps.ghillie.gloves: 2,
+        ArmorBps.riot.shirt: 15,
+        ArmorBps.riot.pants: 15,
+        ArmorBps.riot.helmet: 10,
+        ArmorBps.riot.boots: 10,
+        ArmorBps.riot.gloves: 10,
+        ArmorBps.flak.shirt: 15,
+        ArmorBps.flak.pants: 15,
+        ArmorBps.flak.helmet: 10,
+        ArmorBps.flak.boots: 10,
+        ArmorBps.flak.gloves: 10,
+        ArmorBps.tek.helmet: 5,
+        ArmorBps.tek.shirt: 15,
+        ArmorBps.tek.gloves: 10,
+        ArmorBps.tek.boots: 10,
+        ArmorBps.tek.pants: 15,
+        ArmorBps.scuba.goggles: 15,
+        ArmorBps.scuba.chest: 40,
+        ArmorBps.scuba.flippers: 15,
+        ArmorBps.scuba.pants: 200,
+        ArmorBps.hazard.boots: 10,
+        ArmorBps.hazard.gloves: 10,
+        ArmorBps.hazard.helmet: 10,
+        ArmorBps.hazard.pants: 10,
+        ArmorBps.hazard.shirt: 10,
+        ArmorBps.misc.gas_mask: 10,
+        ArmorBps.misc.miners_helmet: 10,
+        ArmorBps.misc.night_vision_goggles: 15,
+    }
+
+    if bp in resistances:
+        return resistances[bp]
+    else:
+        print(f"WARNING: No hypothermal insulation found for armor {bp}")
+        return 0
+
+def _get_default_hyperT(bp: str):
+    resistances = {
+        ArmorBps.cloth.shirt: 15,
+        ArmorBps.cloth.pants: 15,
+        ArmorBps.cloth.helmet: 15,
+        ArmorBps.cloth.boots: 15,
+        ArmorBps.cloth.gloves: 15,
+        ArmorBps.chitin.shirt: -5,
+        ArmorBps.chitin.pants: -5,
+        ArmorBps.chitin.helmet: -5,
+        ArmorBps.chitin.boots: -5,
+        ArmorBps.chitin.gloves: -5,
+        ArmorBps.desert.shirt: 25,
+        ArmorBps.desert.pants: 25,
+        ArmorBps.desert.goggles: 30,
+        ArmorBps.desert.boots: 25,
+        ArmorBps.desert.gloves: 25,
+        ArmorBps.leather.shirt: -5,
+        ArmorBps.leather.pants: -5,
+        ArmorBps.leather.helmet: -5,
+        ArmorBps.leather.boots: -5,
+        ArmorBps.leather.gloves: -5,
+        ArmorBps.ghillie.shirt: 30,
+        ArmorBps.ghillie.pants: 30,
+        ArmorBps.ghillie.helmet: 35,
+        ArmorBps.ghillie.boots: 30,
+        ArmorBps.ghillie.gloves: 30,
+        ArmorBps.riot.shirt: -10,
+        ArmorBps.riot.pants: -10,
+        ArmorBps.riot.helmet: -10,
+        ArmorBps.riot.boots: -10,
+        ArmorBps.riot.gloves: -10,
+        ArmorBps.flak.shirt: -7,
+        ArmorBps.flak.pants: -7,
+        ArmorBps.flak.helmet: -3,
+        ArmorBps.flak.boots: -4,
+        ArmorBps.flak.gloves: -4,
+        ArmorBps.tek.helmet: 30,
+        ArmorBps.tek.shirt: -7,
+        ArmorBps.tek.gloves: -4,
+        ArmorBps.tek.boots: -4,
+        ArmorBps.tek.pants: -7,
+        ArmorBps.scuba.goggles: -5,
+        ArmorBps.scuba.chest: -5,
+        ArmorBps.scuba.flippers: -5,
+        ArmorBps.scuba.pants: 0,
+        ArmorBps.hazard.boots: 60,
+        ArmorBps.hazard.gloves: 60,
+        ArmorBps.hazard.helmet: 60,
+        ArmorBps.hazard.pants: 60,
+        ArmorBps.hazard.shirt: 60,
+        ArmorBps.misc.gas_mask: -2.0,
+        ArmorBps.misc.miners_helmet: -3,
+        ArmorBps.misc.night_vision_goggles: -5,
+    }
+
+    if bp in resistances:
+        return resistances[bp]
+    else:
+        print(f"WARNING: No hyperthermal insulation found for armor {bp}")
+        return 0

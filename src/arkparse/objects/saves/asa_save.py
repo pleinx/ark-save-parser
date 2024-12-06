@@ -25,7 +25,7 @@ class AsaSave:
     def __init__(self, ark_file: Path, read_only: bool = True):
 
         # create temp copy of file
-        temp_save_path = TEMP_FILES_DIR / "temp_save.ark"
+        temp_save_path = TEMP_FILES_DIR / (str(uuid.uuid4()) + ".ark")
         with open(ark_file, 'rb') as file:
             with open(temp_save_path, 'wb') as temp_file:
                 temp_file.write(file.read())

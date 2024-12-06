@@ -147,15 +147,15 @@ class DinoApi:
         return filtered_dinos
     
     def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, 
-                         class_name: List[str] = None, 
+                         class_names: List[str] = None, 
                          tamed: bool = None, 
                          include_cryopodded: bool = True, only_cryopodded: bool = False, 
                          stat_minimum: int = None, stats: List[ArkStat] = None) -> Dict[UUID, Dino]:
         dinos = None
 
-        if class_name is not None:
+        if class_names is not None:
             config = GameObjectReaderConfiguration(
-                blueprint_name_filter=lambda name: name is not None and name in class_name
+                blueprint_name_filter=lambda name: name is not None and name in class_names
             )
             dinos = self.get_all(config)
         else:
@@ -171,8 +171,8 @@ class DinoApi:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level <= level_upper_bound}
             # print(f"UpperLvBound - Filtered to {len(filtered_dinos)} dinos")
         
-        if class_name is not None:
-            filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.object.blueprint == class_name}
+        if class_names is not None:
+            filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.object.blueprint in class_names}
             # print(f"Class - Filtered to {len(filtered_dinos)} dinos")
 
         if tamed is not None:
@@ -273,7 +273,7 @@ class DinoApi:
 
         tamed = None if not only_tamed else True
         if dinos is None:
-            dinos = self.get_all_filtered(class_name=classes, tamed=tamed, include_cryopodded=False)
+            dinos = self.get_all_filtered(class_names=classes, tamed=tamed, include_cryopodded=False)
 
         heatmap = [[0 for _ in range(resolution)] for _ in range(resolution)]
         print(f"Found {len(dinos)} dinos")

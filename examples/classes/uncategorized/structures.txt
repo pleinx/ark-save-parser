@@ -1,0 +1,5 @@
+/Game/Aberration/Structures/CliffPlatforms/Stone_CliffPlatform/Stone_Platform_BP_Small.Stone_Platform_BP_Small_C
+/Game/Packs/Frontier/Structures/Frontier/Skins/PrimalItemStructureSkin_Tileset_Frontier.PrimalItemStructureSkin_Tileset_Frontier_C
+/Game/Packs/Frontier/Structures/TrainCarts/PrimalItem_TrainCar_Platform.PrimalItem_TrainCar_Platform_C
+/Game/Packs/Steampunk/Structures/Tileset/PrimalItemStructureSkin_Tileset_Steampunk.PrimalItemStructureSkin_Tileset_Steampunk_C
+/Game/PrimalEarth/Structures/Stone/Stone_Ladder/Ladder_Stone.Ladder_Stone_C

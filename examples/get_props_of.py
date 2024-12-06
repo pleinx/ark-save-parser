@@ -9,11 +9,14 @@ from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.parsing.ark_property import ArkProperty
 from arkparse.objects.saves.game_objects.misc.inventory import Inventory
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 
 save_path = Path.cwd() / "test_saves" / "original.ark"
+save_path = ArkFtpClient.from_config(Path("../ftp_config.json"), FtpArkMap.ABERRATION).download_save_file(Path.cwd())
+
 save = AsaSave(save_path)
 
-bps = Classes.equipment.weapons.ammo.advanced_rifle_bullet
+bps = [Classes.equipment.weapons.advanced.compound_bow]
 
 config = GameObjectReaderConfiguration(
     blueprint_name_filter=lambda name: name is not None and name in bps,

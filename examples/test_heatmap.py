@@ -9,23 +9,22 @@ from arkparse.classes.placed_structures import PlacedStructures
 from arkparse.classes.dinos import Dinos
 from arkparse.utils import draw_heatmap
 
-save_path = Path.cwd() / "test_saves" / "server.ark"
+save_path = Path.cwd()  / "Aberration_WP.ark"
 save = AsaSave(save_path)
-structure_api = StructureApi(save)
+# structure_api = StructureApi(save)
 dino_api = DinoApi(save)
-player_api = PlayerApi(Path("../ftp_config.json"), FtpArkMap.ABERRATION, save=save)
+# player_api = PlayerApi(Path("../ftp_config.json"), FtpArkMap.ABERRATION, save=save)
 b = None
 
-stat_limit = 35
-dinos = dino_api.get_all_filtered(tamed=False, 
-                                  stat_minimum=stat_limit, 
-                                  level_upper_bound=150, 
-                                  stats=[ArkStat.HEALTH, ArkStat.MELEE_DAMAGE])
+stat_limit = 20
+dinos = dino_api.get_all_filtered(class_names=[Dinos.reaper_queen])
+
+print(dino_api.count_by_level(dinos))
 
 for key, dino in dinos.items():
     dino : Dino = dino
     s = f"{dino}: {dino.location.as_map_coords(ArkMap.ABERRATION)}"
-    stats = dino.stats.get_of_at_least(limit)
+    stats = dino.stats.get_of_at_least(stat_limit)
     for stat in stats:
         s += f" {dino.stats.stat_to_string(stat)}"
     print(s)

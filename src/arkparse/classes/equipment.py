@@ -211,7 +211,6 @@ class Misc:
 
 class Armor:
     misc: Misc = Misc()
-    shields: Shields = Shields()
     tek: TEK = TEK()
     scuba: SCUBA = SCUBA()
     riot: Riot = Riot()
@@ -223,7 +222,8 @@ class Armor:
     chitin: Chitin = Chitin()
     hazard: Hazard = Hazard()
     desert: Desert = Desert()
-    all_bps = misc.all_bps + shields.all_bps + tek.all_bps + scuba.all_bps + riot.all_bps + flak.all_bps + leather.all_bps + \
+
+    all_bps = misc.all_bps + tek.all_bps + scuba.all_bps + riot.all_bps + flak.all_bps + leather.all_bps + \
         ghillie.all_bps + fur.all_bps + cloth.all_bps + chitin.all_bps + hazard.all_bps + desert.all_bps   
 
 class Utilities:
@@ -245,14 +245,13 @@ class Primitive:
     slingshot: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponSlingshot.PrimalItem_WeaponSlingshot_C"
     stone_club: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponStoneClub.PrimalItem_WeaponStoneClub_C"
     torch: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponTorch.PrimalItem_WeaponTorch_C"
-    fists: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/WeapFists.WeapFists_C"
     lance: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponLance.PrimalItem_WeaponLance_C"
     pike: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponPike.PrimalItem_WeaponPike_C"
     sword: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponSword.PrimalItem_WeaponSword_C"
     shotgun: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponShotgun.PrimalItem_WeaponShotgun_C"
     simple_pistol: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponGun.PrimalItem_WeaponGun_C"
     crossbow: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow_C"
-    all_bps = [bow, slingshot, stone_club, torch, fists, lance, pike, sword, shotgun, simple_pistol, crossbow]
+    all_bps = [bow, slingshot, stone_club, torch, lance, pike, sword, shotgun, simple_pistol, crossbow]
 
 class Advanced:
     compound_bow: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCompoundBow.PrimalItem_WeaponCompoundBow_C"
@@ -291,12 +290,13 @@ class Misc:
     prod: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponProd.PrimalItem_WeaponProd_C"
     spray_paint: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponSprayPaint.PrimalItem_WeaponSprayPaint_C"
     tripwire_c4: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponTripwireC4.PrimalItem_WeaponTripwireC4_C"
+    fists: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/WeapFists.WeapFists_C"
     
     paintbrush: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponPaintbrush.PrimalItem_WeaponPaintbrush_C"
     scissors: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponScissors.PrimalItem_WeaponScissors_C"
     all_bps = [climb_pick, empty_cryopod, shovel, gene_scanner, goo_gun, stopwatch, radio,
-            alarm_trap, flare_gun, handcuffs, harpoon, 
-            poison_trap, prod, spray_paint, tripwire_c4, paintbrush, scissors]
+                alarm_trap, flare_gun, handcuffs, harpoon, fists, 
+                poison_trap, prod, spray_paint, tripwire_c4, paintbrush, scissors]
     
 class Ammo:
     zipline: str = "/Game/Aberration/CoreBlueprints/Weapons/PrimalItemAmmo_Zipline.PrimalItemAmmo_Zipline_C"
@@ -326,17 +326,13 @@ class Ammo:
     all_bps = [zipline, advanced_bullet, advanced_rifle_bullet, advanced_sniper_bullet, tranq_dart, arrow_flame, 
                 arrow_stone, arrow_tranq, ballista_arrow, cannon_ball, chain_bola, compound_bow_arrow, grappling_hook, 
                 refined_tranq_dart, rocket, simple_bullet, simple_rifle_bullet, simple_shotgun_bullet, tranq_dart, 
-                tranq_spear_bolt, c4_ammo, flamethrower, rocket_homing_missile]
-        
+                tranq_spear_bolt, c4_ammo, flamethrower, rocket_homing_missile] 
 class Weapons:
     gathering: Gathering = Gathering()
     primitive: Primitive = Primitive()
     advanced: Advanced = Advanced()
-    misc: Misc = Misc()
-    throwables: Throwables = Throwables()
-    ammo: Ammo = Ammo()
 
-    all_bps = gathering.all_bps + primitive.all_bps + advanced.all_bps + misc.all_bps + throwables.all_bps + ammo.all_bps
+    all_bps = gathering.all_bps + primitive.all_bps + advanced.all_bps 
 
 
 class Equipment:
@@ -344,5 +340,9 @@ class Equipment:
     armor = Armor()
     utilities = Utilities()
     weapons = Weapons()
+    shield = Shields()
+    ammo = Ammo()
+    misc: Misc = Misc()
+    throwables: Throwables = Throwables()
 
-    all_bps = saddles.all_bps + armor.all_bps + utilities.all_bps + weapons.all_bps
+    all_bps = saddles.all_bps + armor.all_bps + utilities.all_bps + weapons.all_bps + shield.all_bps + ammo.all_bps + misc.all_bps + throwables.all_bps

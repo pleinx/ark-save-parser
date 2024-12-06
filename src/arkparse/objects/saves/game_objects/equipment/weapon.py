@@ -2,26 +2,27 @@
 from uuid import UUID
 import math
 
-from arkparse.enums import ArkEquipmentStat
 from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
+from arkparse.enums import ArkEquipmentStat
 
 from .__equipment import Equipment
-from .__saddle_defaults import __get_saddle_armor, __get_saddle_dura
+from .__weapon_defaults import _get_weapon_dura
 
-class Saddle(Equipment):
-    armor: float = 0
+
+class Weapon(Equipment):
+    damage: float = 0
     durability: float = 0
 
     def __init_props__(self, obj: ArkGameObject = None):
         if obj is not None:
             super().__init_props__(obj)
             
-        armor = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.ARMOR.value)
-        dura = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value)
+        durability = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
+        damage = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DAMAGE.value, default=0)
 
-        self.armor = round(__get_saddle_armor(self.object.blueprint)*(0.0002*armor + 1), 1)
-        self.durability = math.floor(__get_saddle_dura(self.object.blueprint)*(0.00025*dura + 1))
+        self.damage = round(100.0 + damage / 100, 1)
+        self.durability = math.floor(_get_weapon_dura(self.object.blueprint) * (0.00025*durability + 1))
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
@@ -31,7 +32,7 @@ class Saddle(Equipment):
 
     @staticmethod
     def from_object(obj: ArkGameObject):
-        saddle = Saddle()
+        saddle = Weapon()
         saddle.__init_props__(obj)
         
         return saddle

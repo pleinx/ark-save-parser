@@ -7,8 +7,11 @@ class Stone:
     triangle_foundation = "/Game/PrimalEarth/StructuresPlus/Structures/Foundations/Triangle/Stone/BP_TriFoundation_Stone.BP_TriFoundation_Stone_C"
     roof = "/Game/PrimalEarth/CoreBlueprints/Items/Structures/Roofs/Stone/StoneRoof_SM.StoneRoof_SM_C"
     door = "/Game/PrimalEarth/Structures/Tileset/DoorShort/Door_Short_Stone.Door_Short_Stone_C"
+    gateframe = "/Game/PrimalEarth/Structures/Stone/Stone_GateFrame/GateFrame_Stone.GateFrame_Stone_C"
+    pillar = "/Game/PrimalEarth/Structures/Stone/Stone_Pillar/Pillar_Stone.Pillar_Stone_C"
+    tri_roof = "/Game/PrimalEarth/StructuresPlus/Structures/Roofs_Tri/Stone/BP_TriRoof_Stone.BP_TriRoof_Stone_C"
 
-    all_bps = [floor, ceiling, doorframe, wall, beam, triangle_foundation, roof, door]
+    all_bps = [floor, ceiling, doorframe, wall, beam, triangle_foundation, roof, door, gateframe, pillar, tri_roof]
 class Metal:
     floor = "/Game/PrimalEarth/Structures/Metal/Floor_Metal.Floor_Metal_C"
     wall = "/Game/PrimalEarth/Structures/Metal/Wall_Metal.Wall_Metal_C"
@@ -31,8 +34,9 @@ class Tek:
 class Wood:
     spike_wall = "/Game/PrimalEarth/Structures/Wooden/SpikeWall.SpikeWall_C"
     crop_plot_large = "/Game/PrimalEarth/Structures/Wooden/CropPlotLarge_SM.CropPlotLarge_SM_C"
+    floor = "/Game/PrimalEarth/Structures/Wooden/Floor_Wood_SM_New.Floor_Wood_SM_New_C"
 
-    all_bps = [spike_wall, crop_plot_large]
+    all_bps = [spike_wall, crop_plot_large, floor]
 
 class Crafting:
     forge = "/Game/PrimalEarth/Structures/Forge.Forge_C"
@@ -48,8 +52,10 @@ class Utility:
     sleeping_bag = "/Game/PrimalEarth/Structures/SleepingBag.SleepingBag_C"
     anvil_bench = "/Game/PrimalEarth/Structures/StorageBox_AnvilBench.StorageBox_AnvilBench_C"
     small_storage_box = "/Game/PrimalEarth/Structures/StorageBox_Small.StorageBox_Small_C"
+    large_bear_trap = "/Game/PrimalEarth/Structures/BearTrapLarge.BearTrapLarge_C"
+    large_storage_box = "/Game/PrimalEarth/Structures/StorageBox_Large.StorageBox_Large_C"
 
-    all_bps = [simple_bed, sleeping_bag, anvil_bench, small_storage_box]
+    all_bps = [simple_bed, sleeping_bag, anvil_bench, small_storage_box, large_bear_trap, large_storage_box]
     
 class TributeTerminals:
     tribute_terminal_purple = "/Game/PrimalEarth/Structures/TributeTerminal_Purple.TributeTerminal_Purple_C"
@@ -80,6 +86,7 @@ class Aberration:
     gas_collector_asa = "/Game/Aberration/Structures/GasCollector/GasCollecter_ASA.GasCollecter_ASA_C"
 
     all_bps = [gas_collector, power_node, damaged_power_node, zipline_anchor, gas_collector_asa]
+
 
 # class Frontier:
 #     frontier_skin = "/Game/Packs/Frontier/Structures/Frontier/Skins/PrimalItemStructureSkin_Tileset_Frontier.PrimalItemStructureSkin_Tileset_Frontier_C"

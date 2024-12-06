@@ -231,7 +231,7 @@ class ArkFtpClient:
             self.download_file(file_name, local_file)
             return local_file
 
-    def download_save_file(self, output_directory=None, map: dict = None):
+    def download_save_file(self, output_directory: Path = None, map: dict = None):
         self.nav_to_save_files(self._check_map(map))
         map = self._check_map(map)
         file_name = map["folder"] + SAVE_FOLDER_EXTENSION + SAVE_FILE_EXTENSION

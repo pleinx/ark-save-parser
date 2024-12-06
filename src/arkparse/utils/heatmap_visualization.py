@@ -8,8 +8,9 @@ def draw_heatmap(heatmap, map: ArkMap):
 
     resolution = len(heatmap)
     mask = heatmap == 0
-    with resources.path('arkparse.assets', f'{map.name}.PNG') as img_path:
-        img = mpimg.imread(img_path)
+    # with resources.path('arkparse.assets', f'{map.name}.PNG') as img_path:
+    img_path = r'../src/arkparse/assets/Aberration.PNG'
+    img = mpimg.imread(img_path)
 
     plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
     plt.colorbar()

@@ -3,6 +3,8 @@ from uuid import UUID
 from arkparse.parsing import ArkBinaryParser
 from pathlib import Path
 
+from arkparse.objects.saves.asa_save import AsaSave
+
 class ParsedObjectBase:
     binary: ArkBinaryParser = None
     object: ArkGameObject = None
@@ -24,6 +26,10 @@ class ParsedObjectBase:
         file_path = path / ("obj_" + str(self.object.uuid))
         with open(file_path, "wb") as file:
             file.write(self.binary.byte_buffer)
+
+    def update_binary(self, save: AsaSave):
+        if save is not None:
+            save.modify_obj_in_db(self.object.uuid, self.binary.byte_buffer)
 
     def get_short_name(self):
         to_strip_end = [

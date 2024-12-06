@@ -10,9 +10,11 @@ class PropertyReplacer(PropertyInsertor):
     def __init__(self, data: bytes, save_context=None):
         super().__init__(data, save_context)
 
-    def set_property_position(self, property_name: str) -> int:
+    def set_property_position(self, property_name: str, position: int = 0) -> int:
         if self.save_context is None:
             raise ValueError("Save context is not set")
+        
+        cur_pos = 0
 
         for i in range(self.size() - 4):
             self.set_position(i)
@@ -21,9 +23,11 @@ class PropertyReplacer(PropertyInsertor):
                 continue
             name = self.save_context.names[int_value]
             if name is not None and name == property_name:
-                ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
-                self.set_position(i)
-                return i
+                if cur_pos == position:
+                    ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                    self.set_position(i)
+                    return i
+                cur_pos += 1
         return None   
 
     def replace_string(self, property_position : int, value: str):
@@ -55,6 +59,11 @@ class PropertyReplacer(PropertyInsertor):
 
         self.set_position(original_position)
         # print(f"Replaced string {current_string} (length={current_nr_of_bytes}) at {property_position} with {value} at {string_pos}")
+
+    def replace_u16(self, property_position : int, new_value: int):
+        value_pos = property_position + 8 + 8 + 1 + 8
+        new_value_bytes = new_value.to_bytes(2, byteorder="little")
+        self.replace_bytes(value_pos, new_value_bytes)
 
     def replace_u32(self, property_position : int, new_value: int):
         value_pos = property_position + 8 + 8 + 1 + 8

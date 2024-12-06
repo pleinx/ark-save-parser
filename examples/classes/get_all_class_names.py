@@ -21,7 +21,7 @@ classes = save.get_all_present_classes()
 # Define category patterns
 category_patterns = {
     "dyes": lambda cls: "Dyes" in cls,
-    "structures": lambda cls: "/Structures" in cls and "PrimalItemStructure_" not in cls and "StructureTurretBaseBP" in cls,
+    "structures": lambda cls: ("/Structures" in cls and "PrimalItemStructure_" not in cls) or "StructureTurretBaseBP" in cls,
     "consumables": lambda cls: "Consumables" in cls,
     "weapons": lambda cls: "Weapons" in cls and "PrimalItemAmmo" not in cls,
     "ammo": lambda cls: "Ammo" in cls,
