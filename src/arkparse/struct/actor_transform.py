@@ -47,13 +47,18 @@ class MapCoordinateParameters:
 class MapCoords:
     lat : float
     long : float
+    in_cryopod: bool
 
-    def __init__(self, lat, long):
+    def __init__(self, lat, long, in_cryo = False):
         self.lat = lat
         self.long = long
+        self.in_cryopod = in_cryo
 
     def __str__(self) -> str:
-        return f"({self.lat}, {self.long})"
+        if self.in_cryopod:
+            return f"(in cryopod)"
+        else:
+            return f"({self.lat}, {self.long})"
 
 @dataclass
 class ActorTransform:
@@ -63,6 +68,7 @@ class ActorTransform:
     pitch: float = 0
     yaw: float = 0
     roll: float = 0
+    in_cryopod: bool = False
 
     unknown: int = 0
 
@@ -104,6 +110,9 @@ class ActorTransform:
         
 
     def get_distance_to(self, other: "ActorTransform") -> float:
+        if self.in_cryopod or other.in_cryopod:
+            return float("inf")
+        
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2) ** 0.5
     
     def __str__(self) -> str:
@@ -111,9 +120,12 @@ class ActorTransform:
     
     def as_map_coords(self, map) -> MapCoords:
         lat, long = MapCoordinateParameters(map).transform_to(self.x, self.y)
-        return MapCoords(lat, long)
+        return MapCoords(lat, long, self.in_cryopod)
     
     def is_within_distance(self, location: "ActorTransform", distance: float = None, foundations: int = None, tolerance: int = 10) -> bool:
+        if self.in_cryopod or location.in_cryopod:
+            return False
+
         if distance is not None:
             return (self.get_distance_to(location) + tolerance) <= distance
         elif foundations is not None:
@@ -122,6 +134,9 @@ class ActorTransform:
             raise ValueError("Either distance or foundations must be provided")
         
     def is_at_map_coordinate(self, map: ArkMap, coordinates: MapCoords, tolerance = 0.1) -> bool:
+        if self.in_cryopod:
+            return False
+
         own_coords = self.as_map_coords(map)
 
         return abs(own_coords.lat - coordinates.lat) <= tolerance and abs(own_coords.long - coordinates.long) <= tolerance

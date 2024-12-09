@@ -21,7 +21,10 @@ class DinoApi:
         self.all_objects = None
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
+        reuse = False
+
         if config is None:
+            reuse = True
             if self.all_objects is not None:
                 return self.all_objects
 
@@ -32,7 +35,9 @@ class DinoApi:
                         ("PrimalItem_WeaponEmptyCryopod_C" in name)))
 
         objects = self.save.get_game_objects(config)
-        self.all_objects = objects
+        
+        if reuse:
+            self.all_objects = objects
 
         return objects
     
@@ -158,6 +163,13 @@ class DinoApi:
                 blueprint_name_filter=lambda name: name is not None and name in class_names
             )
             dinos = self.get_all(config)
+
+            # get cryopodded dinos
+            if include_cryopodded:
+                cryopod_dinos = self.get_all_in_cryopod()
+                for key, dino in cryopod_dinos.items():
+                    if dino.object.blueprint in class_names:
+                        dinos[key] = dino
         else:
             dinos = self.get_all()
 
@@ -293,4 +305,38 @@ class DinoApi:
             heatmap[x][y] += 1
 
         return np.array(heatmap)
+    
+    def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False) -> (Dino, int, ArkStat):
+        if only_tamed and only_untamed:
+            raise ValueError("Cannot specify both only_tamed and only_untamed")
+        
+        if classes is not None:
+            dinos = self.get_all_filtered(class_names=classes, include_cryopodded=True)
+        else:
+            dinos = self.get_all()
+
+        print(f"Found {len(dinos)} dinos")
+
+        best_dino = None
+        best_value = None
+        best_stat = None
+        s = stat
+
+        for key, dino in dinos.items():
+            if only_tamed and not isinstance(dino, TamedDino):
+                continue
+            if only_untamed and isinstance(dino, TamedDino):
+                continue
+
+            if stat is not None:
+                value = dino.stats.get(stat, base_stat)
+            else:
+                s, value = dino.stats.get_highest_stat()
+
+            if best_value is None or value > best_value:
+                best_value = value
+                best_dino = dinos[key]
+                best_stat = s
+
+        return best_dino, best_value, best_stat
         

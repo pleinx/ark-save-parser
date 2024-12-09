@@ -6,7 +6,6 @@ from arkparse.parsing.ark_property import ArkProperty
 from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.objects.saves.game_objects.equipment.saddle import Saddle
 from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
-from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.parsing import ArkBinaryParser
 from arkparse.objects.saves.game_objects.misc.inventory_item import InventoryItem
 
@@ -80,6 +79,7 @@ class Cryopod(InventoryItem):
         
         if dino_obj is not None and status_obj is not None:
             self.dino = TamedDino.from_object(dino_obj, status_obj, self)
+            self.dino.location.in_cryopod = True
 
         saddle_obj = self.embedded_data.get_saddle_obj()
         if saddle_obj is not None:

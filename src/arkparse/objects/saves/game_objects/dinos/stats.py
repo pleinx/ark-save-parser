@@ -36,19 +36,25 @@ class StatPoints:
     movement_speed: int = 0
     fortitude: int = 0
     crafting_speed: int = 0
+    type: str = "NumberOfLevelUpPointsApplied"
 
-    def __init__(self, object: ArkGameObject = None):
+    def __init__(self, object: ArkGameObject = None, type: str = "NumberOfLevelUpPointsApplied"):
+        self.type = type
+
         if object is None:
             return
 
         for idx, stat in STAT_POSITION_MAP.items():
-            value = object.get_property_value("NumberOfLevelUpPointsApplied", position=idx)
+            value = object.get_property_value(self.type, position=idx)
             setattr(self, stat, 0 if value is None else value)
+
+    def __type_str(self):
+        "base points" if self.type == "NumberOfLevelUpPointsApplied" else "points added"
 
     def get_level(self):
         return self.health + self.stamina + self.torpidity + self.oxygen + self.food + \
                self.water + self.temperature + self.weight + self.melee_damage + \
-               self.movement_speed + self.fortitude + self.crafting_speed + 1
+               self.movement_speed + self.fortitude + self.crafting_speed + (1 if self.type == "NumberOfLevelUpPointsApplied" else 0)
 
     def __str__(self):
         stats = [
@@ -59,7 +65,7 @@ class StatPoints:
             f"weight={self.weight}",
             f"melee_damage={self.melee_damage}",
         ]
-        return f"Statpoints(points added)([{', '.join(stats)}])"
+        return f"Statpoints({self.__type_str()})([{', '.join(stats)}])"
     
     def to_string_all(self):
         stats = [
@@ -76,7 +82,7 @@ class StatPoints:
             f"fortitude={self.fortitude}",
             f"crafting_speed={self.crafting_speed}",
         ]
-        return f"Statpoints(points added)([{', '.join(stats)}])"
+        return f"Statpoints({self.__type_str()})([{', '.join(stats)}])"
 
 @dataclass
 class StatValues:
@@ -134,7 +140,9 @@ class DinoStats(ParsedObjectBase):
     base_level: int = 0
     current_level: int = 0
 
-    stat_points: StatPoints = StatPoints()
+    base_stat_points: StatPoints = StatPoints()
+    added_stat_points: StatPoints = StatPoints(type="NumberOfLevelUpPointsAppliedTamed")
+    mutated_stat_points: StatPoints = StatPoints(type="NumberOfMutationsAppliedTamed")
     stat_values: StatValues = StatValues()
 
     def __init_props__(self, obj: ArkGameObject = None):
@@ -143,9 +151,11 @@ class DinoStats(ParsedObjectBase):
 
         base_lv = self.object.get_property_value("BaseCharacterLevel")
         self.base_level = 0 if base_lv is None else base_lv
-        self.stat_points = StatPoints(self.object)
+        self.base_stat_points = StatPoints(self.object)
+        self.added_stat_points = StatPoints(self.object, "NumberOfLevelUpPointsAppliedTamed")
+        self.mutated_stat_points = StatPoints(self.object, "NumberOfMutationsAppliedTamed")
         self.stat_values = StatValues(self.object)
-        self.current_level = self.stat_points.get_level()
+        self.current_level = self.base_stat_points.get_level() + self.added_stat_points.get_level() + self.mutated_stat_points.get_level()
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         if binary is not None:
@@ -160,15 +170,16 @@ class DinoStats(ParsedObjectBase):
         return s
 
     def __str__(self):
-        return f"DinoStats(level={self.current_level}"
+        return f"DinoStats(level={self.current_level})"
     
-    def get(self, stat: ArkStat):
-        return getattr(self.stat_points, STAT_POSITION_MAP[stat.value])
+    def get(self, stat: ArkStat, base: bool):
+        return getattr(self.base_stat_points, STAT_POSITION_MAP[stat.value]) + (0 if base else \
+            (getattr(self.added_stat_points, STAT_POSITION_MAP[stat.value]) + getattr(self.mutated_stat_points, STAT_POSITION_MAP[stat.value])))
 
-    def get_of_at_least(self, value: float):
+    def get_of_at_least(self, value: float, base: bool = False):
         stats = []
         for stat in ArkStat:
-            if self.get(stat) >= value:
+            if self.get(stat,base) >= value:
                 stats.append(stat)
         return stats
     
@@ -179,4 +190,24 @@ class DinoStats(ParsedObjectBase):
         return f"{STAT_POSITION_MAP[stat.value]}"
     
     def to_string_all(self):
-        return f"DinoStats(base_level={self.base_level}, level={self.current_level}, \nstat_points={self.stat_points.to_string_all()}, \nstat_values={self.stat_values.to_string_all()})"
+        return f"DinoStats(base_level={self.base_level}, " + \
+               f"level={self.current_level}, " + \
+               f"\nbase stats={self.base_stat_points.to_string_all()}, " + \
+               f"\nadded stats={self.added_stat_points.to_string_all()}, " + \
+               f"\nstat_values={self.stat_values.to_string_all()})"
+    
+    def get_highest_stat(self, base: bool = False):
+        highest = 0
+        best_stat = None
+        for stat in ArkStat:
+            value = self.get(stat, base)
+            if value > highest:
+                highest = value
+                best_stat = stat
+        return best_stat, highest
+    
+    def get_mutations(self, stat: ArkStat):
+        return getattr(self.mutated_stat_points, STAT_POSITION_MAP[stat.value]) / 2
+    
+    def get_total_mutations(self):
+        return self.mutated_stat_points.get_level() / 2

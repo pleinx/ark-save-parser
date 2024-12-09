@@ -13,14 +13,18 @@ class GeneralApi:
         self.all_objects = None
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
+        reuse = False
         if config is None:
+            reuse = True
             if self.all_objects is not None:
                 return self.all_objects
 
             config = self.config
 
         objects = self.save.get_game_objects(config)
-        self.all_objects = objects
+
+        if reuse:
+            self.all_objects = objects
 
         return objects
     

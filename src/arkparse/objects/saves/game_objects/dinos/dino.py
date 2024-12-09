@@ -57,3 +57,4 @@ class Dino(ParsedObjectBase):
         d.stats = DinoStats.from_object(status_obj)
 
         return d    
+    
