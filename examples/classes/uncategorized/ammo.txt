@@ -1,2 +1,3 @@
+/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_AmmoniteBlood.PrimalItemResource_AmmoniteBlood_C
 /Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItemAmmo_AggroTranqDart.PrimalItemAmmo_AggroTranqDart_C
 /QoLPlus/Misc/AmmoBoxPlus/PrimalItemStructure_AmmoBoxPlus.PrimalItemStructure_AmmoBoxPlus_C

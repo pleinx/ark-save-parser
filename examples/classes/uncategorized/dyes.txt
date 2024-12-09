@@ -1,0 +1,4 @@
+/Game/PrimalEarth/CoreBlueprints/Items/Dyes/PrimalItemDye_Brown_2_Bark.PrimalItemDye_Brown_2_Bark_C
+/Game/PrimalEarth/CoreBlueprints/Items/Dyes/PrimalItemDye_Green_2_Hunter.PrimalItemDye_Green_2_Hunter_C
+/Game/PrimalEarth/CoreBlueprints/Items/Dyes/PrimalItemDye_Misc_4.PrimalItemDye_Misc_4_C
+/Game/PrimalEarth/CoreBlueprints/Items/Dyes/PrimalItemDye_Misc_5.PrimalItemDye_Misc_5_C

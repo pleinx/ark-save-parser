@@ -1,4 +1,4 @@
-
+from enum import Enum
 
 class ArkEnumValue:
     enum_name: str

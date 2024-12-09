@@ -54,13 +54,13 @@ class ArkCharacterConfig:
 
         # Parse head_hair_index
         head_hair_props = properties.find_property("HeadHairIndex")
-        if not head_hair_props:
-            raise ValueError("Missing 'head_hair_index' property.")
-        self.head_hair_index = (
-            head_hair_props.value
-            if head_hair_props.type in ["Byte", "Int"]
-            else 0
-        )
+        self.head_hair_index = 0
+        if head_hair_props:
+            self.head_hair_index = (
+                head_hair_props.value
+                if head_hair_props.type in ["Byte", "Int"]
+                else 0
+            )
 
         # Parse eyebrow_index
         eyebrow_props = properties.find_property("EyebrowIndex")

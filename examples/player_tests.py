@@ -1,14 +1,17 @@
 from pathlib import Path
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMaps
+from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.api.player_api import PlayerApi
 
-# from arkparse.logging import ArkSaveLogger
+from arkparse.logging import ArkSaveLogger
 # ArkSaveLogger.enable_debug = True
 # ArkSaveLogger.temp_file_path = Path.cwd()
 
-ftp_client = ArkFtpClient.from_config('../ftp_config.json', ArkMaps.ABERRATION)
-player_api = PlayerApi(ftp_client)
+ftp_client = ArkFtpClient.from_config('../ftp_config.json', FtpArkMap.ABERRATION)
+save_path = Path('Aberration_WP.ark')
+save = AsaSave(save_path)
+player_api = PlayerApi('../ftp_config.json', FtpArkMap.ABERRATION)
 
 print(f"Total deaths: {player_api.get_deaths()}")
 print(f"Total experience: {player_api.get_xp()}")
