@@ -19,6 +19,9 @@ class DinoApi:
     def __init__(self, save: AsaSave):
         self.save = save
         self.all_objects = None
+        self.parsed_dinos: Dict[UUID, Dino] = {}
+        self.parsed_tamed_dinos: Dict[UUID, TamedDino] = {}
+        self.parsed_cryopods: Dict[UUID, Cryopod] = {}
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         reuse = False
@@ -51,16 +54,28 @@ class DinoApi:
             if "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
                 is_tamed = obj.get_property_value("TamedTimeStamp") is not None
 
-                parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-                if is_tamed:
-                    dino = TamedDino(obj.uuid, parser, self.save)
+                if obj.uuid in self.parsed_dinos:
+                    if is_tamed:
+                        dino = self.parsed_tamed_dinos[obj.uuid]
+                    else:
+                        dino = self.parsed_dinos[obj.uuid]
                 else:
-                    dino = Dino(obj.uuid, parser, self.save)
+                    parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
+                    if is_tamed:
+                        dino = TamedDino(obj.uuid, parser, self.save)
+                        self.parsed_tamed_dinos[obj.uuid] = dino
+                    else:
+                        dino = Dino(obj.uuid, parser, self.save)
+                        self.parsed_dinos[obj.uuid] = dino
             elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint:
                 if not obj.get_property_value("bIsEngram", default=False):
-                    cryopod = Cryopod(obj.uuid, ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context))
-                    if cryopod.dino is not None:
-                        dino = cryopod.dino
+                    if obj.uuid in self.parsed_cryopods:
+                        dino = self.parsed_cryopods[obj.uuid].dino
+                    else:
+                        cryopod = Cryopod(obj.uuid, ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context))
+                        self.parsed_cryopods[obj.uuid] = cryopod
+                        if cryopod.dino is not None:
+                            dino = cryopod.dino
             
             if dino is not None:
                 dinos[key] = dino
@@ -88,9 +103,12 @@ class DinoApi:
 
         return wild_dinos
     
-    def get_all_tamed(self) -> Dict[UUID, TamedDino]:
+    def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
         dinos = self.get_all()
         tamed_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino)}
+
+        if not include_cryopodded:
+            tamed_dinos = {k: v for k, v in tamed_dinos.items() if v.cryopod is None}
 
         return tamed_dinos
     
@@ -206,7 +224,7 @@ class DinoApi:
         if stat_minimum is not None:
             new_filtered_dinos = {}
             for key, dino in filtered_dinos.items():
-                stats_above = dino.stats.get_of_at_least(stat_minimum)
+                stats_above = dino.stats.get_of_at_least(stat_minimum, mutated=True)
                 if len(stats_above) and (stats is None or any(s in stats_above for s in stats)):
                     new_filtered_dinos[key] = dinos[key]
             filtered_dinos = new_filtered_dinos
@@ -288,7 +306,7 @@ class DinoApi:
             dinos = self.get_all_filtered(class_names=classes, tamed=tamed, include_cryopodded=False)
 
         heatmap = [[0 for _ in range(resolution)] for _ in range(resolution)]
-        print(f"Found {len(dinos)} dinos")
+        # print(f"Found {len(dinos)} dinos")
 
         for key, dino in dinos.items():
             if dino.location is None:
@@ -306,16 +324,19 @@ class DinoApi:
 
         return np.array(heatmap)
     
-    def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False) -> (Dino, int, ArkStat):
+    def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False, mutated_stat=False) -> (Dino, int, ArkStat):
         if only_tamed and only_untamed:
             raise ValueError("Cannot specify both only_tamed and only_untamed")
+        
+        if mutated_stat and base_stat:
+            raise ValueError("Cannot specify both base_stat and base_mutated_stat")
         
         if classes is not None:
             dinos = self.get_all_filtered(class_names=classes, include_cryopodded=True)
         else:
             dinos = self.get_all()
 
-        print(f"Found {len(dinos)} dinos")
+        # print(f"Found {len(dinos)} dinos")
 
         best_dino = None
         best_value = None
@@ -329,9 +350,9 @@ class DinoApi:
                 continue
 
             if stat is not None:
-                value = dino.stats.get(stat, base_stat)
+                value = dino.stats.get(stat, base_stat, mutated_stat)
             else:
-                s, value = dino.stats.get_highest_stat()
+                s, value = dino.stats.get_highest_stat(base_stat, mutated_stat)
 
             if best_value is None or value > best_value:
                 best_value = value
@@ -339,4 +360,5 @@ class DinoApi:
                 best_stat = s
 
         return best_dino, best_value, best_stat
+    
         

@@ -172,19 +172,23 @@ class DinoStats(ParsedObjectBase):
     def __str__(self):
         return f"DinoStats(level={self.current_level})"
     
-    def get(self, stat: ArkStat, base: bool):
-        return getattr(self.base_stat_points, STAT_POSITION_MAP[stat.value]) + (0 if base else \
-            (getattr(self.added_stat_points, STAT_POSITION_MAP[stat.value]) + getattr(self.mutated_stat_points, STAT_POSITION_MAP[stat.value])))
+    def get(self, stat: ArkStat, base: bool = False, mutated: bool = False):
+        if base and mutated:
+            raise ValueError("Cannot get base and mutated stats at the same time")
 
-    def get_of_at_least(self, value: float, base: bool = False):
+        return (getattr(self.base_stat_points, STAT_POSITION_MAP[stat.value]) + \
+                (0 if base else getattr(self.mutated_stat_points, STAT_POSITION_MAP[stat.value]))) + \
+                (0 if (base or mutated) else getattr(self.added_stat_points, STAT_POSITION_MAP[stat.value]))
+
+    def get_of_at_least(self, value: float, base: bool = False, mutated: bool = False) -> List[ArkStat]:
         stats = []
         for stat in ArkStat:
-            if self.get(stat,base) >= value:
+            if self.get(stat,base, mutated) >= value:
                 stats.append(stat)
         return stats
     
     def stat_to_string(self, stat: ArkStat):
-        return f"{self.stat_name_string(stat)}={self.get(stat)}"
+        return f"{self.stat_name_string(stat)}={self.get(stat, False, False)}"
     
     def stat_name_string(self, stat: ArkStat):
         return f"{STAT_POSITION_MAP[stat.value]}"
@@ -196,11 +200,11 @@ class DinoStats(ParsedObjectBase):
                f"\nadded stats={self.added_stat_points.to_string_all()}, " + \
                f"\nstat_values={self.stat_values.to_string_all()})"
     
-    def get_highest_stat(self, base: bool = False):
+    def get_highest_stat(self, base: bool = False, mutated: bool = False):
         highest = 0
         best_stat = None
         for stat in ArkStat:
-            value = self.get(stat, base)
+            value = self.get(stat, base, mutated)
             if value > highest:
                 highest = value
                 best_stat = stat

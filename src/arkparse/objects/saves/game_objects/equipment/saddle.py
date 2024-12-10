@@ -7,7 +7,7 @@ from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 
 from .__equipment import Equipment
-from .__saddle_defaults import __get_saddle_armor, __get_saddle_dura
+from .__saddle_defaults import _get_saddle_armor, _get_saddle_dura
 
 class Saddle(Equipment):
     armor: float = 0
@@ -17,11 +17,11 @@ class Saddle(Equipment):
         if obj is not None:
             super().__init_props__(obj)
             
-        armor = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.ARMOR.value)
-        dura = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value)
+        armor = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.ARMOR.value, default=0)
+        dura = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
 
-        self.armor = round(__get_saddle_armor(self.object.blueprint)*(0.0002*armor + 1), 1)
-        self.durability = math.floor(__get_saddle_dura(self.object.blueprint)*(0.00025*dura + 1))
+        self.armor = round(_get_saddle_armor(self.object.blueprint)*(0.0002*armor + 1), 1)
+        self.durability = math.floor(_get_saddle_dura(self.object.blueprint)*(0.00025*dura + 1))
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
