@@ -17,8 +17,37 @@ class Metal:
     wall = "/Game/PrimalEarth/Structures/Metal/Wall_Metal.Wall_Metal_C"
     triangle_foundation = "/Game/PrimalEarth/StructuresPlus/Structures/Foundations/Triangle/Metal/BP_TriFoundation_Metal.BP_TriFoundation_Metal_C"
     cliff_platform = "/Game/Aberration/Structures/CliffPlatforms/Metal_CliffPlatform/Metal_Platform_BP_Small.Metal_Platform_BP_Small_C"
+    double_doorframe = "/Game/PrimalEarth/StructuresPlus/Structures/Doorframes_Double/Metal/BP_DoubleDoorframe_Metal.BP_DoubleDoorframe_Metal_C"
+    tri_roof_metal = "/Game/PrimalEarth/StructuresPlus/Structures/Roofs_Tri/Metal/BP_TriRoof_Metal.BP_TriRoof_Metal_C"
+    large_wall = "/Game/PrimalEarth/StructuresPlus/Structures/Walls_L/Metal/BP_LargeWall_Metal.BP_LargeWall_Metal_C"
+    greenhouse_ceiling = "/Game/PrimalEarth/Structures/Greenhouse_Modular/Greenhouse_Ceiling.Greenhouse_Ceiling_C"
+    greenhouse_wall = "/Game/PrimalEarth/Structures/Greenhouse_Modular/Greenhouse_Wall.Greenhouse_Wall_C"
+    beam_metal = "/Game/PrimalEarth/Structures/Metal/Beam_Metal.Beam_Metal_C"
+    ceiling_metal = "/Game/PrimalEarth/Structures/Metal/Ceiling_Metal.Ceiling_Metal_C"
+    doorframe_metal = "/Game/PrimalEarth/Structures/Metal/Doorframe_Metal.Doorframe_Metal_C"
+    fence_foundation_metal = "/Game/PrimalEarth/Structures/Metal/FenceFoundation_Metal.FenceFoundation_Metal_C"
+    gateframe_large_metal = "/Game/PrimalEarth/Structures/Metal/GateFrame_Large_Metal.GateFrame_Large_Metal_C"
+    gateframe_metal = "/Game/PrimalEarth/Structures/Metal/GateFrame_Metal.GateFrame_Metal_C"
+    gate_large_metal = "/Game/PrimalEarth/Structures/Metal/Gate_Large_Metal.Gate_Large_Metal_C"
+    ladder_metal = "/Game/PrimalEarth/Structures/Metal/Ladder_Metal.Ladder_Metal_C"
+    pillar_metal = "/Game/PrimalEarth/Structures/Metal/Pillar_Metal.Pillar_Metal_C"
+    window_wall_metal = "/Game/PrimalEarth/Structures/Metal/WindowWall_Metal.WindowWall_Metal_C"
+    waterpipe_metal_intake = "/Game/PrimalEarth/Structures/Pipes/WaterPipe_Metal_Intake.WaterPipe_Metal_Intake_C"
+    metal_ceiling_door_giant_bp = "/Game/PrimalEarth/Structures/SM_MetalCeilingDoorGiant_BP.SM_MetalCeilingDoorGiant_BP_C"
+    sign_large_metal = "/Game/PrimalEarth/Structures/Sign_Large_Metal.Sign_Large_Metal_C"
+    door_short_metal = "/Game/PrimalEarth/Structures/Tileset/DoorShort/Door_Short_Metal.Door_Short_Metal_C"
+    doorframe_short_metal = "/Game/PrimalEarth/Structures/Tileset/DoorwayShort/Doorframe_Short_Metal.Doorframe_Short_Metal_C"
+    wall_half_metal = "/Game/PrimalEarth/Structures/Tileset/HalfWalls/StructureBP_Wall_Half_Metal.StructureBP_Wall_Half_Metal_C"
+    ceiling_door_xl_metal = "/Game/PrimalEarth/Structures/Tileset/HatchframesXL/Doors/BP_Ceiling_Door_XL_Metal.BP_Ceiling_Door_XL_Metal_C"
+    railing_sloped_right_metal = "/Game/PrimalEarth/Structures/Tileset/Railings/Metal/StructureBP_Railing_Sloped_Right_Metal.StructureBP_Railing_Sloped_Right_Metal_C"
+    door_secret_metal = "/Game/PrimalEarth/Structures/Tileset/SecretDoorways/StructureBP_Door_Secret_Metal.StructureBP_Door_Secret_Metal_C"
+    metalwall_sloped_right_sm = "/Game/PrimalEarth/CoreBlueprints/Items/Structures/Roofs/Metal/MetalWall_Sloped_Right_SM.MetalWall_Sloped_Right_SM_C"
 
-    all_bps = [floor, wall, triangle_foundation, cliff_platform]
+    all_bps = [floor, wall, triangle_foundation, cliff_platform, double_doorframe, tri_roof_metal, large_wall, 
+               greenhouse_ceiling, greenhouse_wall, beam_metal, ceiling_metal, doorframe_metal, fence_foundation_metal, 
+               gateframe_large_metal, gateframe_metal, gate_large_metal, ladder_metal, pillar_metal, window_wall_metal, 
+               waterpipe_metal_intake, metal_ceiling_door_giant_bp, sign_large_metal, door_short_metal, doorframe_short_metal, 
+               wall_half_metal, ceiling_door_xl_metal, railing_sloped_right_metal, door_secret_metal, metalwall_sloped_right_sm]
 
 class Thatch:
     floor = "/Game/PrimalEarth/Structures/Thatch/Thatch_Floor.Thatch_Floor_C"

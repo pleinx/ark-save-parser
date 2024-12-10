@@ -225,7 +225,7 @@ class ArkProperty:
         properties = ArkProperty.read_struct_properties(byte_buffer)
 
         if byte_buffer.get_position() != position + data_size and not in_array:
-            byte_buffer.set_position(position + data_size) # Skip to the end of the struct
+            byte_buffer.set_position(position + data_size)
             # ArkSaveLogger.open_hex_view()
             # raise Exception("Struct reading position mismatch: [StructType: %s, DataSize: %d, Position: %d, CurrentPosition: %d]" % (struct_type, data_size, position, byte_buffer.get_position()))
         

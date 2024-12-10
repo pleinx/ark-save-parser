@@ -54,7 +54,6 @@ class ArkCharacterConfig:
 
         # Parse head_hair_index
         head_hair_props = properties.find_property("HeadHairIndex")
-        self.head_hair_index = 0
         if head_hair_props:
             self.head_hair_index = (
                 head_hair_props.value
