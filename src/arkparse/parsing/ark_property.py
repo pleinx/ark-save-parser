@@ -15,6 +15,8 @@ from arkparse.struct.ark_my_persistent_buff_datas import ArkMyPersistentBuffData
 from arkparse.struct.ark_item_net_id import ArkItemNetId
 from arkparse.struct.object_reference import ObjectReference
 from arkparse.struct.ark_struct_type import ArkStructType
+from arkparse.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
+
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
 from arkparse.parsing.ark_set import ArkSet
@@ -177,9 +179,9 @@ class ArkProperty:
 
     @staticmethod
     def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
+        ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
         if not in_array:
             ArkSaveLogger.enter_struct(f"S({struct_type})")
-            ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
             byte_buffer.validate_bytes_as_string("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", 16)
 
         ark_struct_type = ArkStructType.from_type_name(struct_type)
@@ -207,6 +209,8 @@ class ArkProperty:
                 p = ArkMyPersistentBuffDatas(byte_buffer, data_size)
             elif ark_struct_type == ArkStructType.ItemNetId:
                 p = ArkItemNetId(byte_buffer)
+            elif ark_struct_type == ArkStructType.ArkDinoAncestor:
+                p = ArkDinoAncestorEntry(byte_buffer)
             elif ark_struct_type == None:
                 return None
             elif in_array:
@@ -225,6 +229,8 @@ class ArkProperty:
         properties = ArkProperty.read_struct_properties(byte_buffer)
 
         if byte_buffer.get_position() != position + data_size and not in_array:
+            print("WARNING: Struct reading position mismatch for type", struct_type)
+            print(f"StructType: {struct_type}, DataSize: {data_size}, Position: {position}, CurrentPosition: {byte_buffer.get_position()}")
             byte_buffer.set_position(position + data_size)
             # ArkSaveLogger.open_hex_view()
             # raise Exception("Struct reading position mismatch: [StructType: %s, DataSize: %d, Position: %d, CurrentPosition: %d]" % (struct_type, data_size, position, byte_buffer.get_position()))
@@ -273,7 +279,7 @@ class ArkProperty:
             ArkSaveLogger.debug_log(f"[STRUCT ARRAY: key=\'{array_name}\'; nr_of_value={array_length}; type={array_content_type}; bin_length={content_size}]")
             struct_array = []
             for _ in range(array_length):
-                struct_array.append(ArkProperty.read_struct_property(byte_buffer, data_size, array_content_type, True))
+                struct_array.append(ArkProperty.read_struct_property(byte_buffer, content_size, array_content_type, True))
 
             if array_content_type == "CustomItemByteArray":
                 struct_array = []
@@ -297,9 +303,14 @@ class ArkProperty:
 
             ArkSaveLogger.debug_log(f"============ END {array_name}[{array_content_type}] ============")
 
-            # if(byte_buffer.position != data_start_postion + data_size):
-            #     ArkSaveLogger.open_hex_view()
-            #     raise ValueError(f"Array read incorrectly, bytes left to read: {data_start_postion + data_size - byte_buffer.position}")
+            if(byte_buffer.position != data_start_postion + data_size):
+                # just skip to the end of the struct if an error occurs
+                print("WARNING: Array read incorrectly, bytes left to read:", data_start_postion + data_size - byte_buffer.position)
+                print("Skipping to the end of the struct, type:", array_content_type)
+                byte_buffer.set_position(data_start_postion + data_size)
+                # byte_buffer.find_names()
+                # ArkSaveLogger.open_hex_view()
+                # raise ValueError(f"Array read incorrectly, bytes left to read: {data_start_postion + data_size - byte_buffer.position}")
             
             ArkSaveLogger.exit_struct()
             return p

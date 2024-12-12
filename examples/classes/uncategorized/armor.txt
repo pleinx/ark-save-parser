@@ -1,3 +1,5 @@
 /Game/PrimalEarth/CoreBlueprints/Items/Armor/Cloth/PrimalItem_PowerNodeCharge.PrimalItem_PowerNodeCharge_C
+/Game/PrimalEarth/CoreBlueprints/Items/Armor/Leather/PrimalItemSkin_AberrationSword.PrimalItemSkin_AberrationSword_C
 /Game/PrimalEarth/CoreBlueprints/Items/Armor/Skin/ChibiDinos/PrimalItem_ChibiDino_RandomCraftable.PrimalItem_ChibiDino_RandomCraftable_C
+/Game/PrimalEarth/CoreBlueprints/Items/Armor/Skin/PrimalItemSkin_AberrationHelmet.PrimalItemSkin_AberrationHelmet_C
 /Game/PrimalEarth/CoreBlueprints/Items/Armor/Skin/PrimalItemSkin_PlayerCostume_Custom.PrimalItemSkin_PlayerCostume_Custom_C

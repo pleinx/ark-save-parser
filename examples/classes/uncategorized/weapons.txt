@@ -1,2 +1,0 @@
-/Game/Aberration/CoreBlueprints/Weapons/WeapClimbPick.WeapClimbPick_C
-/Game/Extinction/CoreBlueprints/Weapons/WeapEmptyCryopod.WeapEmptyCryopod_C

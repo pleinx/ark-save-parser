@@ -213,7 +213,7 @@ class AsaSave:
         
         logger.info(f"Database successfully backed up to {path}")
 
-    def get_game_objects(self, reader_config: GameObjectReaderConfiguration) -> Dict[uuid.UUID, 'ArkGameObject']:
+    def get_game_objects(self, reader_config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()) -> Dict[uuid.UUID, 'ArkGameObject']:
         query = "SELECT key, value FROM game"
         game_objects = {}
         row_index = 0
@@ -262,7 +262,7 @@ class AsaSave:
                 except Exception as e:
                     ArkSaveLogger.enable_debug = True
                     byte_buffer.find_names()
-                    raise Exception("Error parsing object %s of type %s: %s", obj_uuid, class_name, exc_info=e)
+                    raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
                 
                 for object in objects:
                     ArkSaveLogger.debug_log("Object: %s", object)
@@ -324,8 +324,6 @@ class AsaSave:
             ArkSaveLogger.debug_log(f"Nr parsed: {self.nr_parsed}")
 
         skip_list = [
-            "/QoLPlus/Items/OmniTool/PrimalItem_OmniTool.PrimalItem_OmniTool_C",
-            "/QoLPlus/Items/MultiTool/PrimalItem_SplusMultiTool.PrimalItem_SplusMultiTool_C",
             "/Game/PrimalEarth/CoreBlueprints/Items/Notes/PrimalItem_StartingNote.PrimalItem_StartingNote_C",
             "/Script/ShooterGame.StructurePaintingComponent",
             "/Game/Packs/Frontier/Structures/TreasureCache/TreasureMap/PrimalItem_TreasureMap_WildSupplyDrop.PrimalItem_TreasureMap_WildSupplyDrop_C",
@@ -336,6 +334,9 @@ class AsaSave:
         ]
 
         if class_name in skip_list:
+            return None
+        
+        if not class_name.startswith("/Game/"):
             return None
     
         return ArkGameObject(obj_uuid, class_name, byte_buffer)

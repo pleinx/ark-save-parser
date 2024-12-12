@@ -44,6 +44,32 @@ class DinoApi:
 
         return objects
     
+    def get_by_uuid(self, uuid: UUID) -> Dino:
+        object = self.save.get_game_object_by_id(uuid)
+
+        if object is None:
+            return None
+        
+        dino = None
+        if "Dinos/" in object.blueprint and "_Character_" in object.blueprint:
+            is_tamed = object.get_property_value("TamedTimeStamp") is not None
+
+            if uuid in self.parsed_dinos:
+                if is_tamed:
+                    dino = self.parsed_tamed_dinos[uuid]
+                else:
+                    dino = self.parsed_dinos[uuid]
+            else:
+                parser = ArkBinaryParser(self.save.get_game_obj_binary(uuid), self.save.save_context)
+                if is_tamed:
+                    dino = TamedDino(uuid, parser, self.save)
+                    self.parsed_tamed_dinos[uuid] = dino
+                else:
+                    dino = Dino(uuid, parser, self.save)
+                    self.parsed_dinos[uuid] = dino
+
+        return dino
+    
     def get_all(self, config = None) -> Dict[UUID, Dino]:
         objects = self.get_all_objects(config)
 

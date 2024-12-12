@@ -23,7 +23,7 @@ class PropertyParser(BaseValueValidator):
         self.validate_name(property_name)
         self.validate_name("UInt32Property")
         self.validate_byte(0x04)
-        self.validate_uint32(0)
+        self.validate_uint64(0)
         value = self.read_uint32()
         return value
 

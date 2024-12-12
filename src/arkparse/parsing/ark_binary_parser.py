@@ -198,7 +198,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.save_context.generate_unknown_names = False
         
         original_position = self.get_position()
-        max_prints = 75
+        max_prints = 150
         prints = 0
 
         ArkSaveLogger.debug_log("--- Looking for names ---")
