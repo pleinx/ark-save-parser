@@ -315,7 +315,7 @@ class DinoApi:
         for key, dino in dinos.items():
             if new_owner is not None:
                 dino.owner.replace_with(new_owner, dino.binary)
-                self.save.modify_obj_in_db(key, dino.binary.byte_buffer)
+                self.save.modify_game_obj(key, dino.binary.byte_buffer)
 
         if ftp_client is not None:
             self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")

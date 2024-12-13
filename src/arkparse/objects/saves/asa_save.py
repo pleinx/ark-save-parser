@@ -183,7 +183,7 @@ class AsaSave:
         with self.connection as conn:
             conn.execute(query, (self.uuid_to_byte_array(obj_uuid), obj_data))
 
-    def modify_obj_in_db(self, obj_uuid: uuid.UUID, obj_data: bytes):
+    def modify_game_obj(self, obj_uuid: uuid.UUID, obj_data: bytes):
         query = "UPDATE game SET value = ? WHERE key = ?"
         with self.connection as conn:
             conn.execute(query, (obj_data, self.uuid_to_byte_array(obj_uuid)))

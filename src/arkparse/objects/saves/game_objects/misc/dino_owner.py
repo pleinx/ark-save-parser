@@ -63,6 +63,12 @@ class DinoOwner:
         if binary is not None:
             self.set_in_binary(binary)
 
+    def set_tribe(self, tribe_name: str, tribe_id: int):
+        self.tribe = tribe_name
+        self.tamer_tribe_id = tribe_id
+        self.target_team = tribe_id
+        self.tamer_string = tribe_name
+
     @staticmethod
     def from_profile(tribe: ArkTribe, profile: ArkProfile):
         o = DinoOwner()

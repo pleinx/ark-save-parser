@@ -14,8 +14,6 @@ class PropertyReplacer(PropertyInsertor):
         if self.save_context is None:
             raise ValueError("Save context is not set")
         
-        cur_pos = 0
-
         for i in range(self.size() - 4):
             self.set_position(i)
             int_value = self.read_uint32()
@@ -23,6 +21,10 @@ class PropertyReplacer(PropertyInsertor):
                 continue
             name = self.save_context.names[int_value]
             if name is not None and name == property_name:
+                self.position += 16
+                # print("Reading pos at", self.position)
+                cur_pos = self.read_uint32()
+                # print(f"Found property: {name} at {self.position-8} (position {cur_pos})")
                 if cur_pos == position:
                     ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                     self.set_position(i)
@@ -83,6 +85,16 @@ class PropertyReplacer(PropertyInsertor):
     def replace_double(self, property_position : int, new_value: float):
         value_pos = property_position + 8 + 8 + 1 + 8
         new_value_bytes = struct.pack('<d', new_value)
+        self.replace_bytes(value_pos, new_value_bytes)
+    
+    def replace_boolean(self, property_position : int, new_value: bool):
+        value_pos = property_position + 8 + 8 + 8
+        new_value_bytes = b"\x01" if new_value else b"\x00"
+        self.replace_bytes(value_pos, new_value_bytes)
+
+    def replace_byte_property(self, property_position : int, new_value: int):
+        value_pos = property_position + 8 + 8 + 8 + 8 + 1
+        new_value_bytes = new_value.to_bytes(1, byteorder="little")
         self.replace_bytes(value_pos, new_value_bytes)
 
     def replace_array(self, array_name: str, property_type: str, new_items: List[bytes], position: int = None):

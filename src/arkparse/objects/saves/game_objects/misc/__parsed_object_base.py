@@ -29,7 +29,7 @@ class ParsedObjectBase:
 
     def update_binary(self, save: AsaSave):
         if save is not None:
-            save.modify_obj_in_db(self.object.uuid, self.binary.byte_buffer)
+            save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
     def get_short_name(self):
         to_strip_end = [

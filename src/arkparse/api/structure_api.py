@@ -153,7 +153,7 @@ class StructureApi:
             if new_owner is not None:
                 obj.owner.replace_self_with(new_owner, binary=obj.binary)
 
-            self.save.modify_obj_in_db(key, obj.binary.byte_buffer)
+            self.save.modify_game_obj(key, obj.binary.byte_buffer)
 
         if ftp_client is not None:
             self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
