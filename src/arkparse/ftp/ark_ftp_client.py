@@ -264,4 +264,32 @@ class ArkFtpClient:
             new_content += f"{line}\n"
 
         self.write_file_contents(file_name, new_content.encode('utf-8'))
+
+    def list_backups(self):
+        map = self._check_map(None)
+        self.nav_to_save_files(map)
+        # list all backups (end on .ark.gz)
+        files = self.ftp.nlst()
+        backup_files = [file for file in files if file.endswith(SAVE_FILE_EXTENSION + ".gz")]
+        backup_files = [ArkFile(file, self.ftp.pwd(), self.ftp.sendcmd(f"MDTM {file}")) for file in backup_files]
+        backup_files.sort(key=lambda x: x.last_modified, reverse=True)
+        return backup_files
+    
+    def get_backup(self, since: datetime = None, before: datetime = None):
+        backup_files = self.list_backups()
+        since = None if since is None else (since if since.tzinfo else UTC.localize(since))
+        before = None if before is None else (before if before.tzinfo else UTC.localize(before))
+
+        for backup in backup_files:
+            if (since is None or backup.last_modified > since) \
+            and (before is None or backup.last_modified < before):
+                return backup
+        return None
+    
+    def download_backup(self, output_directory: Path, since: datetime = None, before: datetime = None):
+        backup = self.get_backup(since, before)
+        if backup is not None:
+            return self.download_file(backup.name, output_directory / backup.name)
+        return None
+        
     

@@ -14,10 +14,6 @@ from .inventory_item import InventoryItem
 @dataclass
 class Inventory(ParsedObjectBase):
     items: Dict[UUID, InventoryItem]
-
-    container_uuid: UUID
-    container_type: str
-
     def __init__(self, uuid: UUID, binary: ArkBinaryParser, save: AsaSave = None):
         super().__init__(uuid, binary)
         self.items = {}
@@ -31,7 +27,7 @@ class Inventory(ParsedObjectBase):
             if is_engram is None or not is_engram:
                 self.items[item_uuid] = item
 
-    def add_item(self, item: UUID):
+    def add_item(self, item: UUID, save: AsaSave = None):
         if len(self.items) == 0:
             self.binary.set_property_position("bInitializedMe")
         else:
@@ -45,7 +41,10 @@ class Inventory(ParsedObjectBase):
         
         self.binary.replace_array("InventoryItems", "ObjectProperty", object_references)
 
-    def remove_item(self, item: UUID):
+        if save is not None:
+            save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
+
+    def remove_item(self, item: UUID, save: AsaSave = None):
         if len(self.items) == 0:
             return
 
@@ -58,7 +57,10 @@ class Inventory(ParsedObjectBase):
         
         self.binary.replace_array("InventoryItems", "ObjectProperty", object_references if len(object_references) > 0 else None)
 
-    def clear_items(self):
+        if save is not None:
+            save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
+
+    def clear_items(self, save: AsaSave = None):
         if len(self.items) == 0:
             return
         
@@ -66,15 +68,18 @@ class Inventory(ParsedObjectBase):
         self.binary.set_property_position("InventoryItems")
         self.binary.replace_array("InventoryItems", "ObjectProperty", None)
 
+        if save is not None:
+            save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
+
     def store_binary(self, path: Path):
         super().store_binary(path)
         for key, item in self.items.items():
             item.store_binary(path)
 
     def __str__(self):
-        out = f"Inventory(container={self.container_uuid}, items={len(self.items)})"
+        out = f"Inventory(items={len(self.items)})"
               
-        for item in self.items:
-            out += "\n   - " + str(list(item.values())[0])
+        for _, item in self.items.items():
+            out += "\n   - " + item.get_short_name()
 
         return out

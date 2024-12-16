@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Dict
 from pathlib import Path
+from uuid import UUID
 import time
 import threading
 
@@ -7,12 +8,15 @@ from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.objects.player.ark_profile import ArkProfile
 from arkparse.objects.tribe.ark_tribe import ArkTribe
 from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.objects.saves.game_objects.misc.inventory import Inventory
+from arkparse.parsing import ArkBinaryParser
 from arkparse.classes.player import Player
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
 from arkparse.utils import TEMP_FILES_DIR
 
 from arkparse.objects.saves.game_objects.misc.dino_owner import DinoOwner
 from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
+from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
 
 class PlayerApi:
     class StatType:
@@ -34,14 +38,10 @@ class PlayerApi:
         self.players : List[ArkProfile] = []
         self.tribes : List[ArkTribe] = []
         self.save: AsaSave = save
-        self.pawns = None
+        self.pawns: Dict[UUID, ArkGameObject] = None
 
-        if save is not None:
-            pawn_bps = [Player.pawn_female, Player.pawn_male]
-            config = GameObjectReaderConfiguration(
-                blueprint_name_filter=lambda name: name is not None and name in pawn_bps,
-            )
-            self.pawns = save.get_game_objects(config)
+        if self.save is not None:
+            self.__init_pawns()
 
         self.ftp_client : ArkFtpClient = ArkFtpClient.from_config(ftp_config, map)
         
@@ -58,6 +58,14 @@ class PlayerApi:
 
         update_thread = threading.Thread(target=update_loop, daemon=True)
         update_thread.start()
+
+    def __init_pawns(self):
+        if self.save is not None:
+            pawn_bps = [Player.pawn_female, Player.pawn_male]
+            config = GameObjectReaderConfiguration(
+                blueprint_name_filter=lambda name: name is not None and name in pawn_bps,
+            )
+            self.pawns = self.save.get_game_objects(config)
 
     def dispose(self):
         self.ftp_client.close()
@@ -217,4 +225,38 @@ class PlayerApi:
         elif owner_type == self.OwnerType.DINO:
             return DinoOwner.from_profile(tribe, player)
         return None
+    
+    def __check_pawns(self, save: AsaSave):
+        if save is None and self.save is None:
+            raise ValueError("Save not provided")
+        
+        if save is not None:
+            self.save = save
+        
+        if self.pawns is None:
+            self.__init_pawns()
+    
+    def get_player_pawn(self, player: ArkProfile, save: AsaSave = None):
+        self.__check_pawns(save)
+        for _, pawn in self.pawns.items():
+            player_id = pawn.get_property_value("LinkedPlayerDataID")
+            if player_id == player.player_data.id_:
+                return pawn
+        return None
+    
+    def get_player_inventory(self, player: ArkProfile, save: AsaSave = None):
+        self.__check_pawns(save)
+        pawn = self.get_player_pawn(player, self.save)
+        inv_uuid = UUID(pawn.get_property_value("MyInventoryComponent").value)
+        inv = Inventory(inv_uuid, ArkBinaryParser(self.save.get_game_obj_binary(inv_uuid), self.save.save_context), self.save)
+        return inv
+
+    def add_to_player_inventory(self, player: ArkProfile, item: ArkGameObject, save: AsaSave = None):
+        if player is None:
+            raise ValueError("Player not found")
+        
+        self.__check_pawns(self.save)
+        inventory: Inventory = self.get_player_inventory(player, self.save)
+        self.save.add_obj_to_db(item.uuid)
+        inventory.add_item(item, self.save)
 

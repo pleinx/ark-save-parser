@@ -5,14 +5,19 @@ from arkparse.api.dino_api import DinoApi
 from arkparse.enums import ArkMap, ArkStat
 from arkparse.objects.saves.asa_save import AsaSave
 from arkparse.objects.saves.game_objects.dinos.tamed_dino import Dino
+from arkparse.classes.dinos import Dinos
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+
 
 save_path = Path.cwd() / "test_saves" / "server.ark" # replace with path to your save file
+save_path  = ArkFtpClient.from_config("../ftp_config.json", FtpArkMap.ABERRATION).download_save_file(Path.cwd())
 save = AsaSave(save_path)                            # load the save file
 dino_api = DinoApi(save)                             # create a DinoApi object
 
-limit = 35 # set the limit for the stats
+limit = 0 # set the limit for the stats
 dinos = dino_api.get_all_filtered(tamed=False,                                  # only consider wild dinos
                                   stat_minimum=limit,                           # set the limit
+                                  class_names=[Dinos.alpha_reaper_king, Dinos.reaper_queen],
                                   level_upper_bound=150,                        # only consider dinos up to level 150 (no wild wyverns / drakes)
                                   stats=[ArkStat.HEALTH, ArkStat.MELEE_DAMAGE, ArkStat.FOOD]) # only consider dinos with at least 35 points in health or melee damage (if not assigned, all stats are considered)
 
