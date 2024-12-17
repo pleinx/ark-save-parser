@@ -11,10 +11,13 @@ class ObjectCrafter:
         self.char_name = obj.get_property_value("CrafterCharacterName")
 
     def __str__(self) -> str:
-        tribe = self.tribe_name if self.tribe_name is not None else "Unknown"
-        char_name = self.char_name if self.char_name is not None else "Unknown"
+        tribe = self.tribe_name if self.tribe_name is not None else None
+        char_name = self.char_name if self.char_name is not None else None
 
         return f"\"{char_name}\" of tribe \"{tribe}\""
     
     def __eq__(self, value : "ObjectCrafter") -> bool:
         return self.tribe_name == value.tribe_name and self.char_name == value.char_name
+    
+    def is_valid(self) -> bool:
+        return self.tribe_name is not None and self.char_name is not None

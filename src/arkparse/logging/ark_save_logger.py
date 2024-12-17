@@ -6,6 +6,7 @@ from arkparse.utils.temp_files import TEMP_FILES_DIR
 
 class ArkSaveLogger:
     enable_debug = False
+    suppress_warnings = True
     current_struct_path = []
     file = ""
     byte_buffer = None

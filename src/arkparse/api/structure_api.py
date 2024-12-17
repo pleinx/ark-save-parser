@@ -15,6 +15,7 @@ from arkparse.enums.ark_map import ArkMap
 class StructureApi:
     def __init__(self, save: AsaSave):
         self.save = save
+        self.parsed_structures = {}
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         if config is None:
@@ -29,6 +30,9 @@ class StructureApi:
         return objects
     
     def __parse_single_structure(self, obj: ArkGameObject) -> Union[SimpleStructure, StructureWithInventory]:
+        if obj.uuid in self.parsed_structures.keys():
+            return self.parsed_structures[obj.uuid]
+
         if obj.get_property_value("MyInventoryComponent") is not None:
             parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
             structure = StructureWithInventory(obj.uuid, parser, self.save)
@@ -39,6 +43,8 @@ class StructureApi:
         for key, loc in self.save.save_context.actor_transforms.items():
             if key == obj.uuid:
                 structure.set_actor_transform(loc)
+
+        self.parsed_structures[obj.uuid] = structure
 
         return structure
 
@@ -189,6 +195,17 @@ class StructureApi:
             heatmap[x][y] += 1
 
         return np.array(heatmap)
+    
+    def get_container_of_inventory(self, inv_uuid: UUID) -> StructureWithInventory:
+        structures = self.get_all()
+        for key, obj in structures.items():
+            if not isinstance(obj, StructureWithInventory):
+                continue
+            obj: StructureWithInventory = obj
+            if obj.inventory_uuid == inv_uuid:
+                return obj
+        
+        return None
 
     # def get_building_arround(self, key_piece: UUID) -> Dict[UUID, ArkGameObject]:
     #     result = {}

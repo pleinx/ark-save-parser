@@ -36,7 +36,10 @@ class Equipment(InventoryItem):
             self.__init_props__()
 
     def is_rated(self) -> bool:
-        return self.rating > 1    
+        return self.rating > 1  
+
+    def is_crafted(self) -> bool:
+        return False if self.crafter is None else self.crafter.is_valid()
 
     def modify_quality(self, quality: int, save: AsaSave = None):
         if self.quality == 0:

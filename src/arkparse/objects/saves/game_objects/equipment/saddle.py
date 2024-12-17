@@ -35,3 +35,6 @@ class Saddle(Equipment):
         saddle.__init_props__(obj)
         
         return saddle
+    
+    def __str__(self):
+        return f"Saddle: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} -BP: {self.is_bp} -Crafted: {self.is_crafted()}"

@@ -229,8 +229,9 @@ class ArkProperty:
         properties = ArkProperty.read_struct_properties(byte_buffer)
 
         if byte_buffer.get_position() != position + data_size and not in_array:
-            print("WARNING: Struct reading position mismatch for type", struct_type)
-            print(f"StructType: {struct_type}, DataSize: {data_size}, Position: {position}, CurrentPosition: {byte_buffer.get_position()}")
+            if not ArkSaveLogger.suppress_warnings:
+                print("WARNING: Struct reading position mismatch for type", struct_type)
+                print(f"StructType: {struct_type}, DataSize: {data_size}, Position: {position}, CurrentPosition: {byte_buffer.get_position()}")
             byte_buffer.set_position(position + data_size)
             # ArkSaveLogger.open_hex_view()
             # raise Exception("Struct reading position mismatch: [StructType: %s, DataSize: %d, Position: %d, CurrentPosition: %d]" % (struct_type, data_size, position, byte_buffer.get_position()))
@@ -305,8 +306,9 @@ class ArkProperty:
 
             if(byte_buffer.position != data_start_postion + data_size):
                 # just skip to the end of the struct if an error occurs
-                print("WARNING: Array read incorrectly, bytes left to read:", data_start_postion + data_size - byte_buffer.position)
-                print("Skipping to the end of the struct, type:", array_content_type)
+                if not ArkSaveLogger.suppress_warnings:
+                    print("WARNING: Array read incorrectly, bytes left to read:", data_start_postion + data_size - byte_buffer.position)
+                    print("Skipping to the end of the struct, type:", array_content_type)
                 byte_buffer.set_position(data_start_postion + data_size)
                 # byte_buffer.find_names()
                 # ArkSaveLogger.open_hex_view()

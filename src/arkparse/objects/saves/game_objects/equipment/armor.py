@@ -42,3 +42,6 @@ class Armor(Equipment):
         armor.__init_props__(obj)
         
         return armor
+    
+    def __str__(self):
+        return f"Armor: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} -BP: {self.is_bp} -Crafted: {self.is_crafted()}"
