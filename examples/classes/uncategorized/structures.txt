@@ -8,10 +8,12 @@
 /Game/PrimalEarth/CoreBlueprints/Items/Structures/Roofs/Metal/MetalRoof_SM.MetalRoof_SM_C
 /Game/PrimalEarth/CoreBlueprints/Items/Structures/Roofs/Thatch/ThatchRoof_SM.ThatchRoof_SM_C
 /Game/PrimalEarth/Structures/AlarmTrap.AlarmTrap_C
+/Game/PrimalEarth/Structures/BeeHive/BeeHive.BeeHive_C
 /Game/PrimalEarth/Structures/BeeHive/BeeHive_PlayerOwned.BeeHive_PlayerOwned_C
 /Game/PrimalEarth/Structures/BeeHive/PrimalInventoryBP_BeeHive.PrimalInventoryBP_BeeHive_C
 /Game/PrimalEarth/Structures/BuildingBases/TreeSapTap_SM.TreeSapTap_SM_C
 /Game/PrimalEarth/Structures/BuildingBases/WaterTankBaseBP.WaterTankBaseBP_C
+/Game/PrimalEarth/Structures/DeathItemCache.DeathItemCache_C
 /Game/PrimalEarth/Structures/Electric/ElectricGenerator.ElectricGenerator_C
 /Game/PrimalEarth/Structures/Furniture/StructureBP_Toilet.StructureBP_Toilet_C
 /Game/PrimalEarth/Structures/Grill.Grill_C

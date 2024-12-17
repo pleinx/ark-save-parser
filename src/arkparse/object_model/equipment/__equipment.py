@@ -46,7 +46,7 @@ class Equipment(InventoryItem):
             raise ValueError("Cannot modify quality of an item with quality 0")
         
         self.quality = quality
-        self.binary.replace_bytes(self.binary.set_property_position("ItemQualityIndex"), quality.to_bytes(1, byteorder="little"))
+        self.binary.replace_bytes(quality.to_bytes(1, byteorder="little"), position=self.binary.set_property_position("ItemQualityIndex"))
         self.update_binary(save)
 
     def modify_rating(self, rating: int, save: AsaSave = None):

@@ -20,7 +20,7 @@ class StructureWithInventory(Structure):
         self.db = database
 
         self.inventory_uuid = UUID(self.object.get_property_value("MyInventoryComponent").value)
-        self.item_count = self.object.get_property_value("CurrentItemCount")
+        self.item_count = self.object.get_property_value("CurrentItemCount", default=0)
         self.max_item_count = self.object.get_property_value("MaxItemCount")
 
         inv_reader = ArkBinaryParser(database.get_game_obj_binary(self.inventory_uuid))

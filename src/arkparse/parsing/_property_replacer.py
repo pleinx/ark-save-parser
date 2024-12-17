@@ -53,11 +53,11 @@ class PropertyReplacer(PropertyInsertor):
         current_nr_of_bytes = len(current_string) + 4
 
         # replace total length
-        self.replace_bytes(full_length_pos, new_length_byte, 1)
+        self.replace_bytes(new_length_byte, nr_to_replace=1, position=full_length_pos)
 
         # replace string
         lengthu32 = new_length.to_bytes(4, byteorder="little")
-        self.replace_bytes(string_pos, lengthu32 + value.encode("utf-8"), current_nr_of_bytes)
+        self.replace_bytes(lengthu32 + value.encode("utf-8"), nr_to_replace=current_nr_of_bytes, position=string_pos)
 
         self.set_position(original_position)
         # print(f"Replaced string {current_string} (length={current_nr_of_bytes}) at {property_position} with {value} at {string_pos}")
@@ -65,37 +65,37 @@ class PropertyReplacer(PropertyInsertor):
     def replace_u16(self, property_position : int, new_value: int):
         value_pos = property_position + 8 + 8 + 1 + 8
         new_value_bytes = new_value.to_bytes(2, byteorder="little")
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
 
     def replace_u32(self, property_position : int, new_value: int):
         value_pos = property_position + 8 + 8 + 1 + 8
         new_value_bytes = new_value.to_bytes(4, byteorder="little")
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
 
     def replace_u64(self, property_position : int, new_value: int):
         value_pos = property_position + 8 + 8 + 1 + 8
         new_value_bytes = new_value.to_bytes(8, byteorder="little")
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
 
     def replace_float(self, property_position : int, new_value: float):
         value_pos = property_position + 8 + 8 + 1 + 8
         new_value_bytes = struct.pack('<f', new_value)
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
 
     def replace_double(self, property_position : int, new_value: float):
         value_pos = property_position + 8 + 8 + 1 + 8
         new_value_bytes = struct.pack('<d', new_value)
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
     
     def replace_boolean(self, property_position : int, new_value: bool):
         value_pos = property_position + 8 + 8 + 8
         new_value_bytes = b"\x01" if new_value else b"\x00"
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
 
     def replace_byte_property(self, property_position : int, new_value: int):
         value_pos = property_position + 8 + 8 + 8 + 8 + 1
         new_value_bytes = new_value.to_bytes(1, byteorder="little")
-        self.replace_bytes(value_pos, new_value_bytes)
+        self.replace_bytes(new_value_bytes, position=value_pos)
 
     def replace_array(self, array_name: str, property_type: str, new_items: List[bytes], position: int = None):
         if self.save_context is None:
