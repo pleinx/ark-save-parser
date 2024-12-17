@@ -5,18 +5,18 @@ import time
 import threading
 
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
-from arkparse.objects.player.ark_profile import ArkProfile
-from arkparse.objects.tribe.ark_tribe import ArkTribe
-from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects.misc.inventory import Inventory
+from arkparse.player.ark_player import ArkPlayer
+from arkparse.ark_tribe import ArkTribe
+from arkparse.saves.asa_save import AsaSave
+from arkparse.object_model.misc.inventory import Inventory
 from arkparse.parsing import ArkBinaryParser
 from arkparse.classes.player import Player
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
 from arkparse.utils import TEMP_FILES_DIR
 
-from arkparse.objects.saves.game_objects.misc.dino_owner import DinoOwner
-from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.object_model.misc.dino_owner import DinoOwner
+from arkparse.object_model.misc.object_owner import ObjectOwner
+from arkparse.object_model.ark_game_object import ArkGameObject
 
 class PlayerApi:
     class StatType:
@@ -35,7 +35,7 @@ class PlayerApi:
         DINO = 1
 
     def __init__(self, ftp_config: Path, map: FtpArkMap, update_frequency = 900, save: AsaSave = None):
-        self.players : List[ArkProfile] = []
+        self.players : List[ArkPlayer] = []
         self.tribes : List[ArkTribe] = []
         self.save: AsaSave = save
         self.pawns: Dict[UUID, ArkGameObject] = None
@@ -86,7 +86,7 @@ class PlayerApi:
 
         for file in player_files:
             path = self.ftp_client.download_profile_file(file.name, output_dir)
-            player : ArkProfile = ArkProfile(path)
+            player : ArkPlayer = ArkPlayer(path)
             if self.save is not None:
                 player.get_location_and_inventory(self.save, self.pawns)
             new_players.append(player)
@@ -126,9 +126,9 @@ class PlayerApi:
         dict = {}
 
         for p in self.players:
-            if p.player_data.name == player or player is None:
-                deaths.append(p.player_data.nr_of_deaths)
-                dict[p.player_data.id_] = p.player_data.nr_of_deaths
+            if p.name == player or player is None:
+                deaths.append(p.nr_of_deaths)
+                dict[p.id_] = p.nr_of_deaths
 
         return self.__calc_stat(deaths, stat_type) if not as_dict else dict
     
@@ -137,9 +137,9 @@ class PlayerApi:
         dict = {}
 
         for p in self.players:
-            if p.player_data.name == player or player is None:
-                level.append(p.player_data.stats.level)
-                dict[p.player_data.id_] = p.player_data.stats.level
+            if p.name == player or player is None:
+                level.append(p.stats.level)
+                dict[p.id_] = p.stats.level
 
         return self.__calc_stat(level, stat_type) if not as_dict else dict
     
@@ -148,15 +148,15 @@ class PlayerApi:
         dict = {}
 
         for p in self.players:
-            if p.player_data.name == player or player is None:
-                xp.append(p.player_data.stats.experience)
-                dict[p.player_data.id_] = p.player_data.stats.experience
+            if p.name == player or player is None:
+                xp.append(p.stats.experience)
+                dict[p.id_] = p.stats.experience
 
         return self.__calc_stat(xp, stat_type) if not as_dict else dict
     
     def get_player_with(self, stat: int, stat_type: int = StatType.HIGHEST):
         istat = self.__get_stat(stat)
-        player: ArkProfile = None
+        player: ArkPlayer = None
         value: int = 0
         
         if stat_type == self.StatType.LOWEST:
@@ -173,7 +173,7 @@ class PlayerApi:
             value = istat[player_id]
 
         for p in self.players:
-            if p.player_data.id_ == player_id:
+            if p.id_ == player_id:
                 player = p
                 break
         
@@ -181,13 +181,13 @@ class PlayerApi:
     
     def get_player_by_platform_name(self, name: str):
         for p in self.players:
-            if p.player_data.name == name:
+            if p.name == name:
                 return p
         return None
     
-    def get_tribe_of(self, player: ArkProfile):
+    def get_tribe_of(self, player: ArkPlayer):
         for t in self.tribes:
-            if player.player_data.tribe == t.tribe_data.tribe_id:
+            if player.tribe == t.tribe_id:
                 return t
         return None
     
@@ -196,10 +196,10 @@ class PlayerApi:
         tribe = None
 
         for p in self.players:
-            if player_id is not None and p.player_data.id_ == player_id:
+            if player_id is not None and p.id_ == player_id:
                 player = p
                 break
-            elif ue5_id is not None and p.player_data.unique_id == ue5_id:
+            elif ue5_id is not None and p.unique_id == ue5_id:
                 player = p
                 break
         
@@ -210,10 +210,10 @@ class PlayerApi:
             tribe = self.get_tribe_of(player)
         else:
             for t in self.tribes:
-                if tribe_id is not None and t.tribe_data.tribe_id == tribe_id:
+                if tribe_id is not None and t.tribe_id == tribe_id:
                     tribe = t
                     break
-                elif tribe_name is not None and t.tribe_data.name == tribe_name:
+                elif tribe_name is not None and t.name == tribe_name:
                     tribe = t
                     break
         
@@ -236,27 +236,25 @@ class PlayerApi:
         if self.pawns is None:
             self.__init_pawns()
     
-    def get_player_pawn(self, player: ArkProfile, save: AsaSave = None):
+    def get_player_pawn(self, player: ArkPlayer, save: AsaSave = None):
         self.__check_pawns(save)
         for _, pawn in self.pawns.items():
             player_id = pawn.get_property_value("LinkedPlayerDataID")
-            if player_id == player.player_data.id_:
+            if player_id == player.id_:
                 return pawn
         return None
     
-    def get_player_inventory(self, player: ArkProfile, save: AsaSave = None):
+    def get_player_inventory(self, player: ArkPlayer, save: AsaSave = None):
         self.__check_pawns(save)
         pawn = self.get_player_pawn(player, self.save)
-        inv_uuid = UUID(pawn.get_property_value("MyInventoryComponent").value)
-        inv = Inventory(inv_uuid, ArkBinaryParser(self.save.get_game_obj_binary(inv_uuid), self.save.save_context), self.save)
-        return inv
+        player.get_location_and_inventory(save, pawn)
 
-    def add_to_player_inventory(self, player: ArkProfile, item: ArkGameObject, save: AsaSave = None):
-        if player is None:
-            raise ValueError("Player not found")
+    # def add_to_player_inventory(self, player: ArkPlayer, item: ArkGameObject, save: AsaSave = None):
+    #     if player is None:
+    #         raise ValueError("Player not found")
         
-        self.__check_pawns(self.save)
-        inventory: Inventory = self.get_player_inventory(player, self.save)
-        self.save.add_obj_to_db(item.uuid)
-        inventory.add_item(item, self.save)
+    #     self.__check_pawns(self.save)
+    #     inventory: Inventory = self.get_player_inventory(player, self.save)
+    #     self.save.add_obj_to_db(item.uuid)
+    #     inventory.add_item(item, self.save)
 

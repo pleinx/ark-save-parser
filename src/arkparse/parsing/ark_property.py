@@ -3,19 +3,19 @@ from dataclasses import dataclass, field
 
 from arkparse.logging import ArkSaveLogger
 
-from arkparse.struct.ark_color import ArkColor
-from arkparse.struct.ark_linear_color import ArkLinearColor
-from arkparse.struct.ark_quat import ArkQuat
-from arkparse.struct.ark_rotator import ArkRotator
-from arkparse.struct.ark_vector import ArkVector
-from arkparse.struct.ark_unique_net_id_repl import ArkUniqueNetIdRepl
-from arkparse.struct.ark_vector_bool_pair import ArkVectorBoolPair
-from arkparse.struct.ark_tracked_actor_id_category_pair_with_bool import ArkTrackedActorIdCategoryPairWithBool
-from arkparse.struct.ark_my_persistent_buff_datas import ArkMyPersistentBuffDatas
-from arkparse.struct.ark_item_net_id import ArkItemNetId
-from arkparse.struct.object_reference import ObjectReference
-from arkparse.struct.ark_struct_type import ArkStructType
-from arkparse.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
+from arkparse.parsing.struct.ark_color import ArkColor
+from arkparse.parsing.struct.ark_linear_color import ArkLinearColor
+from arkparse.parsing.struct.ark_quat import ArkQuat
+from arkparse.parsing.struct.ark_rotator import ArkRotator
+from arkparse.parsing.struct.ark_vector import ArkVector
+from arkparse.parsing.struct.ark_unique_net_id_repl import ArkUniqueNetIdRepl
+from arkparse.parsing.struct.ark_vector_bool_pair import ArkVectorBoolPair
+from arkparse.parsing.struct.ark_tracked_actor_id_category_pair_with_bool import ArkTrackedActorIdCategoryPairWithBool
+from arkparse.parsing.struct.ark_my_persistent_buff_datas import ArkMyPersistentBuffDatas
+from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
+from arkparse.parsing.struct.object_reference import ObjectReference
+from arkparse.parsing.struct.ark_struct_type import ArkStructType
+from arkparse.parsing.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
 
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser

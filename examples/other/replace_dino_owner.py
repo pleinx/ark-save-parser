@@ -3,11 +3,11 @@ import json
 
 from arkparse.api.structure_api import ArkMap, MapCoords
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
-from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
+from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.api.player_api import PlayerApi
 from arkparse.api.dino_api import DinoApi
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.logging import ArkSaveLogger
 
 ArkSaveLogger.temp_file_path = Path.cwd()

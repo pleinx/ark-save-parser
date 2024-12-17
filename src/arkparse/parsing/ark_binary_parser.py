@@ -3,7 +3,7 @@ from uuid import UUID
 from io import BytesIO
 import zlib
 
-from arkparse.struct.actor_transform import ActorTransform
+from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.logging import ArkSaveLogger
 from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer

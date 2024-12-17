@@ -1,7 +1,7 @@
 from pathlib import Path
 from arkparse.api.structure_api import StructureApi
-from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects.structures.structure_with_inventory import StructureWithInventory
+from arkparse.saves.asa_save import AsaSave
+from arkparse.object_model.structures.structure_with_inventory import StructureWithInventory
 from arkparse.classes.placed_structures import PlacedStructures
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 

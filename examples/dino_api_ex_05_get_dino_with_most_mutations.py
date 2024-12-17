@@ -2,8 +2,8 @@ from pathlib import Path
 
 from arkparse.api.dino_api import DinoApi
 from arkparse.enums import ArkMap
-from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
+from arkparse.saves.asa_save import AsaSave
+from arkparse.object_model.dinos.tamed_dino import TamedDino
 
 save_path = Path.cwd() / "Aberration_WP.ark"            # replace with path to your save file
 save = AsaSave(save_path)                               # load the save file

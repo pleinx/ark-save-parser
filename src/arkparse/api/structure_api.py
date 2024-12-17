@@ -1,15 +1,15 @@
 from typing import Dict, Union, List
 from uuid import UUID
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
 from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.utils import TEMP_FILES_DIR
 
-from arkparse.objects.saves.game_objects import ArkGameObject, ArkGameObject
-from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
-from arkparse.objects.saves.game_objects.structures import SimpleStructure, StructureWithInventory
-from arkparse.struct.actor_transform import MapCoords
+from arkparse.object_model import ArkGameObject, ArkGameObject
+from arkparse.object_model.misc.object_owner import ObjectOwner
+from arkparse.object_model.structures import Structure, StructureWithInventory
+from arkparse.parsing.struct.actor_transform import MapCoords
 from arkparse.enums.ark_map import ArkMap
 
 class StructureApi:
@@ -29,7 +29,7 @@ class StructureApi:
 
         return objects
     
-    def __parse_single_structure(self, obj: ArkGameObject) -> Union[SimpleStructure, StructureWithInventory]:
+    def __parse_single_structure(self, obj: ArkGameObject) -> Union[Structure, StructureWithInventory]:
         if obj.uuid in self.parsed_structures.keys():
             return self.parsed_structures[obj.uuid]
 
@@ -38,7 +38,7 @@ class StructureApi:
             structure = StructureWithInventory(obj.uuid, parser, self.save)
         else:
             parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-            structure = SimpleStructure(obj.uuid, parser)
+            structure = Structure(obj.uuid, parser)
         
         for key, loc in self.save.save_context.actor_transforms.items():
             if key == obj.uuid:
@@ -48,7 +48,7 @@ class StructureApi:
 
         return structure
 
-    def get_all(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def get_all(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         
         objects = self.get_all_objects(config)
 
@@ -66,16 +66,16 @@ class StructureApi:
 
         return structures
     
-    def get_by_id(self, id: UUID) -> Union[SimpleStructure, StructureWithInventory]:
+    def get_by_id(self, id: UUID) -> Union[Structure, StructureWithInventory]:
         obj = self.save.get_game_object_by_id(id)
         return self.__parse_single_structure(obj)
     
-    def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         structures = self.get_all()
         result = {}
 
         for key, obj in structures.items():
-            obj: SimpleStructure = obj
+            obj: Structure = obj
             if obj.location is None:
                 continue
 
@@ -84,7 +84,7 @@ class StructureApi:
 
         return result
     
-    def get_owned_by(self, owner: ObjectOwner) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def get_owned_by(self, owner: ObjectOwner) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
         
         if owner is None:
@@ -98,7 +98,7 @@ class StructureApi:
 
         return result
     
-    def get_by_class(self, blueprints: List[str]) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def get_by_class(self, blueprints: List[str]) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
 
         config = GameObjectReaderConfiguration(
@@ -112,7 +112,7 @@ class StructureApi:
 
         return result
     
-    def filter_by_owner(self, owner: ObjectOwner, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]]) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def filter_by_owner(self, owner: ObjectOwner, structures: Dict[UUID, Union[Structure, StructureWithInventory]]) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
 
         for key, obj in structures.items():
@@ -121,7 +121,7 @@ class StructureApi:
 
         return result
     
-    def filter_by_location(self, map: ArkMap, coords: MapCoords, radius: float, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]]) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def filter_by_location(self, map: ArkMap, coords: MapCoords, radius: float, structures: Dict[UUID, Union[Structure, StructureWithInventory]]) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
 
         for key, obj in structures.items():
@@ -130,7 +130,7 @@ class StructureApi:
 
         return result
     
-    def get_connected_structures(self, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]]) -> Dict[UUID, Union[SimpleStructure, StructureWithInventory]]:
+    def get_connected_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]]) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = structures.copy()
         new_found = True
 
@@ -147,7 +147,7 @@ class StructureApi:
 
         return result
      
-    def modify_structures(self, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None, ftp_client: ArkFtpClient = None):
+    def modify_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None, ftp_client: ArkFtpClient = None):
         for key, obj in structures.items():
             for uuid in obj.linked_structure_uuids:
                 if uuid not in structures.keys():
@@ -167,7 +167,7 @@ class StructureApi:
             ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
             ftp_client.close()
 
-    def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[SimpleStructure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None):
+    def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None):
         import math
         import matplotlib.pyplot as plt
         import matplotlib.image as mpimg
@@ -182,7 +182,7 @@ class StructureApi:
         heatmap = [[0 for _ in range(resolution)] for _ in range(resolution)]
 
         for key, obj in structs.items():
-            obj: SimpleStructure = obj
+            obj: Structure = obj
             if obj.location is None:
                 continue
 

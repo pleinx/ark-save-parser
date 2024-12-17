@@ -1,17 +1,17 @@
 from typing import Dict, List
 from uuid import UUID
 
-from arkparse.objects.saves.game_objects.cryopods.cryopod import Cryopod
-from arkparse.objects.saves.game_objects.dinos.dino import Dino
-from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
-from arkparse.objects.saves.game_objects.misc.dino_owner import DinoOwner
+from arkparse.object_model.cryopods.cryopod import Cryopod
+from arkparse.object_model.dinos.dino import Dino
+from arkparse.object_model.dinos.tamed_dino import TamedDino
+from arkparse.object_model.ark_game_object import ArkGameObject
+from arkparse.object_model.misc.dino_owner import DinoOwner
 from arkparse.ftp.ark_ftp_client import ArkFtpClient
 
 from arkparse.parsing import ArkBinaryParser
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.struct.actor_transform import MapCoords
+from arkparse.parsing.struct.actor_transform import MapCoords
 from arkparse.enums import ArkMap, ArkStat
 from arkparse.utils import TEMP_FILES_DIR
 

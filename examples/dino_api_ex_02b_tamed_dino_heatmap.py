@@ -3,7 +3,7 @@ from pathlib import Path
 from arkparse.utils import draw_heatmap
 from arkparse.api.dino_api import DinoApi
 from arkparse.enums import ArkMap
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 
 save_path = Path.cwd() / "test_saves" / "server.ark"    # replace with path to your save file
 save = AsaSave(save_path)                               # load the save file

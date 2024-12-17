@@ -1,9 +1,9 @@
 from typing import Dict
 from uuid import UUID
 
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 
 class GeneralApi:

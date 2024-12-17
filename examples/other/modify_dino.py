@@ -3,10 +3,10 @@ from uuid import UUID
 
 from arkparse.enums import ArkStat
 from arkparse.api.dino_api import DinoApi
-from arkparse.objects.saves.game_objects.misc.dino_owner import DinoOwner
-from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino
+from arkparse.object_model.misc.dino_owner import DinoOwner
+from arkparse.object_model.dinos.tamed_dino import TamedDino
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.logging import ArkSaveLogger
 
 ArkSaveLogger.temp_file_path = Path.cwd()

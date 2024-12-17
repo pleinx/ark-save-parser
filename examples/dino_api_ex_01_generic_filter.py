@@ -5,8 +5,8 @@ from pathlib import Path
 
 from arkparse.enums import ArkMap
 from arkparse.api.dino_api import DinoApi
-from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects.dinos.tamed_dino import TamedDino, Dino
+from arkparse.saves.asa_save import AsaSave
+from arkparse.object_model.dinos.tamed_dino import TamedDino, Dino
 
 # from arkparse.classes.dinos import Dinos
 # from arkparse.enums import ArkStat

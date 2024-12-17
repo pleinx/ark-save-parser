@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from arkparse.logging import ArkSaveLogger
-from arkparse.objects.saves.save_context import SaveContext
+from arkparse.saves.save_context import SaveContext
 
 from .ark_object import ArkObject
 from .ark_binary_parser import ArkBinaryParser

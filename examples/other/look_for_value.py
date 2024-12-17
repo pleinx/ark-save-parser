@@ -1,7 +1,7 @@
 from pathlib import Path
 from uuid import UUID
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.api.stackable_api import ResourceApi
 from arkparse.classes.resources import Resources
 

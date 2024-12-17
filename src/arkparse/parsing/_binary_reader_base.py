@@ -1,4 +1,4 @@
-from ..objects.saves.save_context import SaveContext
+from ..saves.save_context import SaveContext
 
 class BinaryReaderBase:
     LENGTH_OF_NAME = 8

@@ -1,10 +1,10 @@
 from typing import Dict, List
 from uuid import UUID
 
-from arkparse.objects.saves.game_objects.stackables import Resource, Ammo
-from arkparse.objects.saves.game_objects.misc.inventory_item import InventoryItem
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.object_model.stackables import Resource, Ammo
+from arkparse.object_model.misc.inventory_item import InventoryItem
+from arkparse.object_model.ark_game_object import ArkGameObject
+from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 
 from .general_api import GeneralApi

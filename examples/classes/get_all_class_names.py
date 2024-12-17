@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.classes import Classes
 

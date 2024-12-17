@@ -3,8 +3,8 @@ from uuid import UUID
 
 from .ark_property_container import ArkPropertyContainer
 from .ark_binary_parser import ArkBinaryParser
-from ..struct.ark_rotator import ArkRotator
-from ..struct.ark_vector import ArkVector
+from arkparse.parsing.struct.ark_rotator import ArkRotator
+from arkparse.parsing.struct.ark_vector import ArkVector
 from arkparse.logging import ArkSaveLogger
 
 class ArkObject(ArkPropertyContainer):

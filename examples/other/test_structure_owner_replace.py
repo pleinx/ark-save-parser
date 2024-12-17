@@ -3,13 +3,13 @@ import json
 
 from arkparse.api.structure_api import StructureApi, ArkMap, MapCoords
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
-from arkparse.objects.saves.game_objects.misc.object_owner import ObjectOwner
-from arkparse.objects.saves.game_objects.structures.placed_structure import SimpleStructure
+from arkparse.object_model.misc.object_owner import ObjectOwner
+from arkparse.object_model.structures.structure import Structure
 from arkparse.api.player_api import PlayerApi
 
 
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.logging import ArkSaveLogger
 
 ArkSaveLogger.temp_file_path = Path.cwd()
@@ -46,8 +46,8 @@ if all_structures is not None:
 
     print("\nReparsing binary")
     for key, structure in all_structures.items():
-        structure : SimpleStructure = structure
-        new_structure = SimpleStructure(key, structure.binary)
+        structure : Structure = structure
+        new_structure = Structure(key, structure.binary)
         print(structure.to_string_complete())
         print("\n")
     print("Done")

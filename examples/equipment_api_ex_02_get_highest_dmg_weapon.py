@@ -2,8 +2,8 @@ from pathlib import Path
 from uuid import UUID
 from typing import Dict
 
-from arkparse.objects.saves.game_objects.equipment.weapon import Weapon
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.object_model.equipment.weapon import Weapon
+from arkparse.saves.asa_save import AsaSave
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.api.equipment_api import EquipmentApi
 

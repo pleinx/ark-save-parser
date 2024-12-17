@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Dict
 from uuid import UUID
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import GameObjectReaderConfiguration
 
 # retrieve the save file (can also retrieve it from a local path)

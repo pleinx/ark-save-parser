@@ -3,8 +3,8 @@ from pathlib import Path
 from arkparse.utils import draw_heatmap
 from arkparse.api.dino_api import DinoApi
 from arkparse.enums import ArkMap, ArkStat
-from arkparse.objects.saves.asa_save import AsaSave
-from arkparse.objects.saves.game_objects.dinos.tamed_dino import Dino
+from arkparse.saves.asa_save import AsaSave
+from arkparse.object_model.dinos.tamed_dino import Dino
 from arkparse.classes.dinos import Dinos
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 

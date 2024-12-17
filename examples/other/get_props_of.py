@@ -1,14 +1,14 @@
 from pathlib import Path
 from uuid import UUID
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.classes import Classes
 from arkparse.logging import ArkSaveLogger
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.parsing.ark_property import ArkProperty
-from arkparse.objects.saves.game_objects.misc.inventory import Inventory
+from arkparse.object_model.misc.inventory import Inventory
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 
 save_path = Path.cwd() / "test_saves" / "original.ark"

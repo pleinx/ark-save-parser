@@ -3,7 +3,7 @@ from pathlib import Path
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
 from arkparse.api.dino_api import DinoApi
 from arkparse.enums import ArkMap
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 
 save_path = Path.cwd() / "Aberration_WP.ark"                                                                    # replace with path to your save file
 save_path = ArkFtpClient.from_config('../ftp_config.json', FtpArkMap.ABERRATION).download_save_file(Path.cwd()) # or download the save file from an FTP server

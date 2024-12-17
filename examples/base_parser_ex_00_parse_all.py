@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from arkparse.objects.saves.asa_save import AsaSave
+from arkparse.saves.asa_save import AsaSave
 from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
-from arkparse.objects.saves.game_objects.ark_game_object import ArkGameObject
+from arkparse.object_model.ark_game_object import ArkGameObject
 
 # retrieve the save file (can also retrieve it from a local path)
 save_path = ArkFtpClient.from_config(
