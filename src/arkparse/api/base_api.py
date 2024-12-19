@@ -1,5 +1,6 @@
 from typing import Dict
 from uuid import UUID
+from pathlib import Path
 
 from arkparse.api.structure_api import StructureApi
 from arkparse.parsing.struct.actor_transform import MapCoords
@@ -44,3 +45,17 @@ class BaseApi(StructureApi):
         # todo: remove all structures not owned by the same owner as keystone
 
         return Base(keystone.object.uuid, all_structures)
+    
+    def import_base(self, path: Path):
+        uuid_translation_map = {}
+        interconnection_properties = [
+            "PlacedOnFloorStructure",
+            "MyInventoryComponent",
+            "WirelessSources",
+            "WirelessConsumers",
+            "InventoryItems",
+            "OwnerInventory",
+            "StructuresPlacedOnFloor",
+            "LinkedStructures"
+            
+        ]

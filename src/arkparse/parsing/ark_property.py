@@ -40,6 +40,8 @@ class ArkProperty:
         self.position = position
         self.unknown_byte = unknown_byte
         self.value = value
+        self.binary_position = 0
+        self.nr_of_bytes = 0
 
     @staticmethod
     def read_property(byte_buffer: 'ArkBinaryParser', in_array: bool = False) -> Optional['ArkProperty']:
@@ -53,9 +55,7 @@ class ArkProperty:
         value_type = byte_buffer.read_value_type_by_name()
         data_size = byte_buffer.read_int()
         position = byte_buffer.read_int()
-
         
-
         start_data_position = byte_buffer.get_position()
 
         # print(f"Reading property {key} with type {value_type} at position {start_data_position}")
@@ -97,6 +97,10 @@ class ArkProperty:
         
         if(value_type != ArkValueType.Struct and value_type != ArkValueType.Array and value_type != ArkValueType.Map and value_type != ArkValueType.Set):
             ArkSaveLogger.debug_log(f"[property read: key={key}; type={value_type}; bin_pos={start_data_position}; bin_size={data_size}; value={p.value}; index_pos={position}]")
+
+        if p is not None:
+            p.binary_position = start_data_position
+            p.nr_of_bytes = data_size
 
         return p
     
@@ -162,6 +166,7 @@ class ArkProperty:
             print("Set read incorrectly, bytes left to read")
 
         ArkSaveLogger.debug_log(f"Read set property {key} with {count} values of type {value_type_name}")
+        ArkSaveLogger.debug_log(f"Set values: {values}")
         p = ArkProperty(key, value_type_name, position, unknown_byte, ArkSet(value_type, values))
 
         ArkSaveLogger.exit_struct()
