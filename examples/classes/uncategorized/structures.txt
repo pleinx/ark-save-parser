@@ -1,6 +1,5 @@
 /Game/Aberration/Structures/CliffPlatforms/Stone_CliffPlatform/Stone_Platform_BP_Small.Stone_Platform_BP_Small_C
 /Game/Aberration/Structures/RockwellFlag/Flag_SM_Rockwell.Flag_SM_Rockwell_C
-/Game/Extinction/Structures/Cryofridge/CryoFridge.CryoFridge_C
 /Game/Packs/Frontier/Structures/Frontier/Skins/PrimalItemStructureSkin_Tileset_Frontier.PrimalItemStructureSkin_Tileset_Frontier_C
 /Game/Packs/Frontier/Structures/TrainCarts/PrimalItem_TrainCar_Platform.PrimalItem_TrainCar_Platform_C
 /Game/Packs/Frontier/Structures/TreasureCache/TreasureMap/PrimalItem_TreasureMap_WildSupplyDrop.PrimalItem_TreasureMap_WildSupplyDrop_C
@@ -15,24 +14,11 @@
 /Game/PrimalEarth/Structures/BuildingBases/WaterTankBaseBP.WaterTankBaseBP_C
 /Game/PrimalEarth/Structures/DeathItemCache.DeathItemCache_C
 /Game/PrimalEarth/Structures/Electric/ElectricGenerator.ElectricGenerator_C
-/Game/PrimalEarth/Structures/Furniture/StructureBP_Toilet.StructureBP_Toilet_C
-/Game/PrimalEarth/Structures/Grill.Grill_C
 /Game/PrimalEarth/Structures/IndustrialCookingPot.IndustrialCookingPot_C
-/Game/PrimalEarth/Structures/Metal/Ceiling_Doorway_Metal.Ceiling_Doorway_Metal_C
-/Game/PrimalEarth/Structures/Metal/Gate_Metal.Gate_Metal_C
-/Game/PrimalEarth/Structures/Metal/Railing_Metal.Railing_Metal_C
-/Game/PrimalEarth/Structures/Metal/Window_Metal_BP.Window_Metal_BP_C
-/Game/PrimalEarth/Structures/ModernBed.ModernBed_C
 /Game/PrimalEarth/Structures/PoisonTrap.PoisonTrap_C
 /Game/PrimalEarth/Structures/Sign_Wall_Metal.Sign_Wall_Metal_C
 /Game/PrimalEarth/Structures/Stone/Stone_Doorframe/Doorframe_Stone.Doorframe_Stone_C
 /Game/PrimalEarth/Structures/Stone/Stone_Ladder/Ladder_Stone.Ladder_Stone_C
-/Game/PrimalEarth/Structures/StorageBox_ChemBench.StorageBox_ChemBench_C
-/Game/PrimalEarth/Structures/StorageBox_Huge.StorageBox_Huge_C
-/Game/PrimalEarth/Structures/StorageBox_TekReplicator.StorageBox_TekReplicator_C
-/Game/PrimalEarth/Structures/TekBed.TekBed_C
-/Game/PrimalEarth/Structures/TekTier/TekTeleporterMini.TekTeleporterMini_C
-/Game/PrimalEarth/Structures/Thatch/Thatch_Ceiling.Thatch_Ceiling_C
 /Game/PrimalEarth/Structures/Tileset/HatchframesDouble/Doors/BP_Ceiling_Door_Double_Metal.BP_Ceiling_Door_Double_Metal_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Metal.Pillar_Flat_Thin_Metal_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Thin/Pillar_Thin_Metal.Pillar_Thin_Metal_C
@@ -45,5 +31,4 @@
 /Game/PrimalEarth/Structures/Wooden/Ceiling_Wood_SM.Ceiling_Wood_SM_C
 /Game/PrimalEarth/Structures/Wooden/LadderBP.LadderBP_C
 /Game/PrimalEarth/StructuresPlus/Doors/Doors_Double/Metal/BP_DoubleDoor_Metal.BP_DoubleDoor_Metal_C
-/Game/PrimalEarth/StructuresPlus/Structures/Ramps/Metal/BP_Ramp_Metal.BP_Ramp_Metal_C
 /Game/PrimalEarth/StructuresPlus/Structures/Ramps/Stone/BP_Ramp_Stone.BP_Ramp_Stone_C

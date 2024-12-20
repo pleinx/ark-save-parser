@@ -15,7 +15,7 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkMap
 from arkparse import MapCoords
 
-save_path = Path.cwd() / "___Aberration_WP.ark"
+save_path = Path.cwd() / "_Aberration_WP.ark"
 # save_path = ArkFtpClient.from_config('../../ftp_config.json', FtpArkMap.ABERRATION).download_save_file(Path.cwd())
 
 turret = [Classes.structures.placed.turrets.auto]
@@ -50,20 +50,21 @@ def new_bullet(template: Ammo):
     template.id_.replace(template.binary)
     template.set_quantity(100)
 
-    random_bytes = bytes([random.randint(49, 57) for _ in range(10)])
-    template.binary.replace_bytes(random_bytes, position=57)
+    # random_bytes = bytes([random.randint(49, 57) for _ in range(10)])
+    # template.binary.replace_bytes(random_bytes, position=57)
+    template.renumber_name()
 
     # ArkSaveLogger.set_file(bullet.binary, "temp.bin")
     # ArkSaveLogger.open_hex_view(True)
 
-    # print("New bullet:")
-    # print(f"{template.object.uuid}: {template}")
-    # print(template.object.names)
-    # print(template.id_)
+    print("New bullet:")
+    print(f"{template.object.uuid}: {template}")
+    print(template.object.names)
+    print(template.id_)
 
     return template
 
-# ArkSaveLogger.enable_debug = True
+ArkSaveLogger.enable_debug = True
 # ArkSaveLogger.set_file(bullet.binary, "temp.bin")
 # ArkSaveLogger.open_hex_view(True)
 

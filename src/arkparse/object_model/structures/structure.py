@@ -3,6 +3,7 @@ from typing import List
 from uuid import UUID
 import json
 from pathlib import Path
+import random
 
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.object_model.misc.object_owner import ObjectOwner
@@ -77,6 +78,12 @@ class Structure(ParsedObjectBase):
     def overwrite_health(self, health: float):
         self.max_health = health
         self.binary.replace_float(self.binary.set_property_position("MaxHealth"), float(health))
+
+    def reidentify(self, new_uuid: UUID = None):
+        new_id = random.randint(0, 2**32 - 1)
+        self.id_ = new_id
+        self.binary.replace_u32(self.binary.set_property_position("StructureID"), new_id)
+        super().reidentify(new_uuid)
 
     def is_owned_by(self, owner: ObjectOwner):
         if self.owner.id_ is not None and self.owner.id_ == owner.id_:

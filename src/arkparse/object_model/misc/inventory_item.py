@@ -33,6 +33,10 @@ class InventoryItem(ParsedObjectBase):
     def __str__(self):
         return f"InventoryItem(item={self.object.blueprint.split('/')[-1].split('.')[0]}, quantity={self.quantity})"
     
+    def reidentify(self, new_uuid: UUID = None):
+        self.id_.replace(self.binary)
+        super().reidentify(new_uuid)
+    
     def to_string(self, name = "InventoryItem"):
         return f"{name}({self.get_short_name()}, quantity={self.quantity})"
 

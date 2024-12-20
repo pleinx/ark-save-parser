@@ -29,7 +29,7 @@ class StructureApi:
 
         return objects
     
-    def __parse_single_structure(self, obj: ArkGameObject) -> Union[Structure, StructureWithInventory]:
+    def _parse_single_structure(self, obj: ArkGameObject) -> Union[Structure, StructureWithInventory]:
         if obj.uuid in self.parsed_structures.keys():
             return self.parsed_structures[obj.uuid]
 
@@ -60,7 +60,7 @@ class StructureApi:
                 print(f"Object is None for {key}")
                 continue
             
-            structure = self.__parse_single_structure(obj)
+            structure = self._parse_single_structure(obj)
 
             structures[obj.uuid] = structure
 
@@ -68,7 +68,7 @@ class StructureApi:
     
     def get_by_id(self, id: UUID) -> Union[Structure, StructureWithInventory]:
         obj = self.save.get_game_object_by_id(id)
-        return self.__parse_single_structure(obj)
+        return self._parse_single_structure(obj)
     
     def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         structures = self.get_all()

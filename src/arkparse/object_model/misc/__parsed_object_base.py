@@ -23,7 +23,11 @@ class ParsedObjectBase:
             bp = self.__get_class_name()
             self.__init_props__(ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary))
 
-    def replace_uuid(self, new_uuid: UUID = None):
+    def reidentify(self, new_uuid: UUID = None):
+        self.replace_uuid(new_uuid=new_uuid)
+        self.renumber_name()
+
+    def replace_uuid(self, new_uuid: UUID = None, uuid_to_replace: UUID = None):
         if new_uuid is  None:
             new_uuid = uuid4()
         
@@ -31,11 +35,17 @@ class ParsedObjectBase:
         ArkSaveLogger.debug_log(f"Replacing UUID {self.object.uuid} with {new_uuid}")
         ArkSaveLogger.debug_log(f"UUID bytes: {[hex(b) for b in uuid_as_bytes]}")
         ArkSaveLogger.debug_log(f"Old UUID bytes: {[hex(b) for b in self.object.uuid.bytes]}")
-        old_uuid_bytes = self.object.uuid.bytes
+           
+        old_uuid_bytes = self.object.uuid.bytes if uuid_to_replace is None else uuid_to_replace.bytes
 
         # Replace old UUID bytes with new UUID bytes
         self.binary.byte_buffer = self.binary.byte_buffer.replace(old_uuid_bytes, uuid_as_bytes)
-        self.object.uuid = new_uuid
+
+        if uuid_to_replace is None:
+            self.object.uuid = new_uuid
+
+    def renumber_name(self):
+        self.object.re_number_names(self.binary)
 
     def store_binary(self, path: Path, overwrite_path: bool = False):
         if overwrite_path:

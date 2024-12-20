@@ -165,10 +165,16 @@ class BaseValueParser(BinaryReaderBase):
         return [self.read_string() for _ in range(count)]
 
     def read_names(self, name_count: int) -> List[str]:
-        return [
-            self.read_string() if self.save_context.is_read_names_as_strings() else self.read_name()
-            for _ in range(name_count)
-        ]
+        names = []
+        offsets = []
+
+        for _ in range(name_count):
+            if self.save_context.is_read_names_as_strings():
+                offsets.append(self.position + 4)
+                names.append(self.read_string())
+            else:
+                names.append(self.read_name())
+        return names, offsets
     
     def read_bytes_as_hex(self, data_size: int) -> str:
         # Reads `data_size` bytes from the current position and returns them as a hexadecimal string

@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 from uuid import UUID
+import random
 
 from arkparse.parsing.struct.ark_rotator import ArkRotator
 from arkparse.parsing.ark_property import ArkProperty
@@ -11,6 +12,13 @@ from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.saves.save_context import SaveContext
 from arkparse.logging import ArkSaveLogger
 
+class _NameMetadata:
+    def __init__(self, name: str, offset: int, is_read_as_string: bool):
+        self.name = name
+        self.length = len(name)
+        self.offset = offset
+        self.is_read_as_string = is_read_as_string
+
 @dataclass
 class ArkGameObject(ArkPropertyContainer):
     uuid: Optional[UUID] = None
@@ -20,6 +28,7 @@ class ArkGameObject(ArkPropertyContainer):
     location: Optional[ActorTransform] = None
 
     names: List[str] = field(default_factory=list)
+    name_metadata: List[_NameMetadata] = field(default_factory=list)
     section: Optional[str] = None
     unknown: Optional[int] = None
     properties_offset : int = 0
@@ -47,10 +56,16 @@ class ArkGameObject(ArkPropertyContainer):
                 ArkSaveLogger.debug_log(f"Blueprint: {blueprint}")
                 binary_reader.validate_uint32(0)
 
+                offsets = []
                 if not from_custom_bytes:
-                    self.names = binary_reader.read_names(binary_reader.read_int())
+                    nr_names = binary_reader.read_int()
+                    self.names, offsets = binary_reader.read_names(nr_names)
                 else:
                     self.names = binary_reader.read_strings_array()
+
+                self.name_metadata = []
+                for i, offset in enumerate(offsets):
+                    self.name_metadata.append(_NameMetadata(self.names[i], offset, binary_reader.save_context.is_read_names_as_strings()))
 
                 for name in self.names:
                     ArkSaveLogger.debug_log(f"Name: {name}")
@@ -83,6 +98,18 @@ class ArkGameObject(ArkPropertyContainer):
                     
             if no_header:
                 self.blueprint = self.get_property_value("ItemArchetype").value
+
+    def re_number_names(self, binary: ArkBinaryParser):
+        for md in self.name_metadata:
+            new_bytes = bytes([random.randint(49, 57) for _ in range(10)])
+
+            if not md.is_read_as_string:
+                raise NotImplementedError("Renumbering names is only supported for names read as strings")
+            
+            binary.set_position(md.offset + md.length - 11)
+            underscore = 95
+            binary.validate_byte(underscore)
+            binary.replace_bytes(new_bytes, binary.position)
                     
     def read_props_at_offset(self, reader: ArkBinaryParser):
         reader.set_position(self.properties_offset)
