@@ -2,6 +2,7 @@
 from uuid import UUID
 import math
 
+from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
@@ -34,7 +35,27 @@ class Armor(Equipment):
         super().__init__(uuid, binary)
                          
         if binary is not None:
-            self.__init_props__()            
+            self.__init_props__()
+
+    def __set_stat(self, stat_position: int, default: int, new_value: float, save: AsaSave = None):    
+        stat_value = int((new_value - default)/(default * 0.0002))
+        self.set_stat_value(stat_value, stat_position, save)
+
+    def set_armor(self, armor: float, save: AsaSave = None):
+        self.armor = armor
+        self.__set_stat(ArkEquipmentStat.ARMOR, _get_default_armor(self.object.blueprint), armor, save)        
+
+    def set_durability(self, durability: float, save: AsaSave = None):
+        self.durability = durability
+        self.__set_stat(ArkEquipmentStat.DURABILITY, _get_default_dura(self.object.blueprint), durability, save)
+
+    def set_hypothermal_insulation(self, hypoT: float, save: AsaSave = None):
+        self.hypothermal_insulation = hypoT
+        self.__set_stat(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE, _get_default_hypoT(self.object.blueprint), hypoT, save)
+
+    def set_hyperthermal_insulation(self, hyperT: float, save: AsaSave = None):
+        self.hyperthermal_insulation = hyperT
+        self.__set_stat(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE, _get_default_hyperT(self.object.blueprint), hyperT, save)
 
     @staticmethod
     def from_object(obj: ArkGameObject):

@@ -2,6 +2,7 @@
 from uuid import UUID
 import math
 
+from arkparse import AsaSave
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
@@ -27,7 +28,19 @@ class Saddle(Equipment):
         super().__init__(uuid, binary)
                          
         if binary is not None:
-            self.__init_props__()            
+            self.__init_props__()     
+
+    def set_armor(self, armor: float, save: AsaSave = None):
+        self.armor = armor
+        d = _get_saddle_armor(self.object.blueprint)
+        stat_value = int((armor - d)/(d*0.0002))
+        self.set_stat_value(stat_value, ArkEquipmentStat.ARMOR, save) 
+
+    def set_durability(self, durability: float, save: AsaSave = None):
+        self.durability = durability
+        d = _get_saddle_dura(self.object.blueprint)
+        stat_value = int((durability - d)/(d*0.00025))
+        self.set_stat_value(stat_value, ArkEquipmentStat.DURABILITY, save)     
 
     @staticmethod
     def from_object(obj: ArkGameObject):

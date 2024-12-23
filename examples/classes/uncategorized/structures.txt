@@ -15,6 +15,10 @@
 /Game/PrimalEarth/Structures/DeathItemCache.DeathItemCache_C
 /Game/PrimalEarth/Structures/Electric/ElectricGenerator.ElectricGenerator_C
 /Game/PrimalEarth/Structures/IndustrialCookingPot.IndustrialCookingPot_C
+/Game/PrimalEarth/Structures/Metal/Ceiling_Doorway_Metal.Ceiling_Doorway_Metal_C
+/Game/PrimalEarth/Structures/Metal/Gate_Metal.Gate_Metal_C
+/Game/PrimalEarth/Structures/Metal/Railing_Metal.Railing_Metal_C
+/Game/PrimalEarth/Structures/Metal/Window_Metal_BP.Window_Metal_BP_C
 /Game/PrimalEarth/Structures/PoisonTrap.PoisonTrap_C
 /Game/PrimalEarth/Structures/Sign_Wall_Metal.Sign_Wall_Metal_C
 /Game/PrimalEarth/Structures/Stone/Stone_Doorframe/Doorframe_Stone.Doorframe_Stone_C
@@ -31,4 +35,5 @@
 /Game/PrimalEarth/Structures/Wooden/Ceiling_Wood_SM.Ceiling_Wood_SM_C
 /Game/PrimalEarth/Structures/Wooden/LadderBP.LadderBP_C
 /Game/PrimalEarth/StructuresPlus/Doors/Doors_Double/Metal/BP_DoubleDoor_Metal.BP_DoubleDoor_Metal_C
+/Game/PrimalEarth/StructuresPlus/Structures/Ramps/Metal/BP_Ramp_Metal.BP_Ramp_Metal_C
 /Game/PrimalEarth/StructuresPlus/Structures/Ramps/Stone/BP_Ramp_Stone.BP_Ramp_Stone_C

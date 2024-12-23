@@ -98,6 +98,37 @@ class ArkGameObject(ArkPropertyContainer):
                     
             if no_header:
                 self.blueprint = self.get_property_value("ItemArchetype").value
+    
+    def __replace_name(self, new_class: str, binary: ArkBinaryParser):
+        new_short_name = new_class.split(".")[-1] + "_"
+        as_bytes = new_short_name.encode("utf-8")
+        numbering = bytes([random.randint(49, 57) for _ in range(10)])
+        new_bytes = as_bytes + numbering + b'\x00'
+
+        if len(self.name_metadata) != 1:
+            raise NotImplementedError("Renaming is only supported for objects with one name")
+        
+        md = self.name_metadata[0]
+        prev_length = md.length + 1
+        new_length = len(new_bytes)
+        md.length = new_length - 1
+
+        # replace length of name in name table
+        binary.set_position(md.offset - 4)
+        binary.replace_bytes(new_length.to_bytes(4, byteorder="little"))
+
+        # replace name in name table
+        binary.set_position(md.offset)
+        binary.replace_bytes(new_bytes, nr_to_replace=prev_length)
+
+    def change_class(self, new_class: str, binary: ArkBinaryParser):
+        self.__replace_name(new_class, binary)
+        self.blueprint = new_class
+
+        # replace class id
+        new_class_id = binary.save_context.get_name_id(new_class)
+        binary.set_position(0)
+        binary.replace_bytes(new_class_id.to_bytes(4, byteorder="little"))
 
     def re_number_names(self, binary: ArkBinaryParser):
         for md in self.name_metadata:

@@ -2,6 +2,7 @@
 from uuid import UUID
 import math
 
+from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
@@ -28,7 +29,18 @@ class Weapon(Equipment):
         super().__init__(uuid, binary)
                          
         if binary is not None:
-            self.__init_props__()            
+            self.__init_props__()
+
+    def set_damage(self, damage: float, save: AsaSave = None):
+        self.damage = damage
+        stat_value = int((damage - 100.0) * 100)
+        self.set_stat_value(stat_value, ArkEquipmentStat.DAMAGE, save)
+
+    def set_durability(self, durability: float, save: AsaSave = None):
+        self.durability = durability
+        d = _get_weapon_dura(self.object.blueprint)
+        stat_value = int((durability - d)/(d*0.00025))
+        self.set_stat_value(stat_value, ArkEquipmentStat.DURABILITY, save)
 
     @staticmethod
     def from_object(obj: ArkGameObject):

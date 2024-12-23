@@ -5,7 +5,7 @@ from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.object_crafter import ObjectCrafter
 from arkparse.object_model.misc.inventory_item import InventoryItem
-from arkparse.enums import ArkItemQuality
+from arkparse.enums import ArkItemQuality, ArkEquipmentStat
 from arkparse.saves.asa_save import AsaSave
 
 class Equipment(InventoryItem):
@@ -57,11 +57,20 @@ class Equipment(InventoryItem):
         self.binary.replace_float(self.binary.set_property_position("ItemRating"), rating)
         self.update_binary(save)
 
-    def set_durability(self, percentage: float, save: AsaSave = None):
+    def set_current_durability(self, percentage: float, save: AsaSave = None):
         self.current_durability = percentage / 100
         self.binary.replace_float(self.binary.set_property_position("SavedDurability"), self.current_durability)
         self.update_binary(save)
 
-    def set_stat_value(self, value: float, position: int, save: AsaSave = None):
-        self.binary.replace_u32(self.binary.set_property_position("ItemStatValues", position), value)
+    def set_stat_value(self, value: float, position: ArkEquipmentStat, save: AsaSave = None):
+        self.binary.replace_u16(self.binary.set_property_position("ItemStatValues", position.value), value)
         self.update_binary(save)
+
+    def get_stat_value(self, position: ArkEquipmentStat) -> int:
+        return self.object.get_property_value("ItemStatValues", position=position.value, default=0)
+    
+    def reidentify(self, new_uuid: UUID = None, new_class: str = None):
+        super().reidentify(new_uuid)
+        if new_class is not None:
+            self.object.change_class(new_class, self.binary)
+
