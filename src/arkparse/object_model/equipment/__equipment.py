@@ -25,7 +25,7 @@ class Equipment(InventoryItem):
         if not self.is_bp:
             self.crafter = ObjectCrafter(self.object)
 
-        self.rating = self.object.get_property_value("ItemRatingIndex", default=1)
+        self.rating = self.object.get_property_value("ItemRating", default=1)
         self.quality = self.object.get_property_value("ItemQualityIndex", default=ArkItemQuality.PRIMITIVE.value)
         self.current_durability = self.object.get_property_value("SavedDurability", default=1.0)
 
@@ -35,21 +35,43 @@ class Equipment(InventoryItem):
         if binary is not None:
             self.__init_props__()
 
+    def __determine_quality_index(self) -> int:
+        if self.rating > 10:
+            index = ArkItemQuality.ASCENDANT
+        elif self.rating > 7:
+            index = ArkItemQuality.MASTERCRAFT
+        elif self.rating > 4.5:
+            index = ArkItemQuality.JOURNEYMAN
+        elif self.rating > 2.5:
+            index = ArkItemQuality.APPRENTICE
+        elif self.rating > 1.25:
+            index = ArkItemQuality.RAMSHACKLE
+        else:
+            index = ArkItemQuality.PRIMITIVE
+
+        return index
+    
+    def _auto_rate(self, multiplier: float, average_stat: int, save: AsaSave = None):
+        self.rating = average_stat * multiplier
+        self.quality = self.__determine_quality_index()
+        self.modify_quality(self.quality, save)
+        self.modify_rating(self.rating, save)
+        
     def is_rated(self) -> bool:
         return self.rating > 1  
 
     def is_crafted(self) -> bool:
         return False if self.crafter is None else self.crafter.is_valid()
 
-    def modify_quality(self, quality: int, save: AsaSave = None):
-        if self.quality == 0:
+    def set_quality_index(self, quality: ArkItemQuality, save: AsaSave = None):
+        if self.quality == ArkItemQuality.PRIMITIVE.value:
             raise ValueError("Cannot modify quality of an item with quality 0")
         
-        self.quality = quality
-        self.binary.replace_bytes(quality.to_bytes(1, byteorder="little"), position=self.binary.set_property_position("ItemQualityIndex"))
+        self.quality = quality.value
+        self.binary.replace_byte_property(self.binary.set_property_position("ItemQualityIndex"), quality.value)
         self.update_binary(save)
 
-    def modify_rating(self, rating: int, save: AsaSave = None):
+    def set_rating(self, rating: int, save: AsaSave = None):
         if not self.is_rated():
             raise ValueError("Cannot modify rating of a default crafted item")
         
@@ -74,3 +96,10 @@ class Equipment(InventoryItem):
         if new_class is not None:
             self.object.change_class(new_class, self.binary)
 
+    @staticmethod
+    def from_inventory_item(item: InventoryItem, save: AsaSave, cls: callable = None):
+        parser = ArkBinaryParser(item.binary.byte_buffer, save.save_context)
+        if cls == None:
+            cls = Equipment
+
+        return cls(item.object.uuid, parser)

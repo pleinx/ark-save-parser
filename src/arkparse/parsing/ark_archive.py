@@ -20,8 +20,8 @@ class ArkArchive:
         save_context.save_version = data.read_int()
         ArkSaveLogger.file = str(file)
 
-        if save_context.save_version != 5:
-            raise RuntimeError(f"Unsupported archive version {save_context.save_version}")
+        # if save_context.save_version != 5:
+        #     raise RuntimeError(f"Unsupported archive version {save_context.save_version}")
 
         count = data.read_int()
         # print(f"Found {count} objects in " + str(file))

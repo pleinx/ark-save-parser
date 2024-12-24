@@ -64,8 +64,10 @@ class Tek:
     generator = "/Game/PrimalEarth/Structures/StorageBox_TekGenerator.StorageBox_TekGenerator_C"
     replicator = "/Game/PrimalEarth/Structures/StorageBox_TekReplicator.StorageBox_TekReplicator_C"
     teleporter_small = "/Game/PrimalEarth/Structures/TekTier/TekTeleporterMini.TekTeleporterMini_C"
-
-    all_bps = [floor, generator, teleporter_small, replicator]
+    teleporter_medium = "/Game/PrimalEarth/CoreBlueprints/Items/Structures/Misc/PrimalItemStructure_TekTeleporterSmall.PrimalItemStructure_TekTeleporterSmall_C"
+    teleporter_large = "/Game/PrimalEarth/CoreBlueprints/Items/Structures/Misc/PrimalItemStructure_TekTeleporter.PrimalItemStructure_TekTeleporter_C"
+    
+    all_bps = [floor, generator, teleporter_small, replicator, teleporter_medium, teleporter_large]
     
 class Wood:
     spike_wall = "/Game/PrimalEarth/Structures/Wooden/SpikeWall.SpikeWall_C"

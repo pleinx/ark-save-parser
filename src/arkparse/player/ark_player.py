@@ -61,7 +61,7 @@ class ArkPlayer:
         
         self.id_ = my_data.get_property_value("PlayerDataID")
         self.char_name = my_data.get_property_value("PlayerCharacterName")
-        self.unique_id = my_data.get_property_value("UniqueID")
+        self.unique_id = my_data.get_property_value("UniqueID").value
         self.ip_address = my_data.get_property_value("SavedNetworkAddress")
         self.name = my_data.get_property_value("PlayerName")
         self.first_spawned = my_data.get_property_value("bFirstSpawned")

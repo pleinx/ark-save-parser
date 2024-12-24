@@ -6,6 +6,7 @@ from arkparse import AsaSave
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
+from arkparse.object_model.misc.inventory_item import InventoryItem
 
 from .__equipment import Equipment
 from .__saddle_defaults import _get_saddle_armor, _get_saddle_dura
@@ -28,19 +29,36 @@ class Saddle(Equipment):
         super().__init__(uuid, binary)
                          
         if binary is not None:
-            self.__init_props__()     
+            self.__init_props__()  
+
+    def get_average_stat(self) -> float:
+        return (self.get_internal_value(ArkEquipmentStat.ARMOR) + 
+                self.get_internal_value(ArkEquipmentStat.DURABILITY)) / 2 
+
+    def get_internal_value(self, stat: ArkEquipmentStat) -> int:
+        if stat == ArkEquipmentStat.ARMOR:
+            d = _get_saddle_armor(self.object.blueprint)
+            return int((self.armor - d)/(d*0.0002))
+        elif stat == ArkEquipmentStat.DURABILITY:
+            d = _get_saddle_dura(self.object.blueprint)
+            return int((self.durability - d)/(d*0.00025))
+        else:
+            raise ValueError(f"Stat {stat} is not valid for saddles")
 
     def set_armor(self, armor: float, save: AsaSave = None):
         self.armor = armor
-        d = _get_saddle_armor(self.object.blueprint)
-        stat_value = int((armor - d)/(d*0.0002))
-        self.set_stat_value(stat_value, ArkEquipmentStat.ARMOR, save) 
+        self.set_stat_value(self.get_internal_value(ArkEquipmentStat.ARMOR), ArkEquipmentStat.ARMOR, save) 
 
     def set_durability(self, durability: float, save: AsaSave = None):
         self.durability = durability
-        d = _get_saddle_dura(self.object.blueprint)
-        stat_value = int((durability - d)/(d*0.00025))
-        self.set_stat_value(stat_value, ArkEquipmentStat.DURABILITY, save)     
+        self.set_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)     
+
+    def auto_rate(self, save: AsaSave = None):
+        self._auto_rate(0.000926, self.get_average_stat(), save)
+
+    @staticmethod
+    def from_inventory_item(item: InventoryItem, save: AsaSave):
+        return Equipment.from_inventory_item(item, save, Saddle)
 
     @staticmethod
     def from_object(obj: ArkGameObject):

@@ -26,10 +26,22 @@ class Shield(Equipment):
         if binary is not None:
             self.__init_props__()
 
+    def get_average_stat(self) -> float:
+        return self.get_internal_value(ArkEquipmentStat.DURABILITY)
+
+    def get_internal_value(self, stat: ArkEquipmentStat) -> int:
+        if stat == ArkEquipmentStat.DURABILITY:
+            d = _get_default_dura(self.object.blueprint)
+            return int((self.durability - d)/(d*0.00025))
+        else:
+            raise ValueError(f"Stat {stat} is not valid for shields")
+
     def set_durability(self, durability: float, save: AsaSave = None):
         self.durability = durability
-        d = _get_default_dura(self.object.blueprint)
-        self.set_stat_value(int((durability - d)/(d*0.00025)), ArkEquipmentStat.DURABILITY, save)            
+        self.set_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)  
+
+    def auto_rate(self, save: AsaSave = None):
+        self._auto_rate(0.000519, self.get_average_stat(), save)          
 
     @staticmethod
     def from_object(obj: ArkGameObject):

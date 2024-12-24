@@ -42,8 +42,6 @@ class StructureWithInventory(Structure):
         self.inventory.add_item(item)
         self.db.modify_game_obj(self.inventory.object.uuid, self.inventory.binary.byte_buffer)
 
-        # Should add inventory item to db as well
-
     def remove_item(self, item: UUID):
         if self.item_count == 0:
             return
