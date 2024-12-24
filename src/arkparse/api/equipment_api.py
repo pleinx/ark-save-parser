@@ -8,7 +8,7 @@ from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.misc.object_crafter import ObjectCrafter
 from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.enums import ArkItemQuality
+from arkparse.enums import ArkItemQuality, ArkEquipmentStat
 from arkparse.classes.equipment import Equipment as EqClasses
 
 from .general_api import GeneralApi
@@ -132,3 +132,18 @@ class EquipmentApi(GeneralApi):
             armor = {uuid: armor_piece for uuid, armor_piece in armor.items() if armor_piece.hyperthermal_insulation >= minimum_heat_resistance}
         
         return armor
+    
+    def modify_equipment(self, eq_class_ : "EquipmentApi.Classes", equipment: Equipment, target_class: str = None, target_stat: ArkEquipmentStat = None, value: float = None, range: tuple[float, float] = None):
+        if eq_class_ == self.Classes.WEAPON:
+            equipment: Weapon
+        elif eq_class_ == self.Classes.SADDLE:
+            equipment: Saddle
+        elif eq_class_ == self.Classes.ARMOR:
+            equipment: Armor
+        elif eq_class_ == self.Classes.SHIELD:
+            equipment: Shield
+        else:
+            raise ValueError("Invalid class")
+        
+        equipment.reidentify(new_class=target_class)
+        equipment._set_internal_stat_value

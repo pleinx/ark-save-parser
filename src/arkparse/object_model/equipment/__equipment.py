@@ -15,6 +15,7 @@ class Equipment(InventoryItem):
     rating: float = 1
     quality: int = ArkItemQuality.PRIMITIVE.value
     current_durability: float = 1.0
+    class_name: str = "Equipment"
 
     def __init_props__(self, obj: ArkGameObject = None):
         if obj is not None:
@@ -34,6 +35,18 @@ class Equipment(InventoryItem):
                          
         if binary is not None:
             self.__init_props__()
+            
+    def get_internal_value(self, stat: ArkEquipmentStat) -> int:
+        raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
+    
+    def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
+        raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
+    
+    def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
+        raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
+    
+    def get_average_stat(self, __stats = []) -> float:
+        return sum(__stats) / len(__stats)
 
     def __determine_quality_index(self) -> int:
         if self.rating > 10:
@@ -84,7 +97,7 @@ class Equipment(InventoryItem):
         self.binary.replace_float(self.binary.set_property_position("SavedDurability"), self.current_durability)
         self.update_binary(save)
 
-    def set_stat_value(self, value: float, position: ArkEquipmentStat, save: AsaSave = None):
+    def _set_internal_stat_value(self, value: float, position: ArkEquipmentStat, save: AsaSave = None):
         self.binary.replace_u16(self.binary.set_property_position("ItemStatValues", position.value), value)
         self.update_binary(save)
 

@@ -8,50 +8,52 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
 
-from .__equipment import Equipment
-from .__weapon_defaults import _get_weapon_dura
+from .__equipment_with_durability import EquipmentWithDurability
 
 
-class Weapon(Equipment):
+class Weapon(EquipmentWithDurability):
     damage: float = 0
     durability: float = 0
 
     def __init_props__(self, obj: ArkGameObject = None):
         if obj is not None:
             super().__init_props__(obj)
-            
-        durability = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
+
         damage = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DAMAGE.value, default=0)
 
-        self.damage = round(100.0 + damage / 100, 1)
-        self.durability = math.floor(_get_weapon_dura(self.object.blueprint) * (0.00025*durability + 1))
+        self.damage = self.get_actual_value(ArkEquipmentStat.DAMAGE, damage)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
-                         
+
+        self.class_name = "weapon"             
         if binary is not None:
             self.__init_props__()
 
-    def get_average_stat(self) -> float:
-        return (self.get_internal_value(ArkEquipmentStat.DAMAGE) +
-                self.get_internal_value(ArkEquipmentStat.DURABILITY)) / 2
+    def get_average_stat(self, __stats = []) -> float:
+        return super().get_average_stat([self.get_internal_value(ArkEquipmentStat.DAMAGE)])
 
     def get_internal_value(self, stat: ArkEquipmentStat) -> int:
         if stat == ArkEquipmentStat.DAMAGE:
             return int((self.damage - 100.0) * 100)
-        elif stat == ArkEquipmentStat.DURABILITY:
-            d = _get_weapon_dura(self.object.blueprint)
-            return int((self.durability - d)/(d*0.00025))
         else:
-            raise ValueError(f"Stat {stat} is not valid for weapons")
+            super().get_internal_value(stat)    
+        
+    def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
+        if stat == ArkEquipmentStat.DAMAGE:
+            return round(100.0 + internal_value / 100, 1)
+        else:
+            super().get_actual_value(stat, internal_value)
+        
+    def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
+        if stat == ArkEquipmentStat.DAMAGE:
+            self.__set_damage(value, save)
+        else:
+            super().set_stat(stat, value, save)
 
-    def set_damage(self, damage: float, save: AsaSave = None):
+    def __set_damage(self, damage: float, save: AsaSave = None):
         self.damage = damage
-        self.set_stat_value(self.get_internal_value(ArkEquipmentStat.DAMAGE), ArkEquipmentStat.DAMAGE, save)
-
-    def set_durability(self, durability: float, save: AsaSave = None):
-        self.durability = durability
-        self.set_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)
+        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DAMAGE), ArkEquipmentStat.DAMAGE, save)
 
     def auto_rate(self, save: AsaSave = None):
         self._auto_rate(0.000674, self.get_average_stat(), save) 

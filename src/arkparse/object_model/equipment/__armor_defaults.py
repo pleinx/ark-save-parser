@@ -1,37 +1,5 @@
 from arkparse.classes.equipment import Armor as ArmorBps
-from arkparse.classes.equipment import Shields as ShieldBps
 
-def _get_default_dura(bp: str):
-    if bp in ArmorBps.chitin.all_bps:
-        return 50
-    elif bp in ArmorBps.ghillie.all_bps or bp in ArmorBps.leather.all_bps or bp in ArmorBps.desert.all_bps:
-        return 45
-    elif bp in ArmorBps.fur.all_bps:
-        return 125
-    elif bp in ArmorBps.cloth.all_bps:
-        return 25
-    elif bp in ArmorBps.riot.all_bps or bp in ArmorBps.flak.all_bps or bp in ArmorBps.tek.all_bps:
-        return 120
-    elif bp in ArmorBps.scuba.all_bps:
-        return 185
-    elif bp in ArmorBps.hazard.all_bps:
-        return 85.5
-    elif bp == ShieldBps.metal:
-        return 1250
-    elif bp == ShieldBps.riot:
-        return 2300
-    elif bp == ShieldBps.wood:
-        return 350
-    elif bp == ArmorBps.misc.gas_mask:
-        return 50
-    elif bp == ArmorBps.misc.miners_helmet:
-        return 120
-    elif bp == ArmorBps.misc.night_vision_goggles:
-        return 45
-    else:
-        print(f"WARNING: No durability found for armor {bp}")
-        return 0
-    
 def _get_default_armor(bp: str):
     if bp in ArmorBps.chitin.all_bps:
         return 50

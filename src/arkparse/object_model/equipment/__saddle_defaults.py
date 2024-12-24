@@ -10,10 +10,10 @@ def _get_saddle_armor(bp: str):
     else:
         return 25
     
-def _get_saddle_dura(bp: str):
-    if bp in [SaddleBps.tapejara_tek, SaddleBps.rex_tek, SaddleBps.mosa_tek, SaddleBps.megalodon_tek, SaddleBps.rock_drake_tek]:
-        return 120
-    elif bp == SaddleBps.mole_rat:
-        return 500
-    else:
-        return 100
+# def _get_saddle_dura(bp: str):
+#     if bp in [SaddleBps.tapejara_tek, SaddleBps.rex_tek, SaddleBps.mosa_tek, SaddleBps.megalodon_tek, SaddleBps.rock_drake_tek]:
+#         return 120
+#     elif bp == SaddleBps.mole_rat:
+#         return 500
+#     else:
+#         return 100
