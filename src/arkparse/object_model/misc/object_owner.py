@@ -43,6 +43,15 @@ class ObjectOwner:
     def __str__(self) -> str:
         return f"\"{self.player_name}\" ({self.id_}) of tribe \"{self.tribe_name}\" ({self.tribe_id})"# (originally placed by {self.original_placer_id})"
     
+    def set_tribe(self, tribe_id: int, tribe_name: str="None"):
+        self.tribe_id = tribe_id
+        self.tribe_name = tribe_name
+
+    def set_player(self, player_id: int=0, player_name: str="None"):
+        self.id_ = player_id
+        self.player_name = player_name
+        self.original_placer_id = player_id
+    
     def replace_self_with(self, other: "ObjectOwner", binary: ArkBinaryParser = None):
         self.original_placer_id = None if self.original_placer_id is None else other.original_placer_id
         self.tribe_name = None if self.tribe_name is  None else other.tribe_name
@@ -52,6 +61,15 @@ class ObjectOwner:
 
         if binary is not None:
             self.set_in_binary(binary)
+
+    def serialize(self):
+        return {
+            "original_placer_id": self.original_placer_id,
+            "tribe_name": self.tribe_name,
+            "player_name": self.player_name,
+            "id_": self.id_,
+            "tribe_id": self.tribe_id
+        }
     
     @staticmethod
     def from_profile(profile: ArkPlayer, tribe: ArkTribe):

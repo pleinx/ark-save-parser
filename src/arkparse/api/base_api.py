@@ -1,16 +1,37 @@
-from typing import Dict
+from typing import Dict, List
 from uuid import UUID, uuid4
 from pathlib import Path
 import os
+import json
 
 from arkparse.api.structure_api import StructureApi
 from arkparse.parsing.struct.actor_transform import MapCoords
-from arkparse.object_model.structures import Structure
+from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.object_model.bases.base import Base
+from arkparse.object_model.misc.inventory import Inventory
+from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.enums import ArkMap
 from arkparse.parsing.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model import ArkGameObject
+
+
+class ImportFile:
+    def __init__(self, path: str):
+        def read_bytes_from_file(file_path: Path) -> bytes:
+            with open(file_path, "rb") as f:
+                return f.read()
+            
+        file = path.split("\\")[-1]
+        uuid = UUID(file.split("_")[1].split('.')[0])
+        t = file.split("_")[0]
+        name_path = None if t == "loc" else Path(path).parent / (file.split('.')[0] + "_n.json")
+
+        self.path: Path = Path(path)
+        self.type: str = t
+        self.uuid: UUID = uuid
+        self.names: Dict[int, str] = json.loads(name_path.read_text()) if name_path is not None else None
+        self.bytes = read_bytes_from_file(path)
 
 class BaseApi(StructureApi):
     def __init__(self, save, map: ArkMap):
@@ -30,19 +51,21 @@ class BaseApi(StructureApi):
 
         return closest
 
-
-    def get_base_at(self, coords: MapCoords) -> Base:
-        structures = self.get_at_location(self.map, coords)
-        if structures is None:
+    def get_base_at(self, coords: MapCoords, radius: float = 0.3, owner_tribe_id = None) -> Base:
+        structures = self.get_at_location(self.map, coords, radius)
+        if structures is None or len(structures) == 0:
             return None
         
-        all_structures = {}
+        all_structures: Dict[UUID, Structure] = {}
         for key, structure in structures.items():
             all_structures[key] = structure
             connected = self.get_connected_structures(structures)
             for key, conn_structure in connected.items():
                 if key not in all_structures:
                     all_structures[key] = conn_structure
+
+        if owner_tribe_id is not None:
+            all_structures = {k: v for k, v in all_structures.items() if v.owner.tribe_id == owner_tribe_id}
 
         keystone = self.__get_closest_to(all_structures, coords)
 
@@ -51,19 +74,18 @@ class BaseApi(StructureApi):
         return Base(keystone.object.uuid, all_structures)
     
     def __get_all_files_from_dir_recursive(self, dir_path: Path) -> Dict[str, bytes]:
-        out = {}
-        def read_bytes_from_file(file_path: Path) -> bytes:
-            with open(file_path, "rb") as f:
-                return f.read()
-
+        out = []
+        base_file = None
         for root, _, files in os.walk(dir_path):
             for file in files:
                 file_path = Path(root) / Path(file)
-                out[str(file_path)] = read_bytes_from_file(file_path)
-
-        return out
+                if file_path.name == "base.json":
+                    base_file = file_path
+                elif file_path.name.endswith(".bin") or file_path.name.startswith("loc_"):
+                    out.append(ImportFile(str(file_path)))
+        return out, base_file
     
-    def import_base(self, path: Path):
+    def import_base(self, path: Path, location: ActorTransform = None) -> Base:
         uuid_translation_map = {}
         # interconnection_properties = [
         #     "PlacedOnFloorStructure",
@@ -76,68 +98,84 @@ class BaseApi(StructureApi):
         #     "LinkedStructures"
         # ]
 
+        def replace_uuids(uuid_map: Dict[UUID, UUID], bytes_: bytes):
+            for uuid in uuid_map:
+                new_bytes = uuid_map[uuid].bytes            
+                old_bytes = uuid.bytes
+                bytes_ = bytes_.replace(old_bytes, new_bytes)
+                # print(f"Replacing {uuid} with {uuid_map[uuid]}")
+            return bytes_
+
         actor_transforms: Dict[UUID, ActorTransform] = {}
         structures: Dict[UUID, Structure] = {}
 
-        files: Dict[str, bytes] = self.__get_all_files_from_dir_recursive(path)
+        files: List[ImportFile] = None
+        base_file: Path = None
+        files, base_file = self.__get_all_files_from_dir_recursive(path)
 
-        base_file = None
-        for file_path, file_bytes in files.items():
-            if file_path.split("\\")[-1] == "base.json":
-                base_file = file_path
-        files.pop(base_file)
+        # assign new uuids to all
+        for file in files:
+            uuid_translation_map[file.uuid] = uuid4()
 
         # Assign new uuids to all actor transforms and add them to the database
-        for file_path, _ in files.items():
-            file = file_path.split("\\")[-1]
-            uuid = file.split("_")[0]
-            try:
-                t = file.split("_")[1]
-            except:
-                print(file)
-                raise
-            # t = file.split("_")[1]
-
-            if t == "loc":
-                new_uuid = uuid4()
-                uuid_translation_map[uuid] = new_uuid
-                actor_transforms[new_uuid] = ActorTransform(from_json=Path(file_path))
-                self.save.add_new_actor_transform_to_db(new_uuid, actor_transforms[new_uuid])
-
+        new_actor_transforms: bytes = bytes()
+        for file in files:
+            if file.type == "loc":
+                new_uuid: UUID = uuid_translation_map[file.uuid]
+                actor_transforms[new_uuid] = ActorTransform(from_json=Path(file.path))
+                new_actor_transforms += new_uuid.bytes + actor_transforms[new_uuid].to_bytes()
+        self.save.add_actor_transforms(new_actor_transforms)
         # Update actor transforms in save context
         self.save.read_actor_locations()
 
-        # Parse structures
-        for file_path, file_bytes in files.items():
-            file = file_path.split("\\")[-1]
-            uuid = file.split("_")[0]
-            t = file.split("_")[1]
+        # get all inventory items and add them to DB
+        for file in files:
+            if file.type == "itm":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names)
+                item = InventoryItem(uuid=file.uuid, binary=parser)
+                item.reidentify(new_uuid)
+                self.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
 
-            if t == "obj":
-                if uuid in uuid_translation_map:
-                    new_uuid = uuid_translation_map[UUID(uuid)]
-                else:
-                    new_uuid = uuid4()
-                    uuid_translation_map[uuid] = new_uuid
-                    parser = ArkBinaryParser(file_bytes, self.save.save_context)
-                    obj = ArkGameObject(uuid=new_uuid, binary_reader=parser)
-                    structure = self._parse_single_structure(obj)
-                    structure.reidentify(new_uuid=new_uuid)
-                    structures[new_uuid] = structure
+        # Get all inventories and add them to DB
+        for file in files:
+            if file.type == "inv":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names)
+                inventory = Inventory(uuid=file.uuid, binary=parser, save=self.save)
+                inventory.reidentify(new_uuid)
+                self.save.add_obj_to_db(new_uuid, inventory.binary.byte_buffer)
+                parser = ArkBinaryParser(self.save.get_game_obj_binary(new_uuid), self.save.save_context)
+                obj = ArkGameObject(uuid=new_uuid, binary_reader=parser)
 
-        # Update all interconnection properties
-        for key, structure in structures.items():
-            for uuid in uuid_translation_map:
-                structure.replace_uuid(uuid_translation_map[uuid], uuid)
+        # Get all structures and add them to DB
+        for file in files:
+            if file.type == "str":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names)
+                obj = ArkGameObject(uuid=new_uuid, binary_reader=parser)
+                structure = self._parse_single_structure(obj, parser)
+                structure.reidentify(new_uuid)
+                if isinstance(structure, StructureWithInventory) and structure.inventory is not None:
+                    structure.inventory.renumber_name(new_number=structure.object.get_name_number())
+                    self.save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
+                structures[new_uuid] = structure
+                self.save.add_obj_to_db(new_uuid, structure.binary.byte_buffer)
 
-                # validate that parsing still works for all objects
-                parser = ArkBinaryParser(structure.binary.byte_buffer, self.save.save_context)
-                obj = ArkGameObject(uuid=key, binary_reader=parser)
+        keystone_uuid = uuid_translation_map[UUID(json.loads(Path(base_file).read_text())["keystone"])]
+        base = Base(keystone_uuid, structures)
+        # base = Base(structures=structures)
 
-                # insert object into save
-                self.save.add_obj_to_db(key, structure.binary.byte_buffer)
+        if location is not None:
+            base.move_to(location, self.save)
 
-        return structures
+        return base
 
                 
 

@@ -27,21 +27,28 @@ class Inventory(ParsedObjectBase):
             if is_engram is None or not is_engram:
                 self.items[item_uuid] = item
 
-    def add_item(self, item: UUID, save: AsaSave = None):
+    def add_item(self, item: UUID, save: AsaSave = None, store: bool = True):
         if len(self.items) == 0:
-            self.binary.set_property_position("bInitializedMe")
+            raise ValueError("Currently, adding stuff to empty inventories is not supported!")
+            # self.binary.set_property_position("bInitializedMe")
         else:
             self.binary.set_property_position("InventoryItems")
 
-        self.items[item] = None
+        reader = ArkBinaryParser(save.get_game_obj_binary(item), save.save_context)
+        self.items[item] = InventoryItem(item, reader)
+        self.items[item].add_self_to_inventory(self.object.uuid)
         
         object_references = []
         for item in self.items.keys():
             object_references.append(get_uuid_reference_bytes(item))
         
-        self.binary.replace_array("InventoryItems", "ObjectProperty", object_references)
+        if len(self.items) == 0:
+            raise ValueError("Currently, adding stuff to empty inventories is not supported!")
+            # self.binary.insert_array("InventoryItems", "ObjectProperty", object_references)
+        else:
+            self.binary.replace_array("InventoryItems", "ObjectProperty", object_references)
 
-        if save is not None:
+        if save is not None and store:
             save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
     def remove_item(self, item: UUID, save: AsaSave = None):
@@ -71,15 +78,15 @@ class Inventory(ParsedObjectBase):
         if save is not None:
             save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
-    def store_binary(self, path: Path):
-        super().store_binary(path)
+    def store_binary(self, path: Path, prefix: str = "inv"):
+        super().store_binary(path, prefix=prefix)
         for key, item in self.items.items():
-            item.store_binary(path)
+            item.store_binary(path, prefix="itm")
 
     def __str__(self):
-        out = f"Inventory(items={len(self.items)})"
+        out = f"Inventory(items={len(self.items)}; uuid={self.object.uuid})"
               
         for _, item in self.items.items():
-            out += "\n   - " + item.get_short_name()
+            out += "\n   - " + item.get_short_name() + f" ({item.object.uuid})"
 
         return out

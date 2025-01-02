@@ -162,6 +162,18 @@ class ActorTransform:
         self.x = new_x
         self.y = new_y
         self.z = new_z
+
+    @staticmethod
+    def from_json(data: json):
+        loc = ActorTransform()
+        loc.x = data["x"]
+        loc.y = data["y"]
+        loc.z = data["z"]
+        loc.pitch = data["pitch"]
+        loc.yaw = data["yaw"]
+        loc.roll = data["roll"]
+        loc.unknown = data["unknown"]
+        return loc
     
     def to_bytes(self):
         return (

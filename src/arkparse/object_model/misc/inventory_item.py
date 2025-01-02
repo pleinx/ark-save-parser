@@ -33,16 +33,27 @@ class InventoryItem(ParsedObjectBase):
     def __str__(self):
         return f"InventoryItem(item={self.object.blueprint.split('/')[-1].split('.')[0]}, quantity={self.quantity})"
     
-    def reidentify(self, new_uuid: UUID = None):
+    def reidentify(self, new_uuid: UUID = None, new_class: str = None):
         self.id_.replace(self.binary)
         super().reidentify(new_uuid)
-    
+        if new_class is not None:
+            self.object.change_class(new_class, self.binary)
+
+    def add_self_to_inventory(self, inv_uuid: UUID):
+        old_id = self.owner_inv_uuid
+        self.owner_inv_uuid = inv_uuid
+        self.binary.byte_buffer = self.binary.byte_buffer.replace(old_id.bytes, inv_uuid.bytes)
+
     def to_string(self, name = "InventoryItem"):
         return f"{name}({self.get_short_name()}, quantity={self.quantity})"
 
-    def set_quantity(self, quantity: int):
+    def set_quantity(self, quantity: int, save: AsaSave = None):
+        self.quantity = quantity
         self.binary.set_property_position("ItemQuantity")
         self.binary.replace_u32(self.binary.position, quantity)
+
+        if save is not None:
+            save.modify_game_obj(self.object.uuid, self.binary)
 
     def get_inventory(self, save: AsaSave):
         from .inventory import Inventory # placed here to avoid circular import

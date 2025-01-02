@@ -4,7 +4,7 @@ from uuid import UUID
 import time
 import threading
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.player.ark_player import ArkPlayer
 from arkparse.ark_tribe import ArkTribe
 from arkparse.saves.asa_save import AsaSave
@@ -34,7 +34,7 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, ftp_config: Path, map: FtpArkMap, update_frequency = 900, save: AsaSave = None):
+    def __init__(self, ftp_config: Path, map: ArkMap, update_frequency = 900, save: AsaSave = None):
         self.players : List[ArkPlayer] = []
         self.tribes : List[ArkTribe] = []
         self.save: AsaSave = save

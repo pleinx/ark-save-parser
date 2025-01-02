@@ -29,15 +29,16 @@ class StructureApi:
 
         return objects
     
-    def _parse_single_structure(self, obj: ArkGameObject) -> Union[Structure, StructureWithInventory]:
+    def _parse_single_structure(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure, StructureWithInventory]:
         if obj.uuid in self.parsed_structures.keys():
             return self.parsed_structures[obj.uuid]
-
-        if obj.get_property_value("MyInventoryComponent") is not None:
+        
+        if parser is None:
             parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
+
+        if obj.get_property_value("MaxItemCount") is not None:
             structure = StructureWithInventory(obj.uuid, parser, self.save)
         else:
-            parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
             structure = Structure(obj.uuid, parser)
         
         for key, loc in self.save.save_context.actor_transforms.items():
@@ -84,16 +85,25 @@ class StructureApi:
 
         return result
     
-    def get_owned_by(self, owner: ObjectOwner) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: ObjectOwner = None):
+        structures = self.get_at_location(map, coords, radius)
+
+        for _, obj in structures.items():
+            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id:
+                obj.remove_from_save(self.save)
+    
+    def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
         
-        if owner is None:
-            return result
+        if owner is None and owner_tribe_id is None:
+            raise ValueError("Either owner or owner_tribe_id must be provided")
 
         structures = self.get_all()
         
         for key, obj in structures.items():
-            if obj.is_owned_by(owner):
+            if owner is not None and obj.is_owned_by(owner):
+                result[key] = obj
+            elif owner_tribe_id is not None and obj.owner.tribe_id == owner_tribe_id:
                 result[key] = obj
 
         return result
@@ -112,11 +122,18 @@ class StructureApi:
 
         return result
     
-    def filter_by_owner(self, owner: ObjectOwner, structures: Dict[UUID, Union[Structure, StructureWithInventory]]) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+    def filter_by_owner(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]], owner: ObjectOwner = None, owner_tribe_id: int = None, invert: bool = False) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
 
+        if owner is None and owner_tribe_id is None:
+            raise ValueError("Either owner or owner_tribe_id must be provided")
+
         for key, obj in structures.items():
-            if obj.is_owned_by(owner):
+            if owner is not None and obj.is_owned_by(owner) and not invert:
+                result[key] = obj
+            elif owner_tribe_id is not None and obj.owner.tribe_id == owner_tribe_id and not invert:
+                result[key] = obj
+            elif invert:
                 result[key] = obj
 
         return result
@@ -154,7 +171,7 @@ class StructureApi:
                     raise ValueError(f"Linked structure {uuid} is not in the structures list, please change owner of all linked structures")
 
             if new_max_health is not None:
-                obj.overwrite_health(new_max_health)
+                obj.set_max_health(new_max_health)
             
             if new_owner is not None:
                 obj.owner.replace_self_with(new_owner, binary=obj.binary)

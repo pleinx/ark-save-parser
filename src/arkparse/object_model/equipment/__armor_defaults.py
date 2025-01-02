@@ -1,37 +1,4 @@
 from arkparse.classes.equipment import Armor as ArmorBps
-
-def _get_default_armor(bp: str):
-    if bp in ArmorBps.chitin.all_bps:
-        return 50
-    elif bp in ArmorBps.ghillie.all_bps:
-        return 32
-    elif bp in ArmorBps.leather.all_bps:
-        return 20
-    elif bp in ArmorBps.desert.all_bps:
-        return 40
-    elif bp in ArmorBps.fur.all_bps:
-        return 40
-    elif bp in ArmorBps.cloth.all_bps:
-        return 10
-    elif bp in ArmorBps.riot.all_bps:
-        return 115
-    elif bp in ArmorBps.flak.all_bps:
-        return 100
-    elif bp in ArmorBps.tek.all_bps:
-        return 180
-    elif bp in ArmorBps.scuba.all_bps:
-        return 1
-    elif bp in ArmorBps.hazard.all_bps:
-        return 65
-    elif bp == ArmorBps.misc.gas_mask:
-        return 0.0
-    elif bp == ArmorBps.misc.miners_helmet:
-        return 120
-    elif bp == ArmorBps.misc.night_vision_goggles:
-        return 0.0
-    else:
-        print(f"WARNING: No armor found for armor {bp}")
-        return 0
     
 def _get_default_hypoT(bp: str):
     resistances = {
@@ -50,6 +17,11 @@ def _get_default_hypoT(bp: str):
         ArmorBps.desert.goggles: 5,
         ArmorBps.desert.boots: 5,
         ArmorBps.desert.gloves: 5,
+        ArmorBps.fur.shirt: 65,
+        ArmorBps.fur.pants: 65,
+        ArmorBps.fur.helmet: 52,
+        ArmorBps.fur.boots: 34,
+        ArmorBps.fur.gloves: 34,
         ArmorBps.leather.shirt:20,
         ArmorBps.leather.pants: 20,
         ArmorBps.leather.helmet: 15,
@@ -112,6 +84,11 @@ def _get_default_hyperT(bp: str):
         ArmorBps.desert.goggles: 30,
         ArmorBps.desert.boots: 25,
         ArmorBps.desert.gloves: 25,
+        ArmorBps.fur.shirt: -30,
+        ArmorBps.fur.pants: -30,
+        ArmorBps.fur.helmet: -25,
+        ArmorBps.fur.boots: -10,
+        ArmorBps.fur.gloves: -10,
         ArmorBps.leather.shirt: -5,
         ArmorBps.leather.pants: -5,
         ArmorBps.leather.helmet: -5,

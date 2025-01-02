@@ -1,10 +1,14 @@
 from ..ark_game_object import ArkGameObject
 from uuid import UUID, uuid4
+import json
 from arkparse.parsing import ArkBinaryParser
 from pathlib import Path
 from arkparse.logging import ArkSaveLogger
+from importlib.resources import files
+from typing import Dict, TYPE_CHECKING
 
-from arkparse.saves.asa_save import AsaSave
+if TYPE_CHECKING:
+    from arkparse import AsaSave
 
 class ParsedObjectBase:
     binary: ArkBinaryParser = None
@@ -13,8 +17,7 @@ class ParsedObjectBase:
     def __get_class_name(self):
         self.binary.set_position(0)
         self.binary.read_name()
-
-    def __init_props__(self, obj: ArkGameObject):
+    def __init_props__(self, obj: ArkGameObject = None):
         self.object = obj
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
@@ -22,6 +25,21 @@ class ParsedObjectBase:
             self.binary = binary
             bp = self.__get_class_name()
             self.__init_props__(ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary))
+
+    @staticmethod
+    def _generate(save: "AsaSave", template_path: str):
+        package = 'arkparse.assets'
+        path = files(package) / template_path
+        name_path = files(package) / (template_path + "_n.json")
+        bin = path.read_bytes()
+        names: Dict[int, str] = json.loads(name_path.read_text())
+        parser = ArkBinaryParser(bin, save.save_context)
+        new_uuid = uuid4()
+
+        # Update the template name encodings to the actal save name encodings
+        parser.replace_name_ids(names)
+
+        return new_uuid, parser
 
     def reidentify(self, new_uuid: UUID = None):
         self.replace_uuid(new_uuid=new_uuid)
@@ -31,31 +49,27 @@ class ParsedObjectBase:
         if new_uuid is  None:
             new_uuid = uuid4()
         
-        uuid_as_bytes = new_uuid.bytes
-        ArkSaveLogger.debug_log(f"Replacing UUID {self.object.uuid} with {new_uuid}")
-        ArkSaveLogger.debug_log(f"UUID bytes: {[hex(b) for b in uuid_as_bytes]}")
-        ArkSaveLogger.debug_log(f"Old UUID bytes: {[hex(b) for b in self.object.uuid.bytes]}")
-           
+        uuid_as_bytes = new_uuid.bytes           
         old_uuid_bytes = self.object.uuid.bytes if uuid_to_replace is None else uuid_to_replace.bytes
-
-        # Replace old UUID bytes with new UUID bytes
         self.binary.byte_buffer = self.binary.byte_buffer.replace(old_uuid_bytes, uuid_as_bytes)
 
         if uuid_to_replace is None:
             self.object.uuid = new_uuid
 
-    def renumber_name(self):
-        self.object.re_number_names(self.binary)
+    def renumber_name(self, new_number: bytes = None):
+        self.binary.byte_buffer = self.object.re_number_names(self.binary, new_number)
 
-    def store_binary(self, path: Path, overwrite_path: bool = False):
-        if overwrite_path:
-            file_path = path
-        else:
-            file_path = path / ("obj_" + str(self.object.uuid) + ".bin")
+    def store_binary(self, path: Path, prefix: str = "obj"):
+        file_path = path / (f"{prefix}_{str(self.object.uuid)}.bin")
+        name_path = path / (f"{prefix}_{str(self.object.uuid)}_n.json")
+
         with open(file_path, "wb") as file:
             file.write(self.binary.byte_buffer)
 
-    def update_binary(self, save: AsaSave):
+        with open(name_path, "w") as file:
+            json.dump(self.binary.find_names(), file, indent=4)
+
+    def update_binary(self, save: "AsaSave"):
         if save is not None:
             save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 

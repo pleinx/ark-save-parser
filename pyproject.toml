@@ -6,19 +6,26 @@ build-backend = "hatchling.build"
 name = "ark-save-parser"
 version = "0.0.1"
 dependencies = [
+    # List your dependencies here
 ]
 authors = [
-  { name="Vincent Heneau", email="vincent.henau.github@gmail.com" },
+  { name = "Vincent Heneau", email = "vincent.henau.github@gmail.com" },
 ]
 description = "A package to parse and modify ark save files"
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
+    # Add additional classifiers as needed
 ]
 
 [project.urls]
 Homepage = "https://github.com/VincentHenauGithub/ark-save-parser"
 
+[tool.hatch.build]
+include = [
+    "src/arkparse/assets/**",  # Include all assets
+]
+
 [tool.hatch.build.targets.wheel]
-packages = [ "src/arkparse" ]
+packages = ["src/arkparse"]

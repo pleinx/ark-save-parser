@@ -8,19 +8,18 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
 
+from .__equipment import Equipment
 from .__equipment_with_durability import EquipmentWithDurability
 
 
 class Weapon(EquipmentWithDurability):
     damage: float = 0
-    durability: float = 0
 
     def __init_props__(self, obj: ArkGameObject = None):
         if obj is not None:
             super().__init_props__(obj)
 
         damage = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DAMAGE.value, default=0)
-
         self.damage = self.get_actual_value(ArkEquipmentStat.DAMAGE, damage)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
@@ -30,26 +29,34 @@ class Weapon(EquipmentWithDurability):
         if binary is not None:
             self.__init_props__()
 
+    @staticmethod
+    def generate_from_template(class_: str, save: AsaSave, is_bp: bool):
+        file = "weapon_bp" if is_bp else "weapon"
+        return Equipment._generate_from_template(Weapon, file, class_, save)
+
     def get_average_stat(self, __stats = []) -> float:
         return super().get_average_stat([self.get_internal_value(ArkEquipmentStat.DAMAGE)])
+    
+    def get_implemented_stats(self) -> list:
+        return super().get_implemented_stats() + [ArkEquipmentStat.DAMAGE]
 
     def get_internal_value(self, stat: ArkEquipmentStat) -> int:
         if stat == ArkEquipmentStat.DAMAGE:
             return int((self.damage - 100.0) * 100)
         else:
-            super().get_internal_value(stat)    
+            return super().get_internal_value(stat)    
         
     def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
         if stat == ArkEquipmentStat.DAMAGE:
             return round(100.0 + internal_value / 100, 1)
         else:
-            super().get_actual_value(stat, internal_value)
+            return super().get_actual_value(stat, internal_value)
         
     def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
         if stat == ArkEquipmentStat.DAMAGE:
             self.__set_damage(value, save)
         else:
-            super().set_stat(stat, value, save)
+            return super().set_stat(stat, value, save)
 
     def __set_damage(self, damage: float, save: AsaSave = None):
         self.damage = damage

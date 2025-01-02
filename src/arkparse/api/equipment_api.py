@@ -1,5 +1,6 @@
 from typing import Dict, List
 from uuid import UUID
+import random
 
 from arkparse.object_model.equipment import Armor, Saddle, Weapon, Shield
 from arkparse.object_model.equipment.__equipment import Equipment
@@ -147,3 +148,26 @@ class EquipmentApi(GeneralApi):
         
         equipment.reidentify(new_class=target_class)
         equipment._set_internal_stat_value
+
+    def __get_internal_value_range(self, equipment: Equipment, stat: ArkEquipmentStat, min_value: float, max_value: float) -> tuple[float, float]:
+        equipment.set_stat(stat, min_value)
+        min_internal = equipment.get_internal_value(stat)
+        equipment.set_stat(stat, max_value)
+        max_internal = equipment.get_internal_value(stat)
+        return min_internal, max_internal
+
+
+    def generate_equipment(self, eq_class_ : "EquipmentApi.Classes", blueprint: str, master_stat: ArkEquipmentStat, min_value: float, max_value: float, force_bp: bool = None) -> Equipment:
+        range_min, range_max = self.__get_internal_value_range(eq_class_.generate_from_template(blueprint, self.save, is_bp=False), master_stat, min_value, max_value)
+
+        is_bp = random.choices([True, False], weights=[30, 70], k=1)[0] if force_bp is None else force_bp
+        equipment: Equipment = eq_class_.generate_from_template(blueprint, self.save, is_bp=is_bp)
+
+        for stat in equipment.get_implemented_stats():
+            random_value = random.randint(range_min, range_max)
+            equipment.set_stat(stat, equipment.get_actual_value(stat, random_value))
+        equipment.auto_rate()
+
+        return equipment
+
+            

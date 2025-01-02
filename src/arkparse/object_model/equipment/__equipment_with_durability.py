@@ -103,7 +103,6 @@ class EquipmentWithDurability(Equipment):
             
         dura = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
         self.durability = self.get_actual_value(ArkEquipmentStat.DURABILITY, dura)
-        print(f"Durability: {self.durability}")
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
@@ -113,6 +112,9 @@ class EquipmentWithDurability(Equipment):
 
     def get_average_stat(self, __stats = []) -> float:
         return super().get_average_stat(__stats + [self.get_internal_value(ArkEquipmentStat.DURABILITY)])
+    
+    def get_implemented_stats(self) -> list:
+        return [ArkEquipmentStat.DURABILITY]
 
     def get_internal_value(self, stat: ArkEquipmentStat) -> int:
         if stat == ArkEquipmentStat.DURABILITY:
@@ -124,9 +126,7 @@ class EquipmentWithDurability(Equipment):
     def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
         if stat == ArkEquipmentStat.DURABILITY:
             d = self.__get_default_dura(self.object.blueprint)
-            print(f"Default dura: {d} - Internal value: {internal_value}")
             value = d * (0.00025*internal_value + 1)
-            print(f"Value: {value}")
             return value
         else:
             raise ValueError(f"Stat {stat} is not valid for {self.class_name}")

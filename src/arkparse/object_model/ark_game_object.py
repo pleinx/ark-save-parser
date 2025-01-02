@@ -40,7 +40,7 @@ class ArkGameObject(ArkPropertyContainer):
             if not no_header:
                 if not from_custom_bytes:
                     self.uuid = uuid
-                    self.uuid2 = ""
+                    self.uuid2: UUID = None
                     binary_reader.set_position(0)
 
                     self.blueprint = binary_reader.read_name()
@@ -127,20 +127,32 @@ class ArkGameObject(ArkPropertyContainer):
 
         # replace class id
         new_class_id = binary.save_context.get_name_id(new_class)
+
+        if new_class_id is None:
+            raise Exception(f"Class {new_class} not found in name table")
+
         binary.set_position(0)
         binary.replace_bytes(new_class_id.to_bytes(4, byteorder="little"))
 
-    def re_number_names(self, binary: ArkBinaryParser):
-        for md in self.name_metadata:
-            new_bytes = bytes([random.randint(49, 57) for _ in range(10)])
+    def re_number_names(self, binary: ArkBinaryParser, new_number: bytes = None):
+        md = self.name_metadata[-1]
+        ArkSaveLogger.set_file(binary, "debug.bin")
+        new_bytes = bytes([random.randint(49, 57) for _ in range(10)]) if new_number is None else new_number
 
-            if not md.is_read_as_string:
-                raise NotImplementedError("Renumbering names is only supported for names read as strings")
-            
-            binary.set_position(md.offset + md.length - 11)
-            underscore = 95
-            binary.validate_byte(underscore)
-            binary.replace_bytes(new_bytes, binary.position)
+        if not md.is_read_as_string:
+            raise NotImplementedError("Renumbering names is only supported for names read as strings")
+        
+        binary.set_position(md.offset + md.length - 11)
+        underscore = 95
+        binary.validate_byte(underscore)
+        binary.replace_bytes(new_bytes, binary.position)
+        md.name = md.name[:-11] + "_" + new_bytes.decode("utf-8")
+
+        return binary.byte_buffer
+    
+    def get_name_number(self) -> bytes:
+        md = self.name_metadata[-1]
+        return md.name.split("_")[-1].encode("utf-8")
                     
     def read_props_at_offset(self, reader: ArkBinaryParser):
         reader.set_position(self.properties_offset)
@@ -150,6 +162,10 @@ class ArkGameObject(ArkPropertyContainer):
         self.read_properties(reader, ArkProperty, reader.size())
         # reader.read_int()
         # self.uuid2 = reader.read_uuid()
+
+    def print_properties(self):
+        print(f"Properties for {self.blueprint}:")
+        super().print_properties()
 
     def read_double(self, reader: ArkBinaryParser, property_name: str) -> float:
         reader.validate_name(property_name)

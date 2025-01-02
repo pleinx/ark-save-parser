@@ -1,13 +1,25 @@
 
 from uuid import UUID
-from arkparse.object_model.misc.inventory_item import InventoryItem
+
+from arkparse import AsaSave
+from arkparse.object_model.stackables._stackable import Stackable
 from arkparse.parsing import ArkBinaryParser
 
-class Ammo(InventoryItem):
+class Ammo(Stackable):
     def __init__(self, uuid: UUID, binary: ArkBinaryParser):
         super().__init__(uuid, binary)
 
     def __str__(self):
         return super().to_string("Ammo")
+    
+    @staticmethod
+    def generate_from_template(class_: str, save: AsaSave, owner_inventory_uuid: UUID):
+        uuid, parser = Stackable._generate(save)
+        parser.replace_bytes(uuid.bytes, position=len(parser.byte_buffer) - 16)
+        rsrc = Ammo(uuid, parser)
+        rsrc.set_quantity(1)
+        rsrc.reidentify(uuid, class_)
+        rsrc.replace_uuid(owner_inventory_uuid, rsrc.owner_inv_uuid)
+        return rsrc
 
     

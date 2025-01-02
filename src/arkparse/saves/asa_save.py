@@ -8,6 +8,7 @@ from arkparse.logging import ArkSaveLogger
 
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
 from arkparse.parsing.ark_binary_parser import ArkBinaryParser
+from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 
 from .header_location import HeaderLocation
 from arkparse.object_model.ark_game_object import ArkGameObject
@@ -21,13 +22,20 @@ class AsaSave:
     nr_parsed = 0
     parsed_objects: Dict[uuid.UUID, ArkGameObject] = {}   
 
-    def __init__(self, ark_file: Path, read_only: bool = True):
+    def __init__(self, path: Path = None, contents: bytes = None, read_only: bool = False):
 
         # create temp copy of file
         temp_save_path = TEMP_FILES_DIR / (str(uuid.uuid4()) + ".ark")
-        with open(ark_file, 'rb') as file:
+
+        if path is not None:
+            with open(path, 'rb') as file:
+                with open(temp_save_path, 'wb') as temp_file:
+                    temp_file.write(file.read())
+        elif contents is not None:
             with open(temp_save_path, 'wb') as temp_file:
-                temp_file.write(file.read())
+                temp_file.write(contents)
+        else:
+            raise ValueError("Either path or contents must be provided")
 
         self.sqlite_db = temp_save_path
         self.save_context = SaveContext()
@@ -70,7 +78,10 @@ class AsaSave:
         actor_transforms = self.get_custom_value("ActorTransforms")
         ArkSaveLogger.debug_log("Actor transforms table retrieved")
         if actor_transforms:
-            self.save_context.actor_transforms = actor_transforms.read_actor_transforms()   
+            at, atp = actor_transforms.read_actor_transforms()
+            self.save_context.actor_transforms = at
+            self.save_context.actor_transform_positions = atp
+        # print(f"Lenght of actor transforms: {len(self.save_context.actor_transforms)}")
 
     def read_header(self):
         header_data = self.get_custom_value("SaveHeader")
@@ -176,6 +187,9 @@ class AsaSave:
         cursor = self.connection.cursor()
         cursor.execute(query, (self.uuid_to_byte_array(obj_uuid),))
         return cursor.fetchone() is not None
+    
+    def add_to_db(self, obj: ParsedObjectBase):
+        self.add_obj_to_db(obj.object.uuid, obj.binary.byte_buffer)
         
     def add_obj_to_db(self, obj_uuid: uuid.UUID, obj_data: bytes):
         query = "INSERT INTO game (key, value) VALUES (?, ?)"
@@ -192,14 +206,45 @@ class AsaSave:
         with self.connection as conn:
             conn.execute(query, (self.uuid_to_byte_array(obj_uuid),))
 
-    def add_new_actor_transform_to_db(self, uuid: uuid.UUID, binary_data: bytes):
+    def add_actor_transform(self, uuid: uuid.UUID, binary_data: bytes, no_store: bool = False):
         actor_transforms = self.get_custom_value("ActorTransforms")
+
+        # print(f"Adding actor transform {uuid}")
 
         if actor_transforms:
             actor_transforms.set_position(actor_transforms.size() - 16)
             actor_transforms.insert_bytes(self.uuid_to_byte_array(uuid))
             actor_transforms.set_position(actor_transforms.size() - 16)
             actor_transforms.insert_bytes(binary_data)
+            # print(f"New size: {actor_transforms.size()}")
+
+            query = "UPDATE custom SET value = ? WHERE key = 'ActorTransforms'"
+            with self.connection as conn:
+                conn.execute(query, (actor_transforms.byte_buffer,))
+                conn.commit()
+
+    def add_actor_transforms(self, new_actor_transforms: bytes):
+        actor_transforms = self.get_custom_value("ActorTransforms")
+        if actor_transforms:
+            actor_transforms.set_position(actor_transforms.size() - 16)
+            actor_transforms.insert_bytes(new_actor_transforms)
+
+            query = "UPDATE custom SET value = ? WHERE key = 'ActorTransforms'"
+            with self.connection as conn:
+                conn.execute(query, (actor_transforms.byte_buffer,))
+                conn.commit()
+
+    def modify_actor_transform(self, uuid: uuid.UUID, binary_data: bytes):
+        actor_transforms = self.get_custom_value("ActorTransforms")
+
+        if actor_transforms:
+            # if not uuid in self.save_context.actor_transform_positions:
+            #         raise ValueError(f"Actor transform with UUID {uuid} not found in database")
+            #     actor_transforms.set_position(self.save_context.actor_transform_positions[uuid])
+            byte_sequence = self.uuid_to_byte_array(uuid)
+            positions = actor_transforms.find_byte_sequence(byte_sequence)
+            actor_transforms.set_position(positions[0])
+            actor_transforms.replace_bytes(byte_sequence + binary_data)
 
             query = "UPDATE custom SET value = ? WHERE key = 'ActorTransforms'"
             with self.connection as conn:

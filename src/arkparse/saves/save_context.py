@@ -15,6 +15,7 @@ class SaveContext:
         self.some_other_table: Optional[Dict[int, str]] = None
         self.sections: List[HeaderLocation] = []
         self.actor_transforms: Dict[uuid.UUID, ActorTransform] = {}
+        self.actor_transform_positions: Dict[uuid.UUID, int] = {}
         self.save_version: int = 0
         self.game_time: float = 0.0
         self.generate_unknown_names: bool = False

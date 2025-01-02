@@ -6,6 +6,8 @@ from pytz import timezone, UTC
 from pathlib import Path
 import json
 
+from arkparse.enums import ArkMap
+
 SAVE_FILES_LOCATION = ["arksa", "ShooterGame", "Saved", "SavedArks"]
 INI_FOLDER_LOCATION = ["arksa", "ShooterGame", "Saved", "Config", "WindowsServer"]
 
@@ -50,7 +52,7 @@ class ArkFile:
         return False  # Handle cases where last_modified might be None
 
 
-class FtpArkMap:
+class _FtpArkMap:
     ISLAND = {"folder": "TheIsland"}
     ABERRATION = {"folder": "Aberration"}
 
@@ -72,7 +74,7 @@ class ArkFtpClient:
         self.connected = True
 
     @staticmethod
-    def from_config(config, map=None):
+    def from_config(config, map: ArkMap=None):
         with open(config, 'r') as config_file:
             config = json.load(config_file)
 
@@ -116,8 +118,13 @@ class ArkFtpClient:
             self.ftp.quit()
             self.connected = False
 
-    def set_map(self, map: dict):
-        self.map = map
+    def set_map(self, map: ArkMap):
+        if map == ArkMap.ISLAND:
+            self.map = _FtpArkMap.ISLAND
+        elif map == ArkMap.ABERRATION:
+            self.map = _FtpArkMap.ABERRATION
+        else:
+            raise ValueError(f"Map {map} is not supported, but you can add itin this file")
 
     def _check_map(self, map: dict):
         if map is None and self.map is None:
@@ -125,9 +132,10 @@ class ArkFtpClient:
         elif map is None:
             return self.map
         else:
-            return map
+            self.set_map(map)
+            return self.map
 
-    def nav_to_save_files(self, map: dict):
+    def __nav_to_save_files(self, map: dict):
         self.ftp.cwd("/")
 
         for location in SAVE_FILES_LOCATION:
@@ -182,9 +190,9 @@ class ArkFtpClient:
             error_message = f"Unexpected error: {e}"
             print('    ' * indent + f"    {error_message}")
 
-    def list_all_profile_files(self, map: dict = None):
-        map = self._check_map(map)
-        self.nav_to_save_files(map)
+    def list_all_profile_files(self, map: ArkMap = None):
+        map: dict = self._check_map(map)
+        self.__nav_to_save_files(map)
         files = self.ftp.nlst()
         profile_files = [file for file in files if file.endswith(PROFILE_FILE_EXTENSION)]
         profile_files = [ArkFile(file, self.ftp.pwd(), self.ftp.sendcmd(f"MDTM {file}")) for file in profile_files]
@@ -192,9 +200,9 @@ class ArkFtpClient:
 
         return profile_files
     
-    def list_all_tribe_files(self, map: dict = None):
-        map = self._check_map(map)
-        self.nav_to_save_files(map)
+    def list_all_tribe_files(self, map: ArkMap = None):
+        map: dict = self._check_map(map)
+        self.__nav_to_save_files(map)
         files = self.ftp.nlst()
         tribe_files = [file for file in files if file.endswith(TRIBE_FILE_EXTENSION)]
         tribe_files = [ArkFile(file, self.ftp.pwd(), self.ftp.sendcmd(f"MDTM {file}")) for file in tribe_files]
@@ -202,17 +210,17 @@ class ArkFtpClient:
 
         return tribe_files
     
-    def check_save_file(self, map: dict = None):
-        map = self._check_map(map)
-        self.nav_to_save_files(map)
+    def check_save_file(self, map: ArkMap = None):
+        map: dict = self._check_map(map)
+        self.__nav_to_save_files(map)
         files = self.ftp.nlst()
         save_files = [file for file in files if file.endswith(SAVE_FILE_EXTENSION)]
         save_files = [ArkFile(file, self.ftp.pwd(), self.ftp.sendcmd(f"MDTM {file}")) for file in save_files]
         # print(f"Save files for {map['folder']}: {save_files}")
         return save_files
     
-    def download_tribe_file(self, file_name, output_directory=None, map: dict = None) -> Path:
-        self.nav_to_save_files(self._check_map(map))
+    def download_tribe_file(self, file_name, output_directory=None, map: ArkMap = None) -> Path:
+        self.__nav_to_save_files(self._check_map(map))
         
         if output_directory is None:
             return self.get_file_contents(file_name)
@@ -221,8 +229,8 @@ class ArkFtpClient:
             self.download_file(file_name, local_file)
             return local_file
     
-    def download_profile_file(self, file_name, output_directory=None, map: dict = None) -> Path:
-        self.nav_to_save_files(self._check_map(map))
+    def download_profile_file(self, file_name, output_directory=None, map: ArkMap = None) -> Path:
+        self.__nav_to_save_files(self._check_map(map))
 
         if output_directory is None:
             return self.get_file_contents(file_name)
@@ -231,9 +239,9 @@ class ArkFtpClient:
             self.download_file(file_name, local_file)
             return local_file
 
-    def download_save_file(self, output_directory: Path = None, map: dict = None):
-        self.nav_to_save_files(self._check_map(map))
-        map = self._check_map(map)
+    def download_save_file(self, output_directory: Path = None, map: ArkMap = None):
+        map: dict = self._check_map(map)
+        self.__nav_to_save_files(map)
         file_name = map["folder"] + SAVE_FOLDER_EXTENSION + SAVE_FILE_EXTENSION
 
         if output_directory is None:
@@ -243,14 +251,14 @@ class ArkFtpClient:
             self.download_file(file_name, local_file)
             return local_file
         
-    def upload_save_file(self, path: Path = None, file_contents: bytes = None, map: dict = None):
+    def upload_save_file(self, path: Path = None, file_contents: bytes = None, map: ArkMap = None):
         if path is not None:
             file_contents = path.read_bytes()
 
-        map = self._check_map(map)
+        map: dict = self._check_map(map)
         file_name = map["folder"] + SAVE_FOLDER_EXTENSION + SAVE_FILE_EXTENSION
 
-        self.nav_to_save_files(self._check_map(map))
+        self.__nav_to_save_files(map)
         self.write_file_contents(file_name, file_contents)
     
     def change_ini_setting(self, setting: str, value: str, file_name: INI):
@@ -267,7 +275,7 @@ class ArkFtpClient:
 
     def list_backups(self):
         map = self._check_map(None)
-        self.nav_to_save_files(map)
+        self.__nav_to_save_files(map)
         # list all backups (end on .ark.gz)
         files = self.ftp.nlst()
         backup_files = [file for file in files if file.endswith(SAVE_FILE_EXTENSION + ".gz")]

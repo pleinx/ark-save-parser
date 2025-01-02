@@ -171,14 +171,27 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
     def read_actor_transforms(self) -> Dict[UUID, ActorTransform]:
         actor_transforms = {}
+        actor_transform_positions = {}
         termination_uuid = UUID("00000000-0000-0000-0000-000000000000")
+        position = self.get_position()
         uuid = self.read_uuid()
 
         while uuid != termination_uuid:
             actor_transforms[uuid] = ActorTransform(self)
+            actor_transform_positions[uuid] = position
             uuid = self.read_uuid()
 
-        return actor_transforms
+        return actor_transforms, actor_transform_positions
+    
+    def replace_name_ids(self, name_ids: Dict[int, str]):
+        # Update the template name encodings to the actal save name encodings
+        for position, name in name_ids.items():
+            name_id = self.save_context.get_name_id(name)
+            if name_id is None:
+                self.set_position(0)
+                
+                raise ValueError(f"{self.save_context.get_name(self.read_uint32())}: Name {name} not found in save context, ensure it is present before generating object")
+            self.replace_bytes(name_id.to_bytes(length=4, byteorder='little'), position=int(position))
 
     def read_part(self) -> str:
         part_index = self.read_int()
@@ -209,7 +222,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             name = self.save_context.get_name(int_value)
             
             if name is not None:
-                found[int_value] = name
+                found[i] = name
                 self.set_position(i)
                 if prints < max_prints:
                     ArkSaveLogger.debug_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
@@ -220,22 +233,45 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.save_context.generate_unknown_names = gen_unknown_names
         return found
     
-    def find_byte_sequence(self, bytes: bytes):
+    # def find_byte_sequence(self, bytes: bytes):
+    #     original_position = self.get_position()
+    #     max_prints = 75
+    #     prints = 0
+
+    #     ArkSaveLogger.debug_log("--- Looking for byte sequence ---")
+    #     found = []
+    #     for i in range(self.size() - len(bytes)):
+    #         self.set_position(i)
+    #         if self.read_bytes(len(bytes)) == bytes:
+    #             found.append(i)
+    #             self.set_position(i)
+    #             if prints < max_prints:
+    #                 ArkSaveLogger.debug_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
+    #                 prints += 1
+    #     self.set_position(original_position)
+    #     return found
+
+    def find_byte_sequence(self, pattern: bytes):
         original_position = self.get_position()
         max_prints = 75
         prints = 0
-
-        ArkSaveLogger.debug_log("--- Looking for byte sequence ---")
         found = []
-        for i in range(self.size() - len(bytes)):
-            self.set_position(i)
-            if self.read_bytes(len(bytes)) == bytes:
-                found.append(i)
-                self.set_position(i)
-                if prints < max_prints:
-                    ArkSaveLogger.debug_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
-                    prints += 1
+        buffer = self.byte_buffer
+        
+        while True:
+            pos = buffer.find(pattern)
+            if pos == -1:
+                break
+            found.append(pos)
+            if prints < max_prints:
+                ArkSaveLogger.debug_log(
+                    f"Found byte sequence at {pos}"
+                )
+                prints += 1
+            buffer = buffer[pos + 1:]
+        
         self.set_position(original_position)
         return found
+
     
     

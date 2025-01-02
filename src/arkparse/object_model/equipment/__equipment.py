@@ -1,5 +1,6 @@
 
 from uuid import UUID
+import os
 
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
@@ -45,6 +46,15 @@ class Equipment(InventoryItem):
     def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
         raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
     
+    def generate_from_template(class_: str, save: AsaSave, is_bp: bool):
+        raise ValueError("Cannot generate equipment from template for base class")
+    
+    def get_implemented_stats(self) -> list:
+        raise ValueError("Cannot get implemented stats for base class") 
+    
+    def auto_rate(self, save: AsaSave = None):
+        raise ValueError("Cannot auto rate for base class equipment")
+    
     def get_average_stat(self, __stats = []) -> float:
         return sum(__stats) / len(__stats)
 
@@ -67,9 +77,17 @@ class Equipment(InventoryItem):
     def _auto_rate(self, multiplier: float, average_stat: int, save: AsaSave = None):
         self.rating = average_stat * multiplier
         self.quality = self.__determine_quality_index()
-        self.modify_quality(self.quality, save)
-        self.modify_rating(self.rating, save)
-        
+        self.set_quality_index(self.quality, save)
+        self.set_rating(self.rating, save)
+
+    @staticmethod
+    def _generate_from_template(own_class: callable, template_file: str, bp_class: str, save: AsaSave):
+        uuid, parser = super()._generate(save, os.path.join("templates", "equipment", template_file))
+        parser.replace_bytes(uuid.bytes, position=len(parser.byte_buffer) - 16)
+        eq: "Equipment" = own_class(uuid, parser)
+        eq.reidentify(uuid, bp_class)
+        return eq
+
     def is_rated(self) -> bool:
         return self.rating > 1  
 

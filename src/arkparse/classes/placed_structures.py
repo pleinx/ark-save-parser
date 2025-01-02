@@ -61,13 +61,15 @@ class Thatch:
 
 class Tek:
     floor = "/Game/PrimalEarth/Structures/TekTier/Floor_Tek.Floor_Tek_C"
+    quarter_floor = "/Game/PrimalEarth/Structures/Tileset/Foundations/Quarter/Floor_Quarter_Tek.Floor_Quarter_Tek_C"
+    tri_floor = "/Game/PrimalEarth/StructuresPlus/Structures/Foundations/Triangle/Tek/BP_TriFoundation_Tek.BP_TriFoundation_Tek_C"
     generator = "/Game/PrimalEarth/Structures/StorageBox_TekGenerator.StorageBox_TekGenerator_C"
     replicator = "/Game/PrimalEarth/Structures/StorageBox_TekReplicator.StorageBox_TekReplicator_C"
     teleporter_small = "/Game/PrimalEarth/Structures/TekTier/TekTeleporterMini.TekTeleporterMini_C"
     teleporter_medium = "/Game/PrimalEarth/CoreBlueprints/Items/Structures/Misc/PrimalItemStructure_TekTeleporterSmall.PrimalItemStructure_TekTeleporterSmall_C"
     teleporter_large = "/Game/PrimalEarth/CoreBlueprints/Items/Structures/Misc/PrimalItemStructure_TekTeleporter.PrimalItemStructure_TekTeleporter_C"
     
-    all_bps = [floor, generator, teleporter_small, replicator, teleporter_medium, teleporter_large]
+    all_bps = [floor, generator, teleporter_small, replicator, teleporter_medium, teleporter_large, quarter_floor, tri_floor]
     
 class Wood:
     spike_wall = "/Game/PrimalEarth/Structures/Wooden/SpikeWall.SpikeWall_C"

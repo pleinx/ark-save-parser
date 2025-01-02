@@ -10,6 +10,7 @@ from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
+from arkparse import AsaSave
 
 @dataclass
 class Structure(ParsedObjectBase):
@@ -75,15 +76,24 @@ class Structure(ParsedObjectBase):
     def set_actor_transform(self, actor_transform: ActorTransform):
         self.location = actor_transform
 
-    def overwrite_health(self, health: float):
+    def set_max_health(self, health: float):
         self.max_health = health
         self.binary.replace_float(self.binary.set_property_position("MaxHealth"), float(health))
+
+    def heal(self):
+        if self.current_health == self.max_health:
+            return
+        self.current_health = self.max_health
+        self.binary.replace_float(self.binary.set_property_position("Health"), float(self.max_health))
 
     def reidentify(self, new_uuid: UUID = None):
         new_id = random.randint(0, 2**32 - 1)
         self.id_ = new_id
         self.binary.replace_u32(self.binary.set_property_position("StructureID"), new_id)
         super().reidentify(new_uuid)
+
+    def remove_from_save(self, save: AsaSave):
+        save.remove_obj_from_db(self.object.uuid)
 
     def is_owned_by(self, owner: ObjectOwner):
         if self.owner.id_ is not None and self.owner.id_ == owner.id_:
@@ -102,15 +112,16 @@ class Structure(ParsedObjectBase):
     #     self.owner = owner
     #     save.update_game_object(self.object)
 
-    def store_binary(self, path: Path):
-        super().store_binary(path)
+    def store_binary(self, path: Path, loc_only=False, prefix: str = "str"):
+        if not loc_only:
+            super().store_binary(path, prefix=prefix)
         
         loc_path = path / ("loc_" + str(self.object.uuid) + ".json")
         with open(loc_path, "w") as f:
             f.write(json.dumps(self.object.location.as_json(), indent=4))
 
     def __str__(self):
-        return f"Structure: {self.owner.player_name} {self.id_} {self.current_health}/{self.max_health} {self.location}"
+        return f"Structure ({self.get_short_name()}): owned by {self.owner.player_name} {self.current_health}/{self.max_health} {self.location}"
     
     def to_string_complete(self):
         parts = [
