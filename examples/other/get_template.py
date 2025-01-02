@@ -6,11 +6,11 @@ from arkparse import AsaSave
 from arkparse.api.structure_api import StructureApi
 from arkparse import Classes
 from arkparse.logging import ArkSaveLogger
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.parsing import ArkBinaryParser
 
 # save_path = Path.cwd() / "Aberration_WP.ark"
-save_path = ArkFtpClient.from_config('../../ftp_config.json', FtpArkMap.ABERRATION).download_save_file(Path.cwd())
+save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.ABERRATION).download_save_file(Path.cwd())
 
 turret = [Classes.structures.placed.turrets.auto]
 save = AsaSave(save_path)

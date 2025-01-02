@@ -380,8 +380,8 @@ class AsaSave:
         if class_name in skip_list:
             return None
         
-        if not class_name.startswith("/Game/"):
-            return None
+        # if not class_name.startswith("/Game/"):
+        #     return None
     
         return ArkGameObject(obj_uuid, class_name, byte_buffer)
         

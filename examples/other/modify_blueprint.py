@@ -1,6 +1,6 @@
 from arkparse import AsaSave
 from pathlib import Path
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api import EquipmentApi
 from arkparse import Classes
 from arkparse.parsing import ArkBinaryParser
@@ -12,7 +12,7 @@ from arkparse.logging import ArkSaveLogger
 import random
 from arkparse.enums import ArkItemQuality
 
-# save_path = ArkFtpClient.from_config("../../ftp_config.json", FtpArkMap.ABERRATION).download_save_file(Path.cwd())
+# save_path = ArkFtpClient.from_config("../../ftp_config.json", ArkMap.ABERRATION).download_save_file(Path.cwd())
 save_path = Path.cwd() / "___Aberration_WP.ark"
 save = AsaSave(save_path, False)
 eApi = EquipmentApi(save)

@@ -27,7 +27,7 @@ class ArkPlayer:
     _archive: ArkArchive
     persistent_buffs : List[PersistentBuffData]
     location: ActorTransform
-    inventory: Dict[UUID, Inventory]
+    inventory: Inventory
 
     name: str
     char_name: str
@@ -101,9 +101,12 @@ class ArkPlayer:
         self.location = ActorTransform(vector = pawn.get_property_value("SavedBaseWorldLocation"))
         inv_uuid = UUID(pawn.get_property_value("MyInventoryComponent").value)
         reader = ArkBinaryParser(save.get_game_obj_binary(inv_uuid), save.save_context)
-        self.inventory = {inv_uuid: Inventory(inv_uuid, reader, save=save)}
+        self.inventory = Inventory(inv_uuid, reader, save=save)
 
     def __str__(self):
+        return f"ArkPlayer: {self.char_name} (platform name=\'{self.name}\') in tribe {self.tribe} (ue5 id {self.unique_id}, ark id {self.id_})"
+
+    def to_string_all(self):
         """
         Returns a comprehensive, compact string representation of ArkPlayerData.
         

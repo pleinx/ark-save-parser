@@ -4,13 +4,13 @@ from typing import Dict
 
 from arkparse.object_model.equipment.weapon import Weapon
 from arkparse.saves.asa_save import AsaSave
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api.equipment_api import EquipmentApi
 from arkparse.classes.equipment import Weapons
 
 # retrieve the save file (can also retrieve it from a local path)
 save_path = ArkFtpClient.from_config(
-    Path("../ftp_config.json"), FtpArkMap.ABERRATION).download_save_file(Path.cwd())
+    Path("../../ftp_config.json"), ArkMap.ABERRATION).download_save_file(Path.cwd())
 save = AsaSave(save_path)
 
 equipment_api = EquipmentApi(save)  # Create Equipment API

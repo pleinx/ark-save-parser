@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 
 from arkparse.api.structure_api import StructureApi, ArkMap, MapCoords
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.object_model.structures.structure import Structure
 from arkparse.api.player_api import PlayerApi
@@ -17,7 +17,7 @@ ArkSaveLogger.temp_file_path = Path.cwd()
 path = Path.cwd() / "test_saves"
 ftp = Path.cwd().parent / "ftp_config.json"
 
-client = ArkFtpClient.from_config(ftp, FtpArkMap.ABERRATION)
+client = ArkFtpClient.from_config(ftp, ArkMap.ABERRATION)
 client.connect()
 client.download_save_file(path)
 client.close()

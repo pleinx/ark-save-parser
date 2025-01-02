@@ -101,6 +101,9 @@ class ArkTribe:
             self.nr_of_dinos = nr_of_dinos_prop.value
 
     def __str__(self):
+        return f"Tribe: \'{self.name}\' with {len(self.members)} members (id: {self.tribe_id})"
+
+    def to_string_all(self):
         parts = [
             "ArkTribeData:",
             f"  Tribe Name: {self.name}",

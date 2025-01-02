@@ -8,7 +8,7 @@ from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
 from arkparse.classes import *
 
-# FTP = ArkFtpClient.from_config('../../ftp_config.json', FtpArkMap.ABERRATION)
+# FTP = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.ABERRATION)
 # SAVE = AsaSave(FTP.download_save_file(Path.cwd()))
 SAVE = AsaSave(Path.cwd() / '___Aberration_WP.ark', False)
 

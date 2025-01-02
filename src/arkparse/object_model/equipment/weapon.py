@@ -77,4 +77,4 @@ class Weapon(EquipmentWithDurability):
         return saddle
     
     def __str__(self):
-        return f"Weapon: {self.get_short_name()} - Damage: {self.damage} - Durability: {self.durability} -BP: {self.is_bp} -Crafted: {self.is_crafted()}"
+        return f"Weapon: {self.get_short_name()} - Damage: {self.damage} - Durability: {self.durability} -BP: {self.is_bp} -Crafted: {self.is_crafted()} - rating: {self.rating}"

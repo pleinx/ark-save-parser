@@ -6,21 +6,30 @@ from arkparse.enums import ArkMap, ArkStat
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.dinos.tamed_dino import Dino
 from arkparse.classes.dinos import Dinos
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 
 
 save_path = Path.cwd() / "test_saves" / "server.ark" # replace with path to your save file
-save_path  = ArkFtpClient.from_config("../ftp_config.json", FtpArkMap.ABERRATION).download_save_file(Path.cwd())
-save = AsaSave(save_path)                            # load the save file
-dino_api = DinoApi(save)                             # create a DinoApi object
 
-limit = 0 # set the limit for the stats
-dinos = dino_api.get_all_filtered(tamed=False,                                  # only consider wild dinos
-                                  stat_minimum=limit,                           # set the limit
-                                  class_names=[Dinos.alpha_reaper_king, Dinos.reaper_queen],
-                                  level_upper_bound=150,                        # only consider dinos up to level 150 (no wild wyverns / drakes)
-                                  stats=[ArkStat.HEALTH, ArkStat.MELEE_DAMAGE, ArkStat.FOOD]) # only consider dinos with at least 35 points in health or melee damage (if not assigned, all stats are considered)
+# Or get your save file from an FTP server
+save_path  = ArkFtpClient.from_config("../../ftp_config.json", ArkMap.ABERRATION).download_save_file(Path.cwd()) 
 
+save = AsaSave(save_path)   # load the save file
+dino_api = DinoApi(save)    # create a DinoApi object
+
+limit = 20 # set the limit for the stats
+dinos = dino_api.get_all_filtered(# only consider wild dinos
+                                  tamed=False, 
+                                  # set the stat limit
+                                  stat_minimum=limit,
+                                  # filter the type of dino you want to track
+                                  class_names=[Dinos.reaper_queen],
+                                  # only consider dinos up to level 150 (no wild wyverns / drakes)
+                                  level_upper_bound=150,
+                                  # only consider dinos with at least 'limit' points in the configured stats (if not assigned, all stats are considered)
+                                  stats=[ArkStat.HEALTH, ArkStat.MELEE_DAMAGE])                 
+
+# print the output
 for key, dino in dinos.items():
     dino : Dino = dino
     s = f"{dino}: {dino.location.as_map_coords(ArkMap.ABERRATION)}"

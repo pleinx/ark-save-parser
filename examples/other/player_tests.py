@@ -1,14 +1,14 @@
 from pathlib import Path
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api.player_api import PlayerApi
 
 from arkparse.logging import ArkSaveLogger
 # ArkSaveLogger.enable_debug = True
 # ArkSaveLogger.temp_file_path = Path.cwd()
 
-ftp_client = ArkFtpClient.from_config('../../ftp_config.json', FtpArkMap.ABERRATION)
-player_api = PlayerApi('../../ftp_config.json', FtpArkMap.ABERRATION)
+ftp_client = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.ABERRATION)
+player_api = PlayerApi('../../ftp_config.json', ArkMap.ABERRATION)
 
 print(f"Total deaths: {player_api.get_deaths()}")
 print(f"Total experience: {player_api.get_xp()}")

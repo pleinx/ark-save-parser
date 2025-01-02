@@ -1,5 +1,5 @@
 from arkparse.enums import ArkMap
-from importlib import resources
+from importlib.resources import files
 
 def draw_heatmap(heatmap, map: ArkMap):
     import matplotlib.pyplot as plt
@@ -8,9 +8,12 @@ def draw_heatmap(heatmap, map: ArkMap):
 
     resolution = len(heatmap)
     mask = heatmap == 0
-    # with resources.path('arkparse.assets', f'{map.name}.PNG') as img_path:
-    img_path = r'../src/arkparse/assets/Aberration.PNG'
-    img = mpimg.imread(img_path)
+    package = 'arkparse.assets'
+    try:
+        with open(files(package) / f'{map.name}.PNG') as img_path:
+            img = mpimg.imread(img_path)
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Could not find the image file for the map '{map.name}', you can add it to the assets folder in the arkparse package.")
 
     plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
     plt.colorbar()

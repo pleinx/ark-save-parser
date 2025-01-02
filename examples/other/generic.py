@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api.player_api import PlayerApi
 from arkparse import MapCoords
 from arkparse.api.base_api import BaseApi
@@ -10,11 +10,11 @@ from arkparse.api.structure_api import StructureApi
 from arkparse.saves.asa_save import AsaSave
 from arkparse.classes import *
 
-# FTP = ArkFtpClient.from_config('../../ftp_config.json', FtpArkMap.ABERRATION)
+# FTP = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.ABERRATION)
 # SAVE = AsaSave(FTP.download_save_file(Path.cwd()))
 SAVE = AsaSave(Path.cwd() / 'Aberration_WP.ark')
 
-# player_api = PlayerApi('../../ftp_config.json', FtpArkMap.ABERRATION, save=SAVE)
+# player_api = PlayerApi('../../ftp_config.json', ArkMap.ABERRATION, save=SAVE)
 equipment_api = EquipmentApi(SAVE)
 structure_api = StructureApi(SAVE)
 base_api = BaseApi(SAVE, ArkMap.ABERRATION)

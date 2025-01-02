@@ -1,6 +1,6 @@
 from arkparse import AsaSave
 from pathlib import Path
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, FtpArkMap
+from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api import EquipmentApi
 from arkparse import Classes
 from arkparse.enums import ArkItemQuality
@@ -8,7 +8,7 @@ from uuid import UUID
 from arkparse.object_model.structures import StructureWithInventory
 from arkparse.object_model.equipment import Saddle, Weapon, Armor, Shield
 
-save_path = ArkFtpClient.from_config("../../ftp_config.json", FtpArkMap.ABERRATION).download_save_file(Path.cwd())
+save_path = ArkFtpClient.from_config("../../ftp_config.json", ArkMap.ABERRATION).download_save_file(Path.cwd())
 save = AsaSave(save_path)
 eApi = EquipmentApi(save)
 

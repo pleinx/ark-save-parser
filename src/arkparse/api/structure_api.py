@@ -6,7 +6,7 @@ from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
 from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.utils import TEMP_FILES_DIR
 
-from arkparse.object_model import ArkGameObject, ArkGameObject
+from arkparse.object_model import ArkGameObject
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.parsing.struct.actor_transform import MapCoords
@@ -85,7 +85,7 @@ class StructureApi:
 
         return result
     
-    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: ObjectOwner = None):
+    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None):
         structures = self.get_at_location(map, coords, radius)
 
         for _, obj in structures.items():
@@ -186,8 +186,6 @@ class StructureApi:
 
     def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None):
         import math
-        import matplotlib.pyplot as plt
-        import matplotlib.image as mpimg
         import numpy as np
 
         structs = structures

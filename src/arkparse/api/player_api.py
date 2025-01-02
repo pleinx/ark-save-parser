@@ -37,6 +37,7 @@ class PlayerApi:
     def __init__(self, ftp_config: Path, map: ArkMap, update_frequency = 900, save: AsaSave = None):
         self.players : List[ArkPlayer] = []
         self.tribes : List[ArkTribe] = []
+        self.tribe_to_player_map : Dict[int, List[ArkPlayer]] = {}
         self.save: AsaSave = save
         self.pawns: Dict[UUID, ArkGameObject] = None
 
@@ -76,6 +77,7 @@ class PlayerApi:
     def __update_files(self):
         new_players = []
         new_tribes = []
+        new_tribe_to_player = {}
 
         self.ftp_client.connect()
 
@@ -95,11 +97,21 @@ class PlayerApi:
         for file in tribe_files:
             output_dir = TEMP_FILES_DIR
             path = self.ftp_client.download_tribe_file(file.name, output_dir)
-            new_tribes.append(ArkTribe(path))
+            tribe = ArkTribe(path)
+            players = []
+            for id in tribe.member_ids:
+                for p in new_players:
+                    p: ArkPlayer
+                    if p.id_ == id:
+                        players.append(p)
+                        break
+            new_tribes.append(tribe)
+            new_tribe_to_player[tribe.tribe_id] = players
             Path(output_dir / file.name).unlink()
 
         self.players = new_players
         self.tribes = new_tribes
+        self.tribe_to_player_map = new_tribe_to_player
 
         self.ftp_client.close()
 
@@ -245,9 +257,24 @@ class PlayerApi:
         return None
     
     def get_player_inventory(self, player: ArkPlayer, save: AsaSave = None):
+        if player.inventory:
+            return player.inventory
+        
         self.__check_pawns(save)
         pawn = self.get_player_pawn(player, self.save)
         player.get_location_and_inventory(save, pawn)
+
+        return player.inventory
+    
+    def get_player_location(self, player: ArkPlayer, save: AsaSave = None):
+        if player.location:
+            return player.location
+        
+        self.__check_pawns(save)
+        pawn = self.get_player_pawn(player, self.save)
+        player.get_location_and_inventory(save, pawn)
+
+        return player.location
 
     # def add_to_player_inventory(self, player: ArkPlayer, item: ArkGameObject, save: AsaSave = None):
     #     if player is None:
