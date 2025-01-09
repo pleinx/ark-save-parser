@@ -39,11 +39,11 @@ class EquipmentWithArmor(EquipmentWithDurability):
         elif bp in ArmorBps.hazard.all_bps:
             return 65
         elif bp == ArmorBps.misc.gas_mask:
-            return 0.0
+            return 1
         elif bp == ArmorBps.misc.miners_helmet:
             return 120
         elif bp == ArmorBps.misc.night_vision_goggles:
-            return 0.0
+            return 1
         elif bp in [SaddleBps.tapejara_tek, SaddleBps.rex_tek, SaddleBps.mosa_tek, SaddleBps.megalodon_tek, SaddleBps.rock_drake_tek]:
             return 45
         elif bp in [SaddleBps.paracer, SaddleBps.diplodocus, SaddleBps.bronto, SaddleBps.paracer_platform, SaddleBps.archelon, SaddleBps.carbo]:
@@ -54,7 +54,7 @@ class EquipmentWithArmor(EquipmentWithDurability):
             return 25
         else:
             print(f"WARNING: No armor found for {bp}")
-            return 0
+            return 1
 
     def __init_props__(self, obj: ArkGameObject = None):
         if obj is not None:

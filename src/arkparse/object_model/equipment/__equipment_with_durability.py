@@ -95,7 +95,7 @@ class EquipmentWithDurability(Equipment):
             return 40
         else:
             print(f"WARNING: No durability found for {bp}")
-            return 0
+            return 1
 
     def __init_props__(self, obj: ArkGameObject = None):
         if obj is not None:
