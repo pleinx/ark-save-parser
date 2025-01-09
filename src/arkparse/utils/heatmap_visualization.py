@@ -10,7 +10,7 @@ def draw_heatmap(heatmap, map: ArkMap):
     mask = heatmap == 0
     package = 'arkparse.assets'
     try:
-        with open(files(package) / f'{map.name}.PNG') as img_path:
+        with open(files(package) / f'{map.name}.PNG', 'rb') as img_path:
             img = mpimg.imread(img_path)
     except FileNotFoundError:
         raise FileNotFoundError(f"Could not find the image file for the map '{map.name}', you can add it to the assets folder in the arkparse package.")

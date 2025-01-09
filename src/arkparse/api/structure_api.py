@@ -184,7 +184,7 @@ class StructureApi:
             ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
             ftp_client.close()
 
-    def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None):
+    def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None, min_in_section: int = 1):
         import math
         import numpy as np
 
@@ -208,6 +208,11 @@ class StructureApi:
             y = math.floor(coords.long)
             x = math.floor(coords.lat)
             heatmap[x][y] += 1
+
+        for i in range(resolution):
+            for j in range(resolution):
+                if heatmap[i][j] < min_in_section:
+                    heatmap[i][j] = 0
 
         return np.array(heatmap)
     
