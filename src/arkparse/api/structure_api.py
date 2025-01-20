@@ -15,6 +15,7 @@ from arkparse.enums.ark_map import ArkMap
 class StructureApi:
     def __init__(self, save: AsaSave):
         self.save = save
+        self.retrieved_all = False
         self.parsed_structures = {}
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
@@ -50,6 +51,9 @@ class StructureApi:
         return structure
 
     def get_all(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+
+        if self.retrieved_all:
+            return self.parsed_structures
         
         objects = self.get_all_objects(config)
 
@@ -64,6 +68,8 @@ class StructureApi:
             structure = self._parse_single_structure(obj)
 
             structures[obj.uuid] = structure
+
+        self.retrieved_all = True
 
         return structures
     
@@ -216,9 +222,19 @@ class StructureApi:
 
         return np.array(heatmap)
     
-    def get_container_of_inventory(self, inv_uuid: UUID) -> StructureWithInventory:
+    def get_all_with_inventory(self) -> Dict[UUID, StructureWithInventory]:
         structures = self.get_all()
+        result = {}
+
         for key, obj in structures.items():
+            if isinstance(obj, StructureWithInventory):
+                result[key] = obj
+
+        return result
+    
+    def get_container_of_inventory(self, inv_uuid: UUID) -> StructureWithInventory:
+        structures = self.get_all_with_inventory()
+        for _, obj in structures.items():
             if not isinstance(obj, StructureWithInventory):
                 continue
             obj: StructureWithInventory = obj

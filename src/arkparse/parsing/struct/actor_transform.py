@@ -42,7 +42,7 @@ class MapCoordinateParameters:
         x = (lat - self.latitude_shift) * self.latitude_scale
         y = (lo - self.longitude_shift) * self.longitude_scale
 
-        return x, y
+        return ArkVector(x=x, y=y, z=0)
 
 class MapCoords:
     lat : float
@@ -65,6 +65,9 @@ class MapCoords:
             return f"(in cryopod)"
         else:
             return f"({self.lat}, {self.long})"
+        
+    def as_actor_transform(self, map) -> "ActorTransform":
+        return ActorTransform(vector=ArkVector(*MapCoordinateParameters(map).transform_from(self.lat, self.long)))
 
 @dataclass
 class ActorTransform:
