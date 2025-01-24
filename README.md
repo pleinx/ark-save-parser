@@ -44,7 +44,7 @@ I just hope it's usefull for someone!
 ---
 ## Installation
 
-Install via pip (not yet):
+Install via pip:
 
 ```bash
 pip install arkparse
