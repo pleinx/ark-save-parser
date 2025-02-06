@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 import uuid
 from pathlib import Path
+import random
 
 import json
 
@@ -55,3 +56,11 @@ class SaveContext:
             if value == name:
                 return key
         return None
+
+    def add_new_name(self, name: str) -> int:
+        new_id = random.randint(0, int(2**31 - 1))
+        while new_id in self.names:
+            new_id = random.randint(0, int(2**31 - 1))
+        self.names[new_id] = name
+        
+        return new_id

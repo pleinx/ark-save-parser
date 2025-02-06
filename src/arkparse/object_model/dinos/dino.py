@@ -64,8 +64,14 @@ class Dino(ParsedObjectBase):
         trait = f"{trait.value}[{level}]"
         trait_id = save.save_context.get_name_id(trait)
 
+        gene_trait_id = save.save_context.get_name_id("GeneTraits")
+
+        if gene_trait_id is None:
+            save.add_name_to_name_table("GeneTraits")
+
         if trait_id is None:
-            raise ValueError(f"Trait {trait} not found in save context")
+            save.add_name_to_name_table(trait)
+            trait_id = save.save_context.get_name_id(trait)
         
         return trait_id.to_bytes(4, byteorder="little") + b'\x00\x00\x00\x00'  
     

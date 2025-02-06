@@ -22,6 +22,16 @@ class PropertyInsertor(BaseValueValidator):
 
         self.insert_bytes(name_bytes, position)
 
+    def insert_string(self, string: str, position: int = None):
+        if position is not None:
+            self.position = position
+
+        string_bytes = string.encode("utf-8") + b'\x00'
+        length = len(string_bytes)
+        
+        self.insert_uint32(length)
+        self.insert_bytes(string_bytes)
+
     def insert_uint32(self, value: int, position: int = None):
         if position is not None:
             self.position = position

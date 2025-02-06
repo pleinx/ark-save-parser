@@ -20,7 +20,11 @@ logger = logging.getLogger(__name__)
 class AsaSave:
     MAX_IN_LIST = 10000
     nr_parsed = 0
-    parsed_objects: Dict[uuid.UUID, ArkGameObject] = {}   
+    parsed_objects: Dict[uuid.UUID, ArkGameObject] = {}
+
+    name_offset = 0
+    name_count = 0
+    last_name_end = 0   
 
     def __init__(self, path: Path = None, contents: bytes = None, read_only: bool = False):
 
@@ -89,6 +93,7 @@ class AsaSave:
         self.save_context.save_version = header_data.read_short()
         ArkSaveLogger.debug_log("Save version: %d", self.save_context.save_version)
         name_table_offset = header_data.read_int()
+        self.name_offset = name_table_offset
         ArkSaveLogger.debug_log("Name table offset: %d", name_table_offset)
         self.save_context.game_time = header_data.read_double()
         ArkSaveLogger.debug_log("Game time: %f", self.save_context.game_time)
@@ -105,12 +110,36 @@ class AsaSave:
 
     def read_table(self, header_data: 'ArkBinaryParser') -> Dict[int, str]:
         count = header_data.read_int()
+        self.name_count = count
+        ArkSaveLogger.set_file(header_data, "name_table.bin")
 
         result = {}
-        for _ in range(count):
-            key = header_data.read_uint32()
-            result[key] = header_data.read_string()
+        try:
+            for _ in range(count):
+                key = header_data.read_uint32()
+                result[key] = header_data.read_string()
+            self.last_name_end = header_data.position
+        except Exception as e:
+            ArkSaveLogger.debug_log("Error reading name table: %s", e)
+            ArkSaveLogger.open_hex_view(True)            
+            raise e
         return result
+    
+    def add_name_to_name_table(self, name: str):
+        header_data = self.get_custom_value("SaveHeader")
+        self.name_count += 1
+        header_data.set_position(self.name_offset)
+        header_data.replace_bytes(self.name_count.to_bytes(4, byteorder="little"))
+        header_data.set_position(self.last_name_end)
+        header_data.insert_uint32(self.save_context.add_new_name(name))
+        header_data.insert_string(name)
+        self.last_name_end = header_data.position
+
+        # store new name table
+        query = "UPDATE custom SET value = ? WHERE key = 'SaveHeader'"
+        with self.connection as conn:
+            conn.execute(query, (header_data.byte_buffer,))
+            conn.commit()
 
     def read_locations(self, header_data: 'ArkBinaryParser') -> list:
         parts = []
