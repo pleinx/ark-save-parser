@@ -1,11 +1,13 @@
 
 from uuid import UUID
+from typing import List
 
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
+from arkparse.enums import ArkDinoTrait
 
 from .stats import DinoStats
 
@@ -16,7 +18,7 @@ class Dino(ParsedObjectBase):
     is_female: bool = False
     is_cryopodded: bool = False
 
-    gene_traits: list = []
+    gene_traits: List[str] = []
     stats: DinoStats = DinoStats()
     location: ActorTransform = ActorTransform()
 
@@ -56,5 +58,59 @@ class Dino(ParsedObjectBase):
 
         d.stats = DinoStats.from_object(status_obj)
 
-        return d    
+        return d
+
+    def __get_gene_trait_bytes(self, trait: ArkDinoTrait, level: int, save: AsaSave) -> bytes:
+        trait = f"{trait.value}[{level}]"
+        trait_id = save.save_context.get_name_id(trait)
+
+        if trait_id is None:
+            raise ValueError(f"Trait {trait} not found in save context")
+        
+        return trait_id.to_bytes(4, byteorder="little") + b'\x00\x00\x00\x00'  
+    
+    def clear_gene_traits(self, save: AsaSave):
+        gt = self.object.get_property_value("GeneTraits")
+        self.gene_traits = []
+
+        if gt is None:
+            return
+
+        self.binary.set_property_position("GeneTraits")
+        self.binary.replace_array("GeneTraits", "NameProperty", None)
+        self.object = ArkGameObject(self.object.uuid, self.object.blueprint, self.binary)
+
+        save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
+
+    def remove_gene_trait(self, trait: ArkDinoTrait, save: AsaSave):
+        self.gene_traits = [t for t in self.gene_traits if not t.startswith(trait.value)]
+
+        gt = self.object.get_property_value("GeneTraits")
+
+        if gt is None:
+            return
+        
+        new_genes = [self.__get_gene_trait_bytes(ArkDinoTrait.from_string(t), int(t.split("[")[1][:-1]), save) for t in self.gene_traits]
+        self.binary.set_property_position("GeneTraits")
+        self.binary.replace_array("GeneTraits", "NameProperty", new_genes if len(new_genes) > 0 else None)
+        self.object = ArkGameObject(self.object.uuid, self.object.blueprint, self.binary)
+
+        save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
+
+
+    def add_gene_trait(self, trait: ArkDinoTrait, level: int, save: AsaSave):
+        self.gene_traits.append(f"{trait.value}[{level}]")
+        gt = self.object.get_property_value("GeneTraits")
+
+        if gt is None:
+            self.binary.set_property_position("SavedBaseWorldLocation")
+            self.binary.insert_array("GeneTraits", "NameProperty", [self.__get_gene_trait_bytes(trait, level, save)])
+        else:
+            new_genes = [self.__get_gene_trait_bytes(ArkDinoTrait.from_string(t), int(t.split("[")[1][:-1]), save) for t in self.gene_traits]
+            self.binary.set_property_position("GeneTraits")
+            self.binary.replace_array("GeneTraits", "NameProperty", new_genes)
+        
+        self.object = ArkGameObject(self.object.uuid, self.object.blueprint, self.binary)
+
+        save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
     

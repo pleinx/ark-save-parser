@@ -75,6 +75,24 @@ class ArkPropertyContainer:
             if property.name == name and property.position == position:
                 return property
         return None
+    
+    def get_properties_before(self, name: str) -> List[str]:
+        properties = []
+        for property in self.properties:
+            if property.name == name:
+                break
+            properties.append(property.name)
+        return properties
+    
+    def get_properties_after(self, name: str) -> List[str]:
+        properties = []
+        found = False
+        for property in self.properties:
+            if found:
+                properties.append(property.name)
+            if property.name == name:
+                found = True
+        return properties
 
     def get_property_value(self, name: str, default = None, position: int = None) -> Optional[T]:
         property = self.find_property(name, position)

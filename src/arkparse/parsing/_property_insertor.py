@@ -12,7 +12,12 @@ class PropertyInsertor(BaseValueValidator):
         if position is not None:
             self.position = position
 
-        name_bytes = self.save_context.get_name_id(name).to_bytes(4, byteorder="little")
+        name = self.save_context.get_name_id(name)
+
+        if name is None:
+            raise ValueError(f"Name {name} not found in save context")
+        
+        name_bytes = name.to_bytes(4, byteorder="little")
         name_bytes += b'\x00\x00\x00\x00'
 
         self.insert_bytes(name_bytes, position)
