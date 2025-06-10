@@ -68,23 +68,33 @@ class ArkProperty:
 
         if value_type == ArkValueType.Boolean:
             p = ArkProperty(key, value_type.name, position, 0, ArkProperty.read_property_value(value_type, byte_buffer))
-        elif value_type in {ArkValueType.Float, ArkValueType.Int, ArkValueType.Int8, ArkValueType.Double, ArkValueType.UInt32,
+        elif value_type in {ArkValueType.Int, ArkValueType.Int8, ArkValueType.Double, ArkValueType.UInt32,
                             ArkValueType.UInt64, ArkValueType.UInt16, ArkValueType.Int16, ArkValueType.Int64,
                             ArkValueType.String, ArkValueType.Name, ArkValueType.SoftObject, ArkValueType.Object}:
             p = ArkProperty(key, value_type.name, position, byte_buffer.read_byte(), ArkProperty.read_property_value(value_type, byte_buffer))
+        elif value_type == ArkValueType.Float:
+            is_pos = byte_buffer.read_byte() == 1
+            position = byte_buffer.read_int() if is_pos else 0  # V14, position is now read here
+
+            p = ArkProperty(key, value_type.name, position, 0, byte_buffer.read_float())
         elif value_type == ArkValueType.Byte:
             pre_read_pos = byte_buffer.get_position()
-            enum_type = byte_buffer.read_name()
+            # enum_type = byte_buffer.read_name()
+            enum_type = "None"  # For V14, enum type is not used anymore
+            is_pos = byte_buffer.read_byte() == 1
+            position = byte_buffer.read_int() if is_pos else 0 # V14, position is now read here
             if enum_type == "None":
-                p = ArkProperty(key, value_type.name, position, byte_buffer.read_byte(), byte_buffer.read_unsigned_byte())
+                p = ArkProperty(key, value_type.name, position, 0, byte_buffer.read_unsigned_byte())
             else:
                 unkn_byte = byte_buffer.read_byte()
                 enum_name = byte_buffer.read_name()
                 ArkSaveLogger.debug_log(f"[ENUM: key={key}; value={ArkEnumValue(enum_name)}; start_pos={pre_read_pos}")
                 p = ArkProperty(key, ArkValueType.Enum, position, unkn_byte, ArkEnumValue(enum_name))
         elif value_type == ArkValueType.Struct:
+            # V14, now no position -> revert by 4
+            byte_buffer.set_position(byte_buffer.get_position() - 4)  # Remove position read
             struct_type = byte_buffer.read_name()
-            p = ArkProperty(key, value_type.name, position, byte_buffer.read_byte(), ArkProperty.read_struct_property(byte_buffer, data_size, struct_type, in_array))
+            p = ArkProperty(key, value_type.name, position, 0, ArkProperty.read_struct_property(byte_buffer, data_size, struct_type, in_array))
         elif value_type == ArkValueType.Array:
             p = ArkProperty.read_array_property(key, value_type.name, position, byte_buffer, data_size)
         elif value_type == ArkValueType.Map:
@@ -185,9 +195,23 @@ class ArkProperty:
     @staticmethod
     def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
         ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
+        
         if not in_array:
             ArkSaveLogger.enter_struct(f"S({struct_type})")
-            byte_buffer.validate_bytes_as_string("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", 16)
+            # Removed in V14? now a name here
+            # byte_buffer.validate_bytes_as_string("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", 16)
+            byte_buffer.validate_uint32(1) # Added in V14, this is now 1
+            new_name = byte_buffer.read_name()
+            ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
+            # print(f"New name in v14: {new_name}")
+            byte_buffer.validate_uint32(0)
+            data_size = byte_buffer.read_uint32()
+            ArkSaveLogger.debug_log(f"V14 - unknown byte: {byte_buffer.read_byte()}")
+            
+            next_value = byte_buffer.read_uint32()
+
+            if next_value != 1:
+                byte_buffer.set_position(byte_buffer.get_position() - 4)  # Revert the read if not 1
 
         ark_struct_type = ArkStructType.from_type_name(struct_type)
         
@@ -264,28 +288,38 @@ class ArkProperty:
 
     @staticmethod
     def read_array_property(key: str, type_: str, position: int, byte_buffer: 'ArkBinaryParser', data_size: int) -> 'ArkProperty':
+        # V14 no position in array
+        byte_buffer.set_position(byte_buffer.get_position() - 4)  # Remove position read
+
         array_type = byte_buffer.read_name()
-        end_of_struct = byte_buffer.read_byte()
-        data_start_postion = byte_buffer.get_position()
+
+        # V14, now an additional 8 bytes here
         array_length = byte_buffer.read_int()
+
+        if array_type != "StructProperty": # from V14, StructProperty is handled differently
+            data_size = byte_buffer.read_uint32()
+            end_of_struct = byte_buffer.read_byte()
+            data_start_postion = byte_buffer.get_position()
+            array_length = byte_buffer.read_uint32()
         start_of_array_values_position = byte_buffer.get_position()
 
-        if array_type == "StructProperty":
-            array_name = byte_buffer.read_name()
-            sProp = byte_buffer.read_name()
+        ArkSaveLogger.debug_log(f"Reading array property {key} with type {array_type} at position {start_of_array_values_position}, length {array_length}")
 
-            if sProp != "StructProperty":
-                ArkSaveLogger.open_hex_view()
-                raise ValueError(f"Expected StructProperty, got {sProp}")
-            
-            content_size = byte_buffer.read_uint64()
+        if array_type == "StructProperty":
             array_content_type = byte_buffer.read_name()
-            byte_buffer.skip_bytes(17)
+            byte_buffer.validate_uint32(1) # Added in V14, this is now 1
+            ArkSaveLogger.debug_log(f"New name in v14: {byte_buffer.read_name()}")
+            byte_buffer.validate_uint32(0)
+            data_size = byte_buffer.read_uint32()
+            byte_buffer.validate_byte(0) # V14, unknown byte
+            data_start_postion = byte_buffer.get_position()
+            byte_buffer.validate_uint32(1) # Added in V14, this is now 1
+
             ArkSaveLogger.enter_struct(f"Arr({array_content_type})")
-            ArkSaveLogger.debug_log(f"[STRUCT ARRAY: key=\'{array_name}\'; nr_of_value={array_length}; type={array_content_type}; bin_length={content_size}]")
+            ArkSaveLogger.debug_log(f"[STRUCT ARRAY: key=\'{'none'}\'; nr_of_value={array_length}; type={array_content_type}; bin_length={data_size}]")
             struct_array = []
             for _ in range(array_length):
-                struct_array.append(ArkProperty.read_struct_property(byte_buffer, content_size, array_content_type, True))
+                struct_array.append(ArkProperty.read_struct_property(byte_buffer, data_size, array_content_type, True))
 
             if array_content_type == "CustomItemByteArray":
                 struct_array = []
@@ -305,9 +339,9 @@ class ArkProperty:
                     #     newReader.find_names()
                     #     ArkSaveLogger.open_hex_view(True)
 
-            p = ArkProperty(key, type_, position, end_of_struct, struct_array)
+            p = ArkProperty(key, type_, position, 0, struct_array)
 
-            ArkSaveLogger.debug_log(f"============ END {array_name}[{array_content_type}] ============")
+            ArkSaveLogger.debug_log(f"============ END {''}[{array_content_type}] ============")
 
             if(byte_buffer.position != data_start_postion + data_size):
                 # just skip to the end of the struct if an error occurs
@@ -384,7 +418,7 @@ class ArkProperty:
         elif value_type == ArkValueType.Name:
             return byte_buffer.read_name()
         elif value_type == ArkValueType.Boolean:
-            return byte_buffer.read_short() == 1
+            return byte_buffer.read_byte() == 1
         elif value_type == ArkValueType.Struct:
             return ArkProperty.read_struct_property(byte_buffer, byte_buffer.read_int(), True)
         elif value_type == ArkValueType.SoftObject:

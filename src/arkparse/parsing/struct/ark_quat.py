@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
+from arkparse.logging import ArkSaveLogger
 
 if TYPE_CHECKING:
     from arkparse.parsing import ArkBinaryParser
@@ -16,3 +17,5 @@ class ArkQuat:
         self.y = byte_buffer.read_double()
         self.z = byte_buffer.read_double()
         self.w = byte_buffer.read_double()
+
+        ArkSaveLogger.debug_log(f"Read ArkQuat: x={self.x}, y={self.y}, z={self.z}, w={self.w}")

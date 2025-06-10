@@ -28,6 +28,7 @@ class ArkPropertyContainer:
                 #     ArkSaveLogger.debug_log(f"Base property read, binary index is {byte_buffer.get_position()} value is {ark_property.value}")
                 self.properties.append(ark_property)
         except Exception as e:
+            byte_buffer.find_names()
             ArkSaveLogger.debug_log(f"Failed to read object properties at position {last_property_position}")
             ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()

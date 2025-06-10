@@ -22,31 +22,35 @@ class PropertyParser(BaseValueValidator):
     def parse_uint32_property(self, property_name: str) -> int:
         self.validate_name(property_name)
         self.validate_name("UInt32Property")
+        self.validate_uint32(0)
         self.validate_byte(0x04)
-        self.validate_uint64(0)
+        self.validate_uint32(0)
         value = self.read_uint32()
         return value
 
     def parse_int32_property(self, property_name: str) -> int:
         self.validate_name(property_name)
         self.validate_name("IntProperty")
+        self.validate_uint32(0)
         self.validate_byte(0x04)
-        self.validate_uint64(0)
+        self.validate_uint32(0)
         value = self.read_int()
         return value
 
     def parse_float_property(self, property_name: str) -> float:
         self.validate_name(property_name)
         self.validate_name("FloatProperty")
+        self.validate_uint32(0)
         self.validate_byte(0x04)
-        self.validate_uint64(0)
+        self.validate_uint32(0)
         value = self.read_float()
         return value
 
     def parse_string_property(self, property_name: str) -> str:
         self.validate_name(property_name)
         self.validate_name("StrProperty")
+        self.validate_uint32(0)
         self.read_byte() # length?
-        self.validate_uint64(0)
+        self.validate_uint32(0)
         value = self.read_string()
         return value

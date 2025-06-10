@@ -68,6 +68,7 @@ class ArkFtpClient:
         self.user = user
         self.password = password
         self.ftp = ftplib.FTP()
+        self.connected = False
         self.ftp.connect(host, port, timeout=10)
         self.ftp.login(user, password)
         self.map = None

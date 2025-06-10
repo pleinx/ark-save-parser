@@ -136,7 +136,7 @@ class BaseValueParser(BinaryReaderBase):
             return self.read_string()
         name_id = self.read_uint32()
         name = self.save_context.get_name(name_id)
-
+        
         if name is None:
             ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
@@ -148,9 +148,10 @@ class BaseValueParser(BinaryReaderBase):
         always_zero = self.read_int()
 
         if always_zero != 0:
-            ArkSaveLogger.enable_debug = True
-            ArkSaveLogger.open_hex_view()
-            raise ValueError(f"Always zero is not zero: {always_zero}, for name {name}")
+            # ArkSaveLogger.enable_debug = True
+            # ArkSaveLogger.open_hex_view()
+            # raise ValueError(f"Always zero is not zero: {always_zero}, for name {name}")
+            print("ERROR: Always zero is not zero:", always_zero, "for name", name)
         
         return name
     

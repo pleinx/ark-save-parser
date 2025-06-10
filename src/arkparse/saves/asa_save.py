@@ -89,14 +89,21 @@ class AsaSave:
 
     def read_header(self):
         header_data = self.get_custom_value("SaveHeader")
-                       
+        ArkSaveLogger.set_file(header_data, "header.bin")
+           
         self.save_context.save_version = header_data.read_short()
         ArkSaveLogger.debug_log("Save version: %d", self.save_context.save_version)
+
+        if self.save_context.save_version >= 14:
+            ArkSaveLogger.debug_log("V14 unknown value 1: %d", header_data.read_uint32())
+            ArkSaveLogger.debug_log("V14 unknown value 2: %d", header_data.read_uint32())
+            
         name_table_offset = header_data.read_int()
         self.name_offset = name_table_offset
         ArkSaveLogger.debug_log("Name table offset: %d", name_table_offset)
         self.save_context.game_time = header_data.read_double()
         ArkSaveLogger.debug_log("Game time: %f", self.save_context.game_time)
+
 
         if self.save_context.save_version >= 12:
             self.save_context.unknown_value = header_data.read_uint32()
@@ -143,12 +150,19 @@ class AsaSave:
 
     def read_locations(self, header_data: 'ArkBinaryParser') -> list:
         parts = []
+
         num_parts = header_data.read_uint32()
+        ArkSaveLogger.debug_log("Number of header locations: %d", num_parts)
+
         for _ in range(num_parts):
-            part = header_data.read_string()
-            if not part.endswith("_WP"):
-                parts.append(HeaderLocation(part))
-            header_data.validate_uint32(0xFFFFFFFF)
+            try:
+                part = header_data.read_string()
+                if not part.endswith("_WP"):
+                    parts.append(HeaderLocation(part))
+                header_data.validate_uint32(0xFFFFFFFF)
+            except Exception as e:             
+                ArkSaveLogger.open_hex_view()
+                raise ValueError(f"Error reading header location: {e}")
         return parts
     
     def get_game_obj_binary(self, obj_uuid: uuid.UUID) -> Optional[bytes]:

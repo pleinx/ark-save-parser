@@ -17,7 +17,7 @@ save_path  = ArkFtpClient.from_config("../../ftp_config.json", ArkMap.ABERRATION
 save = AsaSave(save_path)   # load the save file
 dino_api = DinoApi(save)    # create a DinoApi object
 
-limit = 20 # set the limit for the stats
+limit = 5 # set the limit for the stats
 dinos = dino_api.get_all_filtered(# only consider wild dinos
                                   tamed=False, 
                                   # set the stat limit
