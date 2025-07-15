@@ -134,7 +134,7 @@ class BaseApi(StructureApi):
                 new_uuid = uuid_translation_map[file.uuid]
                 parser = ArkBinaryParser(file.bytes, self.save.save_context)
                 parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
-                parser.replace_name_ids(file.names)
+                parser.replace_name_ids(file.names, self.save)
                 item = InventoryItem(uuid=file.uuid, binary=parser)
                 item.reidentify(new_uuid)
                 self.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
@@ -145,7 +145,7 @@ class BaseApi(StructureApi):
                 new_uuid = uuid_translation_map[file.uuid]
                 parser = ArkBinaryParser(file.bytes, self.save.save_context)
                 parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
-                parser.replace_name_ids(file.names)
+                parser.replace_name_ids(file.names, self.save)
                 inventory = Inventory(uuid=file.uuid, binary=parser, save=self.save)
                 inventory.reidentify(new_uuid)
                 self.save.add_obj_to_db(new_uuid, inventory.binary.byte_buffer)
@@ -158,7 +158,7 @@ class BaseApi(StructureApi):
                 new_uuid = uuid_translation_map[file.uuid]
                 parser = ArkBinaryParser(file.bytes, self.save.save_context)
                 parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
-                parser.replace_name_ids(file.names)
+                parser.replace_name_ids(file.names, self.save)
                 obj = ArkGameObject(uuid=new_uuid, binary_reader=parser)
                 structure = self._parse_single_structure(obj, parser)
                 structure.reidentify(new_uuid)
@@ -168,10 +168,17 @@ class BaseApi(StructureApi):
                 structures[new_uuid] = structure
                 self.save.add_obj_to_db(new_uuid, structure.binary.byte_buffer)
 
+                # print(f"Added structure {structure.object.uuid} with blueprint {structure.object.blueprint} to save")
+                # from arkparse.logging import ArkSaveLogger
+                # ArkSaveLogger.enable_debug = True
+                # obj = ArkGameObject(binary_reader=structure.binary)
+                # ArkSaveLogger.enable_debug = False
+
         keystone_uuid = uuid_translation_map[UUID(json.loads(Path(base_file).read_text())["keystone"])]
         base = Base(keystone_uuid, structures)
         # base = Base(structures=structures)
 
+        input(f"Imported base with {len(structures)} structures, keystone {base.keystone.object.uuid} at {base.keystone.location}")
         if location is not None:
             base.move_to(location, self.save)
 

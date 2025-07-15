@@ -4,6 +4,7 @@ from pathlib import Path
 from arkparse.parsing import ArkBinaryParser
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.misc.inventory import Inventory
+from arkparse.object_model import ArkGameObject
 
 from .structure import Structure
 class StructureWithInventory(Structure):
@@ -33,13 +34,13 @@ class StructureWithInventory(Structure):
 
     def set_item_quantity(self, quantity: int):
         if self.item_count != None:
-            self.binary.replace_u32(self.binary.set_property_position("CurrentItemCount"), quantity)
+            self.binary.replace_u32(self.object.find_property("CurrentItemCount"), quantity)
             self.item_count = quantity
             self.db.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
     def add_item(self, item: UUID, save: AsaSave = None):
         if self.item_count == self.max_item_count:
-            return
+            return False
         
         if self.item_count == 0:
             raise ValueError("Currently, adding stuff to empty inventories is not supported!")
@@ -47,6 +48,7 @@ class StructureWithInventory(Structure):
         self.set_item_quantity(self.item_count + 1)
         self.inventory.add_item(item, self.db, store=(save is not None))
         self.db.modify_game_obj(self.inventory.object.uuid, self.inventory.binary.byte_buffer)
+        return True
 
     def remove_item(self, item: UUID):
         if self.item_count == 0:
@@ -77,8 +79,10 @@ class StructureWithInventory(Structure):
         super().reidentify(new_uuid)
         if self.inventory is not None:
             self.inventory.renumber_name(new_number=self.object.get_name_number())
+        uuid = new_uuid if new_uuid is not None else self.object.uuid
+        self.object = ArkGameObject(uuid=uuid, blueprint=self.object.blueprint, binary_reader=self.binary)
 
-    def store_binary(self, path: Path, prefix: str = "str"):
+    def store_binary(self, path: Path, prefix: str = "str_"):
         super().store_binary(path, prefix=prefix)
         if self.inventory is None:
             print(f"Structure {self.object.uuid} (class={self.object.blueprint}) has no inventory")

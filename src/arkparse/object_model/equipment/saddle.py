@@ -21,7 +21,8 @@ class Saddle(EquipmentWithArmor):
     @staticmethod
     def generate_from_template(class_: str, save: AsaSave, is_bp: bool):
         file = "saddle_bp" if is_bp else "saddle"
-        return Equipment._generate_from_template(Saddle, file, class_, save)
+        eq = Equipment._generate_from_template(Saddle, file, class_, save)
+        return eq
     
     def auto_rate(self, save: AsaSave = None):
         self._auto_rate(0.000926, self.get_average_stat(), save)

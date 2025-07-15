@@ -78,18 +78,18 @@ class Structure(ParsedObjectBase):
 
     def set_max_health(self, health: float):
         self.max_health = health
-        self.binary.replace_float(self.binary.set_property_position("MaxHealth"), float(health))
+        self.binary.replace_float(self.object.find_property("MaxHealth"), float(health))
 
     def heal(self):
         if self.current_health == self.max_health:
             return
         self.current_health = self.max_health
-        self.binary.replace_float(self.binary.set_property_position("Health"), float(self.max_health))
+        self.binary.replace_float(self.object.find_property("Health"), float(self.max_health))
 
     def reidentify(self, new_uuid: UUID = None):
         new_id = random.randint(0, 2**32 - 1)
         self.id_ = new_id
-        self.binary.replace_u32(self.binary.set_property_position("StructureID"), new_id)
+        self.binary.replace_u32(self.object.find_property("StructureID"), new_id)
         super().reidentify(new_uuid)
 
     def remove_from_save(self, save: AsaSave):
@@ -112,7 +112,7 @@ class Structure(ParsedObjectBase):
     #     self.owner = owner
     #     save.update_game_object(self.object)
 
-    def store_binary(self, path: Path, loc_only=False, prefix: str = "str"):
+    def store_binary(self, path: Path, loc_only=False, prefix: str = "str_"):
         if not loc_only:
             super().store_binary(path, prefix=prefix)
         

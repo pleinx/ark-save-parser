@@ -6,8 +6,8 @@ from arkparse.classes import Classes
 
 # Define paths using pathlib for better readability and cross-platform support
 current_dir = Path.cwd()
-save_path = current_dir / "Aberration_WP.ark"
-save_path = ArkFtpClient.from_config(Path("../../ftp_config.json"), ArkMap.ABERRATION).download_save_file(Path.cwd())
+save_path = current_dir / "Ragnarok_WP.ark"
+save_path = ArkFtpClient.from_config(Path("../../ftp_config.json"), ArkMap.RAGNAROK).download_save_file(Path.cwd())
 new_folder = current_dir / "uncategorized"
 
 # Ensure the new_folder exists

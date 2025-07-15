@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 # Import ArkProperty only for type checking to avoid circular import
 if TYPE_CHECKING:
     from arkparse.parsing import ArkProperty
-    
-from arkparse.parsing import ArkBinaryParser
+    from arkparse.parsing import ArkBinaryParser 
+
 from arkparse.logging import ArkSaveLogger
 
 T = TypeVar('T')
@@ -14,8 +14,9 @@ T = TypeVar('T')
 class ArkPropertyContainer:
     properties: List['ArkProperty'] = field(default_factory=list)
 
-    def read_properties(self, byte_buffer: ArkBinaryParser, propertyClass: Type['ArkProperty'], next_object_index: int) -> None:
+    def read_properties(self, byte_buffer: "ArkBinaryParser", propertyClass: Type['ArkProperty'], next_object_index: int) -> None:
         last_property_position = byte_buffer.get_position()
+        # ArkSaveLogger.open_hex_view(True)
         try:
             while byte_buffer.has_more() and byte_buffer.get_position() < next_object_index:
                 last_property_position = byte_buffer.get_position()
@@ -26,12 +27,13 @@ class ArkPropertyContainer:
                     break
                 # else:
                 #     ArkSaveLogger.debug_log(f"Base property read, binary index is {byte_buffer.get_position()} value is {ark_property.value}")
+
                 self.properties.append(ark_property)
+
         except Exception as e:
-            byte_buffer.find_names()
-            ArkSaveLogger.debug_log(f"Failed to read object properties at position {last_property_position}")
             ArkSaveLogger.enable_debug = True
-            ArkSaveLogger.open_hex_view()
+            byte_buffer.find_names()
+            ArkSaveLogger.debug_log(f"Failed to read object properties at position {last_property_position} ()")
             byte_buffer.set_position(last_property_position)
             raise e
         

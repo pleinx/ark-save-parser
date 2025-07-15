@@ -347,12 +347,13 @@ class AsaSave:
                         game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
 
                 except Exception as e:
+                    pass
                     ArkSaveLogger.enable_debug = True
                     byte_buffer.find_names()
                     raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
                 
-                for object in objects:
-                    ArkSaveLogger.debug_log("Object: %s", object)
+                # for object in objects:
+                #     ArkSaveLogger.debug_log("Object: %s", object)
                 ArkSaveLogger.exit_struct()
 
         for o in self.var_objects:
@@ -425,6 +426,13 @@ class AsaSave:
         
         # if not class_name.startswith("/Game/"):
         #     return None
-    
-        return ArkGameObject(obj_uuid, class_name, byte_buffer)
+
+        try:
+            return ArkGameObject(obj_uuid, class_name, byte_buffer)
+        except Exception as e:
+            ArkSaveLogger.enable_debug = True
+            # ArkSaveLogger.debug_log("Error parsing object %s: %s", class_name, e)
+            ArkSaveLogger.enable_debug = False
+
+        return None
         

@@ -85,6 +85,9 @@ class Equipment(InventoryItem):
         uuid, parser = super()._generate(save, os.path.join("templates", "equipment", template_file))
         parser.replace_bytes(uuid.bytes, position=len(parser.byte_buffer) - 16)
         eq: "Equipment" = own_class(uuid, parser)
+        name_id = save.save_context.get_name_id(bp_class) # gnerate name id if needed
+        if name_id is None:
+            save.add_name_to_name_table(bp_class)
         eq.reidentify(uuid, bp_class)
         return eq
 
@@ -99,7 +102,7 @@ class Equipment(InventoryItem):
             raise ValueError("Cannot modify quality of an item with quality 0")
         
         self.quality = quality.value
-        self.binary.replace_byte_property(self.binary.set_property_position("ItemQualityIndex"), quality.value)
+        self.binary.replace_byte_property(self.object.find_property("ItemQualityIndex"), quality.value)
         self.update_binary(save)
 
     def set_rating(self, rating: int, save: AsaSave = None):
@@ -107,16 +110,17 @@ class Equipment(InventoryItem):
             raise ValueError("Cannot modify rating of a default crafted item")
         
         self.rating = rating
-        self.binary.replace_float(self.binary.set_property_position("ItemRating"), rating)
+        self.binary.replace_float(self.object.find_property("ItemRating"), rating)
         self.update_binary(save)
 
     def set_current_durability(self, percentage: float, save: AsaSave = None):
         self.current_durability = percentage / 100
-        self.binary.replace_float(self.binary.set_property_position("SavedDurability"), self.current_durability)
+        self.binary.replace_float(self.object.find_property("SavedDurability"), self.current_durability)
         self.update_binary(save)
 
     def _set_internal_stat_value(self, value: float, position: ArkEquipmentStat, save: AsaSave = None):
-        self.binary.replace_u16(self.binary.set_property_position("ItemStatValues", position.value), value)
+        prop = self.object.find_property("ItemStatValues", position.value)
+        self.binary.replace_u16(prop, value)
         self.update_binary(save)
 
     def get_stat_value(self, position: ArkEquipmentStat) -> int:
@@ -126,6 +130,8 @@ class Equipment(InventoryItem):
         super().reidentify(new_uuid)
         if new_class is not None:
             self.object.change_class(new_class, self.binary)
+            uuid = self.object.uuid if new_uuid is None else new_uuid
+            self.object = ArkGameObject(uuid=uuid, blueprint=new_class, binary_reader=self.binary)
 
     @staticmethod
     def from_inventory_item(item: InventoryItem, save: AsaSave, cls: callable = None):

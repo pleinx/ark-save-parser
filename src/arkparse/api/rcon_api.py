@@ -20,6 +20,7 @@ class ActivePlayer:
         split_str = [x.strip() for x in split_str]
         self.name = split_str[1]
         self.ue_5_id = split_str[2]
+        self.real_life_name = ""
 
         self.id_to_name = {}
         if PlayerDataFiles.players_files_path is not None:
