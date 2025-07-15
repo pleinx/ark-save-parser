@@ -17,6 +17,9 @@ class Resource(Stackable):
         uuid, parser = Stackable._generate(save)
         rsrc = Resource(uuid, parser)
         rsrc.set_quantity(2)
+        name_id = save.save_context.get_name_id(class_) # gnerate name id if needed
+        if name_id is None:
+            save.add_name_to_name_table(class_)
         rsrc.reidentify(uuid, class_)
         rsrc.replace_uuid(owner_inventory_uuid, rsrc.owner_inv_uuid)
         return rsrc

@@ -323,7 +323,7 @@ class DinoApi:
             ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
             ftp_client.close()
 
-    def create_heatmap(self, resolution: int = 100, dinos: Dict[UUID, TamedDino] = None, classes: List[str] = None, owner: DinoOwner = None, only_tamed: bool = False):
+    def create_heatmap(self, map: ArkMap, resolution: int = 100, dinos: Dict[UUID, TamedDino] = None, classes: List[str] = None, owner: DinoOwner = None, only_tamed: bool = False):
         import math
         import numpy as np
 
@@ -338,10 +338,12 @@ class DinoApi:
             if dino.location is None:
                 continue
 
-            coords: MapCoords = dino.location.as_map_coords(ArkMap.ABERRATION)
+            coords: MapCoords = dino.location.as_map_coords(map)
 
             y = math.floor(coords.long)
             x = math.floor(coords.lat)
+
+            print(f"Adding dino {dino.tamed_name} ({dino.get_short_name()}) at ({x}, {y})")
 
             if x < 0 or x >= resolution or y < 0 or y >= resolution:
                 continue

@@ -38,6 +38,8 @@ class InventoryItem(ParsedObjectBase):
         super().reidentify(new_uuid)
         if new_class is not None:
             self.object.change_class(new_class, self.binary)
+            uuid = self.object.uuid if new_uuid is None else new_uuid
+            self.object = ArkGameObject(uuid=uuid, blueprint=new_class, binary_reader=self.binary)
 
     def add_self_to_inventory(self, inv_uuid: UUID):
         old_id = self.owner_inv_uuid
@@ -49,8 +51,10 @@ class InventoryItem(ParsedObjectBase):
 
     def set_quantity(self, quantity: int, save: AsaSave = None):
         self.quantity = quantity
-        self.binary.set_property_position("ItemQuantity")
-        self.binary.replace_u32(self.binary.position, quantity)
+        prop = self.object.find_property("ItemQuantity")
+        # self.binary.structured_print()
+        self.binary.replace_u32(prop, quantity)
+        # self.binary.structured_print()
 
         if save is not None:
             save.modify_game_obj(self.object.uuid, self.binary)

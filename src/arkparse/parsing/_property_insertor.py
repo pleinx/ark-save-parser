@@ -38,9 +38,12 @@ class PropertyInsertor(BaseValueValidator):
         value_bytes = value.to_bytes(4, byteorder="little")
         self.insert_bytes(value_bytes)
         
-    def insert_array(self, array_name: str, property_type: str, item_bytes: List[bytes], position: int = None):
+    def insert_array(self, array_name: str, property_type: str, item_bytes: List[bytes], nr_of_items: int, type_int: int, position: int = None):
         if self.save_context is None:
             raise ValueError("Save context is not set")
+    
+        if property_type == "StructProperty":
+            raise NotImplementedError("Replacing StructProperty arrays is not implemented yet")
         
         if position is not None:
             self.position = position
@@ -49,9 +52,10 @@ class PropertyInsertor(BaseValueValidator):
 
         self.insert_name(array_name)
         self.insert_name("ArrayProperty")
-        self.insert_uint32(array_length)
-        self.insert_uint32(0)
+        self.insert_uint32(nr_of_items)
         self.insert_name(property_type)
+        self.insert_uint32(type_int)
+        self.insert_uint32(array_length)
         self.insert_bytes(b'\x00')
         self.insert_uint32(len(item_bytes))
 

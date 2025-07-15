@@ -20,3 +20,4 @@ class BinaryReaderBase:
 
     def size(self) -> int:
         return len(self.byte_buffer)
+    

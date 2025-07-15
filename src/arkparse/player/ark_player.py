@@ -68,7 +68,7 @@ class ArkPlayer:
         self.tribe = my_data.get_property_value("TribeID")
         self.last_time_died = my_data.get_property_value("LastTimeDiedToEnemyTeam")
         self.login_time = my_data.get_property_value("LoginTime")
-        self.nr_of_deaths = my_data.get_property_value("NumOfDeaths")
+        self.nr_of_deaths = my_data.get_property_value("NumOfDeaths", 0)
 
         deaths = my_data.get_array_property_value("ServerSavedLastDeathLocations")
         self.death_locations = []
@@ -88,7 +88,8 @@ class ArkPlayer:
     def __init__(self, file: Path):
         _archive = ArkArchive(file)
         
-        self.__init_player_data(_archive.get_object_by_class("/Game/PrimalEarth/CoreBlueprints/PrimalPlayerDataBP.PrimalPlayerDataBP_C"))
+        self.player_data = _archive.get_object_by_class("/Game/PrimalEarth/CoreBlueprints/PrimalPlayerDataBP.PrimalPlayerDataBP_C")
+        self.__init_player_data(self.player_data)
 
         self.persistent_buffs = []
         for buff in _archive.get_all_objects_by_class("/Script/ShooterGame.PrimalBuffPersistentData"):

@@ -5,6 +5,7 @@ from arkparse.logging import ArkSaveLogger
 
 from arkparse.player.ark_player import ArkPlayer
 from arkparse.ark_tribe import ArkTribe
+from arkparse.object_model import ArkGameObject
 
 @dataclass
 class ObjectOwner:
@@ -17,6 +18,7 @@ class ObjectOwner:
     def __init__(self, properties: ArkPropertyContainer = None):
         if properties is None:
             return
+        self.properties = properties
         self.original_placer_id = properties.get_property_value("OriginalPlacerPlayerID")
         self.tribe_name = properties.get_property_value("OwnerName")
         self.player_name = properties.get_property_value("OwningPlayerName")
@@ -25,19 +27,26 @@ class ObjectOwner:
 
     def set_in_binary(self, binary: ArkBinaryParser):
         ArkSaveLogger.set_file(binary, "debug.bin")
-
+        
         if binary is not None:
             if self.original_placer_id is not None:
-                binary.replace_u32(binary.set_property_position("OriginalPlacerPlayerID"), self.original_placer_id)
+                binary.replace_u32(self.properties.find_property("OriginalPlacerPlayerID"), self.original_placer_id)
             if self.tribe_name is not None:
-                binary.replace_string(binary.set_property_position("OwnerName"), self.tribe_name)
+                binary.replace_string(self.properties.find_property("OwnerName"), self.tribe_name)
+                self.properties = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
             if self.player_name is not None:
-                binary.replace_string(binary.set_property_position("OwningPlayerName"), self.player_name)
+                binary.replace_string(self.properties.find_property("OwningPlayerName"), self.player_name)
+                self.properties = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
             if self.id_ is not None:
-                binary.replace_u32(binary.set_property_position("OwningPlayerID"), self.id_)
+                binary.replace_u32(self.properties.find_property("OwningPlayerID"), self.id_)
             if self.tribe_id is not None:
-                binary.replace_u32(binary.set_property_position("TargetingTeam"), self.tribe_id)
-
+                # print("Setting TargetingTeam to", self.tribe_id)
+                # prop = self.properties.find_property("TargetingTeam")
+                # print("Found property:", prop, " at offset ", prop.value_position)
+                # binary.structured_print()
+                binary.replace_u32(self.properties.find_property("TargetingTeam"), self.tribe_id)
+                # binary.structured_print()
+                # input("Press Enter to continue...")
         return binary
 
     def __str__(self) -> str:

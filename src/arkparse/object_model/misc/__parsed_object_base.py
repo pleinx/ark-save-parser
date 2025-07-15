@@ -37,13 +37,15 @@ class ParsedObjectBase:
         new_uuid = uuid4()
 
         # Update the template name encodings to the actal save name encodings
-        parser.replace_name_ids(names)
+        parser.replace_name_ids(names, save)
 
         return new_uuid, parser
 
     def reidentify(self, new_uuid: UUID = None):
         self.replace_uuid(new_uuid=new_uuid)
         self.renumber_name()
+        uuid = new_uuid if new_uuid is not None else self.object.uuid
+        self.object = ArkGameObject(uuid=uuid, blueprint=self.object.blueprint, binary_reader=self.binary)
 
     def replace_uuid(self, new_uuid: UUID = None, uuid_to_replace: UUID = None):
         if new_uuid is  None:
@@ -59,9 +61,10 @@ class ParsedObjectBase:
     def renumber_name(self, new_number: bytes = None):
         self.binary.byte_buffer = self.object.re_number_names(self.binary, new_number)
 
-    def store_binary(self, path: Path, prefix: str = "obj"):
-        file_path = path / (f"{prefix}_{str(self.object.uuid)}.bin")
-        name_path = path / (f"{prefix}_{str(self.object.uuid)}_n.json")
+    def store_binary(self, path: Path, name: str = None, prefix: str = "obj_", no_suffix= False):
+        name = name if name is not None else str(self.object.uuid)
+        file_path = path / (f"{prefix}{name}.bin" if not no_suffix else f"{prefix}{name}")
+        name_path = path / (f"{prefix}{name}_n.json")
 
         with open(file_path, "wb") as file:
             file.write(self.binary.byte_buffer)

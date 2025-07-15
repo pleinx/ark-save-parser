@@ -1,3 +1,4 @@
+/Game/ASA/Dinos/Bison/DinoTamedInventoryComponent_Bison.DinoTamedInventoryComponent_Bison_C
 /Game/ASA/Dinos/Fasolasuchus/DinoTamedInventoryComponent_Fasola.DinoTamedInventoryComponent_Fasola_C
 /Game/ASA/Dinos/Gigantoraptor/DinoTamedInventoryComponent_Gigantoraptor.DinoTamedInventoryComponent_Gigantoraptor_C
 /Game/ASA/Dinos/YiLing/DinoTamedInventoryComponent_YiLing.DinoTamedInventoryComponent_YiLing_C

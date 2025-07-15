@@ -75,8 +75,9 @@ class BaseValueParser(BinaryReaderBase):
             if terminator != 0:
                 print(f"Terminator is not zero: {terminator}")
                 self.position = pre_read_pos
-                ArkSaveLogger.enable_debug = True
+                # ArkSaveLogger.enable_debug = True
                 ArkSaveLogger.open_hex_view()
+                
 
         return result
 
@@ -110,6 +111,9 @@ class BaseValueParser(BinaryReaderBase):
         return result
 
     def read_unsigned_byte(self) -> int:
+        # ArkSaveLogger.enable_debug = True
+        # ArkSaveLogger.set_file(self, "read_unsigned_byte")
+        # ArkSaveLogger.open_hex_view(True)
         return self.read_byte() & 0xFF
 
     def read_byte(self) -> int:
@@ -136,13 +140,14 @@ class BaseValueParser(BinaryReaderBase):
             return self.read_string()
         name_id = self.read_uint32()
         name = self.save_context.get_name(name_id)
+        # print(f"Reading name with id {name_id} at position {self.position}, name: {name}")
         
         if name is None:
-            ArkSaveLogger.enable_debug = True
+            # ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
             raise ValueError(f"Name is None, for name index {hex(name_id)}")
 
-        if name == "NPCZoneVolume" or "NPCZoneVolume_" in name or "_NPCZoneVolume" in name:
+        if name == "NPCZoneVolume" or "NPCZoneVolume_" in name or "_NPCZoneVolume" in name or "NPCCountVolume" in name:
             return name + "_" + hex(self.read_int())
 
         always_zero = self.read_int()
@@ -181,3 +186,4 @@ class BaseValueParser(BinaryReaderBase):
         # Reads `data_size` bytes from the current position and returns them as a hexadecimal string
         bytes_data = self.read_bytes(data_size)
         return ' '.join(f"{byte:02X}" for byte in bytes_data)
+    

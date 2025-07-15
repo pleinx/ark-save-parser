@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, TYPE_CHECKING
 from uuid import UUID
 from io import BytesIO
 import zlib
@@ -9,6 +9,9 @@ from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
 from .ark_value_type import ArkValueType
 from collections import deque
+
+if TYPE_CHECKING:
+    from arkparse import AsaSave
 
 COMPRESSED_BYTES_NAME_CONSTANTS = {
         0: "TribeName",
@@ -114,6 +117,59 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             output_buffer.append(next_byte)
 
         return bytes(output_buffer)
+    
+    def __structured_print_known(self, lengths: List[int]):
+        for length in lengths:
+            if self.position >= len(self.byte_buffer):
+                break
+            
+            for _ in range(length):
+                if self.position >= len(self.byte_buffer):
+                    break
+                print(f"{self.read_byte():02x} ", end="")
+            print("")
+            print(f"{self.position}: ", end="")
+    
+    def structured_print(self):
+        current_position = self.position
+        known_structures = {
+            "UInt32Property": [4,1,4,4],
+            "DoubleProperty": [4,1,4,8],
+            "IntProperty": [4,1,4,4],
+            "ByteProperty": [4,1,4,1],
+            "UInt16Property": [4,4,1,4,2],
+        }
+        names = self.find_names(no_print=True)
+        self.position = 0
+        printed = 0
+
+        while self.has_more():
+            if self.position >= len(self.byte_buffer):
+                break
+            
+            if self.position in names:
+                if printed > 0:
+                    print("")
+                    print(f"{self.position}: ", end="")
+                name = names[self.position]
+                print(f"{name}")
+                self.set_position(self.position + 8)
+                print(f"{self.position}: ", end="")
+                printed = 0
+                if name in known_structures:
+                    self.__structured_print_known(known_structures[name])
+                    continue
+            else:
+                print(f"{self.read_byte():02x} ", end="")
+                printed += 1
+
+                if printed == 4:
+                    print("")
+                    print(f"{self.position}: ", end="")
+                    printed = 0  
+
+        self.position = current_position
+        print(" === End of structured print === ")           
 
     @staticmethod
     def from_deflated_data(byte_arr: List[int]):
@@ -154,7 +210,6 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             name_table[i | 0x10000000] = parser.read_string()
         parser.save_context.names = name_table
         parser.save_context.constant_name_table = COMPRESSED_BYTES_NAME_CONSTANTS
-        parser.save_context.generate_unknown_names = True
         parser.position = 0
 
         return parser
@@ -164,7 +219,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         key_type_name = self.read_name()
         key_type = ArkValueType.from_name(key_type_name)
         if key_type is None:
-            ArkSaveLogger.enable_debug = True
+            # ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
             raise ValueError(f"Unknown value type {key_type_name} at position {position}")
         return key_type
@@ -183,15 +238,20 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
         return actor_transforms, actor_transform_positions
     
-    def replace_name_ids(self, name_ids: Dict[int, str]):
+    def replace_name_ids(self, name_ids: Dict[int, str], save: "AsaSave" = None):
         # Update the template name encodings to the actal save name encodings
         for position, name in name_ids.items():
             name_id = self.save_context.get_name_id(name)
             if name_id is None:
-                self.set_position(0)
-                
+                if save is not None:
+                    save.add_name_to_name_table(name)
+                    name_id = self.save_context.get_name_id(name)
+            
+            if name_id is None:
                 raise ValueError(f"{self.save_context.get_name(self.read_uint32())}: Name {name} not found in save context, ensure it is present before generating object")
             self.replace_bytes(name_id.to_bytes(length=4, byteorder='little'), position=int(position))
+
+            ArkSaveLogger.debug_log(f"Replaced name id at position {position} with {hex(name_id)} for name {name}")
 
     def read_part(self) -> str:
         part_index = self.read_int()
@@ -202,19 +262,18 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     def read_uuids(self) -> List[UUID]:
         uuid_count = self.read_int()
         return [self.read_uuid() for _ in range(uuid_count)]
+
     
-    def find_names(self):
+    def find_names(self, no_print=False):
         if not self.save_context.has_name_table():
             return []
-        
-        gen_unknown_names = self.save_context.generate_unknown_names
-        self.save_context.generate_unknown_names = False
         
         original_position = self.get_position()
         max_prints = 150
         prints = 0
 
-        ArkSaveLogger.debug_log("--- Looking for names ---")
+        if not no_print:
+            ArkSaveLogger.debug_log("--- Looking for names ---")
         found = {}
         for i in range(self.size() - 4):
             self.set_position(i)
@@ -225,12 +284,12 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 found[i] = name
                 self.set_position(i)
                 if prints < max_prints:
-                    ArkSaveLogger.debug_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                    if not no_print:
+                        ArkSaveLogger.debug_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                     prints += 1
                 i += 3  # Adjust index to avoid overlapping reads
         self.set_position(original_position)
 
-        self.save_context.generate_unknown_names = gen_unknown_names
         return found
     
     # def find_byte_sequence(self, bytes: bytes):
@@ -251,24 +310,26 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #     self.set_position(original_position)
     #     return found
 
-    def find_byte_sequence(self, pattern: bytes):
+    def find_byte_sequence(self, pattern: bytes) -> List[int]:
         original_position = self.get_position()
         max_prints = 75
         prints = 0
         found = []
         buffer = self.byte_buffer
+        cur_offset = 0
         
         while True:
             pos = buffer.find(pattern)
             if pos == -1:
                 break
-            found.append(pos)
+            found.append(pos + cur_offset)
             if prints < max_prints:
                 ArkSaveLogger.debug_log(
-                    f"Found byte sequence at {pos}"
+                    f"Found byte sequence at {pos + cur_offset}"
                 )
                 prints += 1
             buffer = buffer[pos + 1:]
+            cur_offset += pos + 1
         
         self.set_position(original_position)
         return found

@@ -54,8 +54,11 @@ class Base:
     def __count_turrets(self):
         count = 0
         for _, structure in self.structures.items():
-            if structure.object.blueprint in Classes.structures.placed.turrets.all_bps:
+            if structure.object.blueprint in [Classes.structures.placed.turrets.heavy,
+                                              Classes.structures.placed.turrets.tek]:
                 count += 1
+            elif structure.object.blueprint == Classes.structures.placed.turrets.auto:
+                count += 0.25
         self.nr_of_turrets = count
 
     def set_keystone(self, keystone: UUID):
@@ -81,6 +84,7 @@ class Base:
 
     def set_owner(self, new_owner: ObjectOwner, save: AsaSave):
         for _, structure in self.structures.items():
+            # print(f"Setting owner {new_owner} for structure {structure.object.uuid}")
             structure.owner.replace_self_with(new_owner, structure.binary)
             save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
 
@@ -90,6 +94,23 @@ class Base:
             json.dump(self.__serialize(), f, indent=4)
         for _, structure in self.structures.items():
             structure.store_binary(path)
+
+    def __add_turret_stacks(self, bullet: Ammo, structure: StructureWithInventory, save: AsaSave, pad_to: int):
+        inventory = structure.inventory
+
+        while len(inventory.items) < pad_to:
+            from arkparse.logging import ArkSaveLogger
+            # ArkSaveLogger.enable_debug = True
+            new_uuid = uuid4()
+            bullet.reidentify(new_uuid)
+            bullet.set_quantity(100)
+            save.add_obj_to_db(bullet.object.uuid, bullet.binary.byte_buffer)
+            space_available = structure.add_item(bullet.object.uuid)
+            # ArkSaveLogger.enable_debug = False  
+
+            if not space_available:
+                print(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
+                break
 
     def pad_turret_ammo(self, nr_of_stacks: int, save: AsaSave):
         
@@ -101,67 +122,39 @@ class Base:
                 if inventory is None:
                     raise Exception(f"Structure {structure.object.uuid} has no inventory")
 
-                bullet = Ammo.generate_from_template(Classes.equipment.ammo.advanced_rifle_bullet, save, inv_key)                
-                structure.binary.replace_u32(structure.binary.set_property_position("NumBullets"), nr_of_stacks * 100)
+                bullet = Ammo.generate_from_template(Classes.equipment.ammo.advanced_rifle_bullet, save, inv_key)   
+                structure.binary.find_names()             
+                structure.binary.replace_u32(structure.object.find_property("NumBullets"), nr_of_stacks * 100)
+            
+                uuids = []
+                for key, _ in inventory.items.items():
+                    uuids.append(key)
                 
-                # while len(inventory.items) < nr_of_stacks:
-                #     bullet.reidentify()
-                #     save.add_obj_to_db(bullet.object.uuid, bullet.binary.byte_buffer)
-                #     structure.add_item(bullet.object.uuid, save)
+                self.__add_turret_stacks(bullet, structure, save, pad_to=nr_of_stacks)
 
-                # for key, item in inventory.items.items():
-                #     item: Ammo
-                #     if item.object.blueprint == Classes.equipment.ammo.advanced_rifle_bullet:
-                #         item.set_quantity(100)
-                #         save.modify_game_obj(key, item.binary.byte_buffer)
+                for key in uuids:
+                    inventory.remove_item(key, save)
 
-                for key, item in inventory.items.items():
-                    item: Ammo
-                    if item.object.blueprint == Classes.equipment.ammo.advanced_rifle_bullet:
-                        item.set_quantity(100)
-                        save.modify_game_obj(key, item.binary.byte_buffer)
-                
-                while len(inventory.items) < nr_of_stacks:
-                    bullet.reidentify()
-                    bullet.set_quantity(100)
-                    save.add_obj_to_db(bullet.object.uuid, bullet.binary.byte_buffer)
-                    structure.add_item(bullet.object.uuid)
+                self.__add_turret_stacks(bullet, structure, save, pad_to=nr_of_stacks)
 
                 save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
                 save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
-
-    # def set_nr_of_element_in_generators(self, nr_of_element: int, save: AsaSave):
-    #     nr_of_gens_handed = 0
-    #     for _, structure in self.structures.items():
-    #         if structure.object.blueprint in Classes.structures.placed.tek.generator:
-    #             structure: StructureWithInventory
-    #             if len(structure.inventory.items) == 0:
-    #                 raise Exception(f"Structure {structure.object.uuid} has no inventory")
-                
-    #             element = Resource.generate_from_template(Classes.resources.Basic.element, save=save)
-    #             element.set_quantity(nr_of_element)
-    #             save.add_to_db(element)
-    #             structure.inventory.add_item(element.object.uuid, save)
-    #             nr_of_gens_handed += 1
-                
-    #             for key, _ in structure.inventory.items.copy().items():
-    #                 if key != element.object.uuid:
-    #                     structure.remove_item(key)
-
-    #     return nr_of_gens_handed
     
-    def set_nr_of_element_in_generators(self, nr_of_element: int, save: AsaSave):
-        nr_of_gens_handed = 0                
+    def set_nr_of_fuel_in_generators(self, nr_of_element: int, save: AsaSave):
+        nr_of_gens_handed = 0
+
         for _, structure in self.structures.items():
-            if structure.object.blueprint in Classes.structures.placed.tek.generator:
+            if structure.object.blueprint in Classes.structures.placed.tek.generator or structure.object.blueprint in Classes.structures.placed.metal.generator:
                 structure: StructureWithInventory
                 if not structure.inventory:
                     raise Exception(f"Generators must have inventory!")
 
                 # Reset the generators last checked fuel time to the current game time to prevent them from running out of fuel instantly
-                structure.binary.replace_double(structure.binary.set_property_position("LastCheckedFuelTime"), save.save_context.game_time)
-                
-                element = Resource.generate_from_template(Classes.resources.Basic.element, save, structure.object.uuid)
+                structure.binary.replace_double(structure.object.find_property("LastCheckedFuelTime"), save.save_context.game_time)
+                if structure.object.blueprint in Classes.structures.placed.tek.generator:
+                    fuel = Resource.generate_from_template(Classes.resources.Basic.element, save, structure.object.uuid)
+                else:
+                    fuel = Resource.generate_from_template(Classes.resources.Crafted.gasoline, save, structure.object.uuid)
                 nr_of_gens_handed += 1
 
                 for key, item in structure.inventory.items.items():
@@ -171,10 +164,10 @@ class Base:
                         save.modify_game_obj(key, item.binary.byte_buffer)
                 
                 while len(structure.inventory.items) < nr_of_element:
-                    element.reidentify()
-                    element.set_quantity(1)
-                    save.add_obj_to_db(element.object.uuid, element.binary.byte_buffer)
-                    structure.add_item(element.object.uuid)
+                    fuel.reidentify()
+                    fuel.set_quantity(1)
+                    save.add_obj_to_db(fuel.object.uuid, fuel.binary.byte_buffer)
+                    structure.add_item(fuel.object.uuid)
 
                 save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
                 save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)

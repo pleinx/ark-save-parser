@@ -17,3 +17,4 @@
 /Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_LeechBlood.PrimalItemResource_LeechBlood_C
 /Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_PeltOrHair.PrimalItemResource_PeltOrHair_C
 /Game/ScorchedEarth/CoreBlueprints/Resources/PrimalItemResource_Silk.PrimalItemResource_Silk_C
+/QoLPlus/_Resources/PrimalItemResource_SPlusFuel.PrimalItemResource_SPlusFuel_C

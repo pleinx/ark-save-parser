@@ -47,12 +47,14 @@ class Metal:
     railing = "/Game/PrimalEarth/Structures/Metal/Railing_Metal.Railing_Metal_C"
     window = "/Game/PrimalEarth/Structures/Metal/Window_Metal_BP.Window_Metal_BP_C"
     ramp = "/Game/PrimalEarth/StructuresPlus/Structures/Ramps/Metal/BP_Ramp_Metal.BP_Ramp_Metal_C"
+    generator = "/Game/PrimalEarth/Structures/Electric/ElectricGenerator.ElectricGenerator_C"
 
     all_bps = [floor, wall, triangle_foundation, cliff_platform, double_doorframe, tri_roof, large_wall, 
                greenhouse_ceiling, greenhouse_wall, beam, ceiling, doorframe, fence_foundation, 
                gateframe_large, gateframe, gate_large, ladder, pillar, window_wall, 
                waterpipe_intake, behemoth_gate, sign_large, door_short, doorframe_short, 
-               wall_half, hatchframe_xl, railing_sloped_right, door_secret, metalwall_sloped_right_sm]
+               wall_half, hatchframe_xl, railing_sloped_right, door_secret, metalwall_sloped_right_sm,
+               generator]
 
 class Thatch:
     floor = "/Game/PrimalEarth/Structures/Thatch/Thatch_Floor.Thatch_Floor_C"

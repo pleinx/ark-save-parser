@@ -69,7 +69,8 @@ class StructureApi:
 
             structures[obj.uuid] = structure
 
-        self.retrieved_all = True
+        if config is None:
+            self.retrieved_all = True
 
         return structures
     
@@ -77,8 +78,15 @@ class StructureApi:
         obj = self.save.get_game_object_by_id(id)
         return self._parse_single_structure(obj)
     
-    def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
-        structures = self.get_all()
+    def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, classes: List[str] = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+        if classes is not None:
+            config = GameObjectReaderConfiguration(
+                blueprint_name_filter=lambda name: name in classes
+            )
+        else:
+            config = None
+
+        structures = self.get_all(config)
         result = {}
 
         for key, obj in structures.items():
@@ -190,7 +198,7 @@ class StructureApi:
             ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
             ftp_client.close()
 
-    def create_heatmap(self, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None, min_in_section: int = 1):
+    def create_heatmap(self, map: ArkMap, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None, min_in_section: int = 1):
         import math
         import numpy as np
 
@@ -210,7 +218,7 @@ class StructureApi:
             if owner is not None and not obj.is_owned_by(owner):
                 continue
 
-            coords: MapCoords = obj.location.as_map_coords(ArkMap.ABERRATION)
+            coords: MapCoords = obj.location.as_map_coords(map)
             y = math.floor(coords.long)
             x = math.floor(coords.lat)
             heatmap[x][y] += 1

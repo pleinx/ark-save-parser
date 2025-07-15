@@ -1,19 +1,36 @@
 from ._property_insertor import PropertyInsertor
+from arkparse.parsing.ark_property import ArkProperty
 from arkparse.logging import ArkSaveLogger
 from typing import Dict, List
 import struct
 
 
 class PropertyReplacer(PropertyInsertor):
-    
-
     def __init__(self, data: bytes, save_context=None):
         super().__init__(data, save_context)
 
-    def set_property_position(self, property_name: str, position: int = 0) -> int:
+    def __check_property_alignment(self, property: ArkProperty) -> int:
+        if property.position != 0:
+            return # can't check alignment if the property is not at the start of the data
+        
+        prev_position = property.value_position
+        actual_index = self.set_property_position(property.name)
+        shift = actual_index - property.name_position
+        if shift != 0:
+            raise ValueError(f"Property {property.name} at {property.name_position} has unexpected shift {shift}, expected 0")
+            property.name_position += shift
+            property.value_position += shift
+            print(f"Aligned property {property.name} from {prev_position} to {property.name_position} with value position {property.value_position}")
+            ArkSaveLogger.debug_log(f"Aligned property {property.name} from {prev_position} to {property.name_position} with value position {property.value_position}")
+        return actual_index
+
+    def set_property_position(self, property_name: str, occurrence_index: int = 0) -> int:
         if self.save_context is None:
             raise ValueError("Save context is not set")
         
+        # print(f"Looking for property {property_name} at index {occurrence_index}")
+        cur_pos = 0
+
         for i in range(self.size() - 4):
             self.set_position(i)
             int_value = self.read_uint32()
@@ -21,81 +38,80 @@ class PropertyReplacer(PropertyInsertor):
                 continue
             name = self.save_context.names[int_value]
             if name is not None and name == property_name:
-                self.position += 16
                 # print("Reading pos at", self.position)
-                cur_pos = self.read_uint32()
                 # print(f"Found property: {name} at {self.position-8} (position {cur_pos})")
-                if cur_pos == position:
+                if cur_pos == occurrence_index:
                     ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                     self.set_position(i)
                     return i
+                i += 16
                 cur_pos += 1
+        ArkSaveLogger.debug_log(f"Property {property_name} not found, returning position {self.position}")
         return None   
 
-    def replace_string(self, property_position : int, value: str):
-        original_position = self.get_position()
-        self.set_position(property_position)
+    def replace_string(self, property : ArkProperty, value: str):
+        # from arkparse.object_model import ArkGameObject
+        # ArkSaveLogger.enable_debug = True
+        # ArkSaveLogger.set_file(self, "debug.bin")
+        # obj = ArkGameObject(uuid='', blueprint='', binary_reader=self)
+        # ArkSaveLogger.open_hex_view(True)
 
+        self.__check_property_alignment(property)
+
+        original_position = self.position
         new_length = len(value) + 1
         new_length_byte = (new_length + 4).to_bytes(1, byteorder="little")
 
-        # ArkSaveLogger.enable_debug = True
-        # ArkSaveLogger.set_file(self, "debug.bin")
-        # ArkSaveLogger.open_hex_view(True)
-
-        self.read_name() # skip prop name
-        self.validate_name("StrProperty")
-        full_length_pos = self.position
-        self.read_byte() # full length
-        self.validate_uint64(0)
-        string_pos = self.position
+        self.position = property.value_position - 5
+        self.read_int() # full length
+        self.validate_byte(0)
         current_string = self.read_string()
         current_nr_of_bytes = len(current_string) + 4
 
         # replace total length
-        self.replace_bytes(new_length_byte, nr_to_replace=1, position=full_length_pos)
+        self.replace_bytes(new_length_byte, nr_to_replace=1, position=property.value_position - 5)
 
         # replace string
         lengthu32 = new_length.to_bytes(4, byteorder="little")
-        self.replace_bytes(lengthu32 + value.encode("utf-8"), nr_to_replace=current_nr_of_bytes, position=string_pos)
+        self.replace_bytes(lengthu32 + value.encode("utf-8"), nr_to_replace=current_nr_of_bytes, position=property.value_position)
 
         self.set_position(original_position)
         # print(f"Replaced string {current_string} (length={current_nr_of_bytes}) at {property_position} with {value} at {string_pos}")
 
-    def replace_u16(self, property_position : int, new_value: int):
-        value_pos = property_position + 8 + 8 + 1 + 8
+    def replace_u16(self, property : ArkProperty, new_value: int):
+        self.__check_property_alignment(property)
         new_value_bytes = new_value.to_bytes(2, byteorder="little")
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
-    def replace_u32(self, property_position : int, new_value: int):
-        value_pos = property_position + 8 + 8 + 1 + 8
+    def replace_u32(self, property : ArkProperty, new_value: int):
+        self.__check_property_alignment(property)
         new_value_bytes = new_value.to_bytes(4, byteorder="little")
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
-    def replace_u64(self, property_position : int, new_value: int):
-        value_pos = property_position + 8 + 8 + 1 + 8
+    def replace_u64(self, property : ArkProperty, new_value: int):
+        self.__check_property_alignment(property)
         new_value_bytes = new_value.to_bytes(8, byteorder="little")
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
-    def replace_float(self, property_position : int, new_value: float):
-        value_pos = property_position + 8 + 8 + 1 + 8
+    def replace_float(self, property : ArkProperty, new_value: float):
+        self.__check_property_alignment(property)
         new_value_bytes = struct.pack('<f', new_value)
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
-    def replace_double(self, property_position : int, new_value: float):
-        value_pos = property_position + 8 + 8 + 1 + 8
+    def replace_double(self, property : ArkProperty, new_value: float):
+        self.__check_property_alignment(property)
         new_value_bytes = struct.pack('<d', new_value)
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
     
-    def replace_boolean(self, property_position : int, new_value: bool):
-        value_pos = property_position + 8 + 8 + 8
+    def replace_boolean(self, property : ArkProperty, new_value: bool):
+        self.__check_property_alignment(property)
         new_value_bytes = b"\x01" if new_value else b"\x00"
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
-    def replace_byte_property(self, property_position : int, new_value: int):
-        value_pos = property_position + 8 + 8 + 8 + 8 + 1
+    def replace_byte_property(self, property : ArkProperty, new_value: int):
+        self.__check_property_alignment(property)
         new_value_bytes = new_value.to_bytes(1, byteorder="little")
-        self.replace_bytes(new_value_bytes, position=value_pos)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
     def replace_array(self, array_name: str, property_type: str, new_items: List[bytes], position: int = None):
         if self.save_context is None:
@@ -104,13 +120,27 @@ class PropertyReplacer(PropertyInsertor):
         if position is not None:
             self.set_position(position)
 
+        if property_type == "StructProperty":
+            raise NotImplementedError("Replacing StructProperty arrays is not implemented yet")
+
         # remove array
         self.snip_bytes(8) # name
         self.snip_bytes(8) # ArrayProperty
+
+        nr_of_items = self.read_uint32()
+        self.set_position(self.position - 4)
+        self.snip_bytes(4) # nr_of_items
+
+        self.snip_bytes(8) # type name
+
+        type_int = self.read_uint32()
+        self.set_position(self.position - 4)
+        self.snip_bytes(4) # type int
+
         array_length = self.read_uint32()
         self.set_position(self.position - 4)
-        self.snip_bytes(8) # length
-        self.snip_bytes(8) # type
+        self.snip_bytes(4) # array length
+
         self.snip_bytes(1) # end of struct
         self.snip_bytes(array_length) # array itself
 
@@ -118,4 +148,5 @@ class PropertyReplacer(PropertyInsertor):
         if new_items is None:
             return
         
-        self.insert_array(array_name, property_type, new_items)
+
+        self.insert_array(array_name, property_type, new_items, nr_of_items, type_int)

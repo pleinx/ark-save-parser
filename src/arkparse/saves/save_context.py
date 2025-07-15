@@ -1,8 +1,7 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
 import uuid
 from pathlib import Path
 import random
-
 import json
 
 from arkparse.parsing.struct import ActorTransform
@@ -19,7 +18,6 @@ class SaveContext:
         self.actor_transform_positions: Dict[uuid.UUID, int] = {}
         self.save_version: int = 0
         self.game_time: float = 0.0
-        self.generate_unknown_names: bool = False
         self.unknown_value: int = 0
         self.npc_zone_volumes: List["NpcZoneVolume"] = []
         self.all_uuids: List[uuid.UUID] = []
@@ -35,10 +33,6 @@ class SaveContext:
             return self.names[key]
         elif self.constant_name_table and key in self.constant_name_table:
             return self.constant_name_table[key]
-        elif self.generate_unknown_names:
-            new_name = f"Unknown_{key}"
-            self.names[key] = new_name
-            return new_name
         return None
 
     def use_constant_name_table(self, constant_name_table: Dict[int, str]):
@@ -55,6 +49,7 @@ class SaveContext:
         for key, value in self.names.items():
             if value == name:
                 return key
+        
         return None
 
     def add_new_name(self, name: str) -> int:

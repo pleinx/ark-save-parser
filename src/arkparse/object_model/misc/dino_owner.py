@@ -19,7 +19,7 @@ class DinoOwner:
     def __init__(self, obj: ArkGameObject = None):
         if obj is None:
             return
-        
+        self.object = obj
         self.tribe = obj.get_property_value("TribeName")
         self.tamer_tribe_id = obj.get_property_value("TamingTeamID")
         self.tamer_string = obj.get_property_value("TamerString")
@@ -34,21 +34,26 @@ class DinoOwner:
 
     def set_in_binary(self, binary: ArkBinaryParser):
         if self.imprinter_unique_id is not None:
-            binary.replace_string(binary.set_property_position("ImprinterPlayerUniqueNetId"), self.imprinter_unique_id)
+            binary.replace_string(self.object.find_property("ImprinterPlayerUniqueNetId"), self.imprinter_unique_id)
+            self.object = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
         if self.id_ is not None:
-            binary.replace_u32(binary.set_property_position("OwningPlayerID"), self.id_)
+            binary.replace_u32(self.object.find_property("OwningPlayerID"), self.id_)
         if self.tribe is not None:
-            binary.replace_string(binary.set_property_position("TribeName"), self.tribe)
+            binary.replace_string(self.object.find_property("TribeName"), self.tribe)
+            self.object = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
         if self.tamer_tribe_id is not None:
-            binary.replace_u32(binary.set_property_position("TamingTeamID"), self.tamer_tribe_id)
+            binary.replace_u32(self.object.find_property("TamingTeamID"), self.tamer_tribe_id)
         if self.tamer_string is not None:
-            binary.replace_string(binary.set_property_position("TamerString"), self.tamer_string)
+            binary.replace_string(self.object.find_property("TamerString"), self.tamer_string)
+            self.object = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
         if self.player is not None:
-            binary.replace_string(binary.set_property_position("OwningPlayerName"), self.player)
+            binary.replace_string(self.object.find_property("OwningPlayerName"), self.player)
+            self.object = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
         if self.imprinter is not None:
-            binary.replace_string(binary.set_property_position("ImprinterName"), self.imprinter)
+            binary.replace_string(self.object.find_property("ImprinterName"), self.imprinter)
+            self.object = ArkGameObject(uuid='', blueprint='', binary_reader=binary) # align after potential move of positions
         if self.target_team is not None:
-            binary.replace_u32(binary.set_property_position("TargetingTeam"), self.target_team)
+            binary.replace_u32(self.object.find_property("TargetingTeam"), self.target_team)
 
     def replace_with(self, other: "DinoOwner", binary: ArkBinaryParser = None):
         self.imprinter_unique_id = None if self.imprinter_unique_id is None else other.imprinter_unique_id

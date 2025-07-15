@@ -28,6 +28,11 @@ class MapCoordinateParameters:
             self.longitude_shift = 50
             self.latitude_scale = 8000
             self.longitude_scale = 8000
+        elif map == ArkMap.RAGNAROK:
+            self.latitude_shift = 50
+            self.longitude_shift = 50
+            self.latitude_scale = 13100
+            self.longitude_scale = 13100
         else:
             raise ValueError(f"Map {map} not supported")
         

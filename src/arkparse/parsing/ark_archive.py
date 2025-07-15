@@ -15,9 +15,13 @@ class ArkArchive:
 
         save_context: SaveContext = SaveContext()
         data = ArkBinaryParser(file.read_bytes(), save_context)
+        self.data = data
         ArkSaveLogger.set_file(data, "debug.bin")
         ArkSaveLogger.byte_buffer = data
+        # ArkSaveLogger.open_hex_view(True)
         save_context.save_version = data.read_int()
+        extra1 = data.read_int()  # This is usually 0, but can be used for future extensions
+        extra2 = data.read_int()
         ArkSaveLogger.file = str(file)
 
         # if save_context.save_version != 5:
@@ -30,7 +34,7 @@ class ArkArchive:
 
         for i, obj in enumerate(self.objects):
             ArkSaveLogger.enter_struct(obj.class_name.split(".")[-1])
-            data.set_position(obj.properties_offset)
+            data.set_position(obj.properties_offset + 1)
             if ArkSaveLogger.enable_debug:
                 print("\n")
             ArkSaveLogger.debug_log(f"Reading properties for object \'{obj.class_name}\' at {data.get_position()}")
@@ -38,7 +42,7 @@ class ArkArchive:
             next_object_index = data.size()
             if i + 1 < len(self.objects):
                 next_object_index = self.objects[i + 1].properties_offset
-
+            
             obj.read_properties(data, ArkProperty, next_object_index)
             ArkSaveLogger.exit_struct()
 
