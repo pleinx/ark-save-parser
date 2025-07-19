@@ -1,10 +1,10 @@
 
 from uuid import UUID
-import os
 
 from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
+from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
 
 from .__equipment import Equipment
@@ -26,6 +26,10 @@ class Saddle(EquipmentWithArmor):
     
     def auto_rate(self, save: AsaSave = None):
         self._auto_rate(0.000926, self.get_average_stat(), save)
+
+    def get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float) -> float:
+        value = super()._get_stat_for_rating(stat, rating, 0.000926)
+        return self.get_actual_value(stat, value)
 
     @staticmethod
     def from_inventory_item(item: InventoryItem, save: AsaSave):

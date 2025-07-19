@@ -34,7 +34,7 @@
 /Game/PrimalEarth/Structures/Metal/Railing_Metal.Railing_Metal_C
 /Game/PrimalEarth/Structures/Metal/Window_Metal_BP.Window_Metal_BP_C
 /Game/PrimalEarth/Structures/PoisonTrap.PoisonTrap_C
-/Game/PrimalEarth/Structures/Sign_Small_Wood.Sign_Small_Wood_C
+/Game/PrimalEarth/Structures/Sign_Small_Metal.Sign_Small_Metal_C
 /Game/PrimalEarth/Structures/Sign_Wall_Metal.Sign_Wall_Metal_C
 /Game/PrimalEarth/Structures/Sign_Wall_Wood.Sign_Wall_Wood_C
 /Game/PrimalEarth/Structures/Stone/Stone_CeilingDoorway/Ceiling_Doorway_Stone.Ceiling_Doorway_Stone_C
@@ -42,6 +42,7 @@
 /Game/PrimalEarth/Structures/Stone/Stone_Ladder/Ladder_Stone.Ladder_Stone_C
 /Game/PrimalEarth/Structures/Stone/WallWindow/WindowWall_Stone.WindowWall_Stone_C
 /Game/PrimalEarth/Structures/TekTrough.TekTrough_C
+/Game/PrimalEarth/Structures/Tileset/Foundations/Quarter/Floor_Quarter_Metal.Floor_Quarter_Metal_C
 /Game/PrimalEarth/Structures/Tileset/HatchframesDouble/Doors/BP_Ceiling_Door_Double_Metal.BP_Ceiling_Door_Double_Metal_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat/Pillar_Flat_Metal.Pillar_Flat_Metal_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Metal.Pillar_Flat_Thin_Metal_C
@@ -52,6 +53,7 @@
 /Game/PrimalEarth/Structures/Tileset/Pillars/Thin/Pillar_Thin_Stone.Pillar_Thin_Stone_C
 /Game/PrimalEarth/Structures/Tileset/Railings/Metal/StructureBP_Railing_Sloped_Metal.StructureBP_Railing_Sloped_Metal_C
 /Game/PrimalEarth/Structures/Tileset/SecretDoorways/StructureBP_Door_Secret_Stone.StructureBP_Door_Secret_Stone_C
+/Game/PrimalEarth/Structures/Tileset/TriangleRoofs/BP_TriRoof_Inverted_Metal.BP_TriRoof_Inverted_Metal_C
 /Game/PrimalEarth/Structures/TributeTerminal_1.TributeTerminal_1_C
 /Game/PrimalEarth/Structures/TrophyWallBP.TrophyWallBP_C
 /Game/PrimalEarth/Structures/WallTorch.WallTorch_C

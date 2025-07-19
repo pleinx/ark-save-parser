@@ -142,6 +142,7 @@ class Base:
     
     def set_nr_of_fuel_in_generators(self, nr_of_element: int, save: AsaSave):
         nr_of_gens_handed = 0
+        is_regular = False
 
         for _, structure in self.structures.items():
             if structure.object.blueprint in Classes.structures.placed.tek.generator or structure.object.blueprint in Classes.structures.placed.metal.generator:
@@ -153,8 +154,10 @@ class Base:
                 structure.binary.replace_double(structure.object.find_property("LastCheckedFuelTime"), save.save_context.game_time)
                 if structure.object.blueprint in Classes.structures.placed.tek.generator:
                     fuel = Resource.generate_from_template(Classes.resources.Basic.element, save, structure.object.uuid)
+                    is_regular = False
                 else:
                     fuel = Resource.generate_from_template(Classes.resources.Crafted.gasoline, save, structure.object.uuid)
+                    is_regular = True
                 nr_of_gens_handed += 1
 
                 for key, item in structure.inventory.items.items():
@@ -163,9 +166,9 @@ class Base:
                         item.set_quantity(1)
                         save.modify_game_obj(key, item.binary.byte_buffer)
                 
-                while len(structure.inventory.items) < nr_of_element:
+                while len(structure.inventory.items) < nr_of_element :
                     fuel.reidentify()
-                    fuel.set_quantity(1)
+                    fuel.set_quantity((10 if is_regular else 1))
                     save.add_obj_to_db(fuel.object.uuid, fuel.binary.byte_buffer)
                     structure.add_item(fuel.object.uuid)
 

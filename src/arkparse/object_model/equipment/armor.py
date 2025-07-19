@@ -94,6 +94,14 @@ class Armor(EquipmentWithArmor):
     def auto_rate(self, save: AsaSave = None):
         self._auto_rate(0.000760, self.get_average_stat(), save)
 
+    def get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float) -> float:
+        if stat == ArkEquipmentStat.HYPOTHERMAL_RESISTANCE or stat == ArkEquipmentStat.HYPERTHERMAL_RESISTANCE:
+            value = round(rating / 0.000760, 1)
+        else:
+            value = super()._get_stat_for_rating(stat, rating, 0.000760)
+        
+        return self.get_actual_value(stat, value)
+
     @staticmethod
     def from_inventory_item(item: InventoryItem, save: AsaSave):
         return Equipment.from_inventory_item(item, save, Armor)

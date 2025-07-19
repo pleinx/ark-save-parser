@@ -72,6 +72,9 @@ class ArkGameObject(ArkPropertyContainer):
                     for name in self.names:
                         ArkSaveLogger.debug_log(f"Name: {name}")
 
+                    if "AnimSequence" in self.blueprint:
+                        return
+
                     self.section = binary_reader.read_part()
                     self.unknown = binary_reader.read_short()
 

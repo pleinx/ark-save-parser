@@ -135,12 +135,17 @@ class BaseValueParser(BinaryReaderBase):
         self.position = current_position
         return value
     
-    def read_name(self) -> str:
+    def read_name(self, default="UNKNOWN_NAME") -> str:
         if not self.save_context.has_name_table():
             return self.read_string()
         name_id = self.read_uint32()
         name = self.save_context.get_name(name_id)
         # print(f"Reading name with id {name_id} at position {self.position}, name: {name}")
+
+        if name is None and default is not None:
+            name = default
+            # print(f"Name with id {name_id} not found, using default: {name}")
+            ArkSaveLogger.debug_log(f"Name with id {name_id} not found, using default: {name}")
         
         if name is None:
             # ArkSaveLogger.enable_debug = True

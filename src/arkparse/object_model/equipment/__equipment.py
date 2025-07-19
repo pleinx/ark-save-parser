@@ -80,6 +80,12 @@ class Equipment(InventoryItem):
         self.set_quality_index(self.quality, save)
         self.set_rating(self.rating, save)
 
+    def _get_stat_for_rating(self, stat: ArkEquipmentStat, _: float, __: float) -> float:
+        raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
+    
+    def get_stat_for_rating(self, _: ArkEquipmentStat, __: float) -> float:
+        raise ValueError(f"Merthod get_stat_for_rating is not implemented for {self.class_name}")
+
     @staticmethod
     def _generate_from_template(own_class: callable, template_file: str, bp_class: str, save: AsaSave):
         uuid, parser = super()._generate(save, os.path.join("templates", "equipment", template_file))
@@ -92,7 +98,7 @@ class Equipment(InventoryItem):
         return eq
 
     def is_rated(self) -> bool:
-        return self.rating > 1  
+        return self.rating != 1  
 
     def is_crafted(self) -> bool:
         return False if self.crafter is None else self.crafter.is_valid()
@@ -107,8 +113,8 @@ class Equipment(InventoryItem):
 
     def set_rating(self, rating: int, save: AsaSave = None):
         if not self.is_rated():
-            raise ValueError("Cannot modify rating of a default crafted item")
-        
+            raise ValueError(f"Cannot modify rating of a default crafted item (rating={self.rating})")
+
         self.rating = rating
         self.binary.replace_float(self.object.find_property("ItemRating"), rating)
         self.update_binary(save)
@@ -120,7 +126,7 @@ class Equipment(InventoryItem):
 
     def _set_internal_stat_value(self, value: float, position: ArkEquipmentStat, save: AsaSave = None):
         prop = self.object.find_property("ItemStatValues", position.value)
-        self.binary.replace_u16(prop, value)
+        self.binary.replace_16(prop, int(value))
         self.update_binary(save)
 
     def get_stat_value(self, position: ArkEquipmentStat) -> int:

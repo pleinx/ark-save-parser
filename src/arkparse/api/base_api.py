@@ -178,7 +178,7 @@ class BaseApi(StructureApi):
         base = Base(keystone_uuid, structures)
         # base = Base(structures=structures)
 
-        input(f"Imported base with {len(structures)} structures, keystone {base.keystone.object.uuid} at {base.keystone.location}")
+        # input(f"Imported base with {len(structures)} structures, keystone {base.keystone.object.uuid} at {base.keystone.location}")
         if location is not None:
             base.move_to(location, self.save)
 

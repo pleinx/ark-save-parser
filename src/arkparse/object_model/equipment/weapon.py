@@ -65,6 +65,14 @@ class Weapon(EquipmentWithDurability):
     def auto_rate(self, save: AsaSave = None):
         self._auto_rate(0.000674, self.get_average_stat(), save) 
 
+    def get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float) -> float:
+        if stat == ArkEquipmentStat.DAMAGE:
+            value = round(rating / 0.000674, 1)
+        else:
+            value = super()._get_stat_for_rating(stat, rating, 0.000674)
+
+        return self.get_actual_value(stat, value)
+
     @staticmethod
     def from_inventory_item(item: InventoryItem, save: AsaSave):
         return Equipment.from_inventory_item(item, save, Weapon)

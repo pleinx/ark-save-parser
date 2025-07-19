@@ -126,7 +126,7 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave, update_frequency = 900):
+    def __init__(self, save: AsaSave):
         self.players : List[ArkPlayer] = []
         self.tribes : List[ArkTribe] = []
         self.tribe_to_player_map : Dict[int, List[ArkPlayer]] = {}
@@ -140,25 +140,12 @@ class PlayerApi:
 
         self.__update_files()
 
-        self.__initial_run = True
-
-        def update_loop():
-            while True:
-                if self.__initial_run:
-                    self.__initial_run = False
-                else:
-                    self.__update_files()
-                time.sleep(update_frequency)
-
-        update_thread = threading.Thread(target=update_loop, daemon=True)
-        update_thread.start()
-
     def __del__(self):
         ArkSaveLogger.debug_log("Stopping PlayerApi")
-        self.players.clear()
-        self.tribes.clear()
-        self.tribe_to_player_map.clear()
-        self.pawns.clear()
+        self.players = {}
+        self.tribes = {}
+        self.tribe_to_player_map = {}
+        self.pawns = {}
         self.save = None
         ArkSaveLogger.debug_log("PlayerApi stopped")
 

@@ -48,6 +48,7 @@ class Metal:
     window = "/Game/PrimalEarth/Structures/Metal/Window_Metal_BP.Window_Metal_BP_C"
     ramp = "/Game/PrimalEarth/StructuresPlus/Structures/Ramps/Metal/BP_Ramp_Metal.BP_Ramp_Metal_C"
     generator = "/Game/PrimalEarth/Structures/Electric/ElectricGenerator.ElectricGenerator_C"
+    sign = "/Game/PrimalEarth/Structures/Sign_Small_Metal.Sign_Small_Metal_C"
 
     all_bps = [floor, wall, triangle_foundation, cliff_platform, double_doorframe, tri_roof, large_wall, 
                greenhouse_ceiling, greenhouse_wall, beam, ceiling, doorframe, fence_foundation, 
@@ -77,8 +78,9 @@ class Wood:
     spike_wall = "/Game/PrimalEarth/Structures/Wooden/SpikeWall.SpikeWall_C"
     crop_plot_large = "/Game/PrimalEarth/Structures/Wooden/CropPlotLarge_SM.CropPlotLarge_SM_C"
     floor = "/Game/PrimalEarth/Structures/Wooden/Floor_Wood_SM_New.Floor_Wood_SM_New_C"
+    sign = "/Game/PrimalEarth/Structures/Sign_Small_Wood.Sign_Small_Wood_C"
 
-    all_bps = [spike_wall, crop_plot_large, floor]
+    all_bps = [spike_wall, crop_plot_large, floor, sign]
 
 class Crafting:
     forge = "/Game/PrimalEarth/Structures/Forge.Forge_C"

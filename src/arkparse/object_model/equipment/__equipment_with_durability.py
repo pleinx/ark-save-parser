@@ -140,3 +140,9 @@ class EquipmentWithDurability(Equipment):
     def __set_durability(self, durability: float, save: AsaSave = None):
         self.durability = durability
         self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)  
+
+    def _get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float, multiplier: float) -> float:
+        if stat == ArkEquipmentStat.DURABILITY:
+            return round(rating / multiplier, 1)
+        else:
+            return super()._get_stat_for_rating(stat, rating, multiplier)

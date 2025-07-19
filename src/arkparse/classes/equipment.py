@@ -95,6 +95,16 @@ class Saddles:
     moth: str = "/Game/ScorchedEarth/Dinos/Moth/PrimalItemArmor_MothSaddle.PrimalItemArmor_MothSaddle_C"
     rock_golem: str = "/Game/ScorchedEarth/Dinos/RockGolem/PrimalItemArmor_RockGolemSaddle.PrimalItemArmor_RockGolemSaddle_C"
     thorny_dragon: str = "/Game/ScorchedEarth/Dinos/SpineyLizard/PrimalItemArmor_SpineyLizardSaddle.PrimalItemArmor_SpineyLizardSaddle_C"
+    bison: str = "/Game/ASA/Dinos/Bison/PrimalItemArmor_BisonSaddle.PrimalItemArmor_BisonSaddle_C"
+    deinotherium: str = "/Game/ASA/Dinos/Deinotherium/Dinos/Saddle/PrimalItemArmor_DeinotheriumSaddle_ASA.PrimalItemArmor_DeinotheriumSaddle_ASA_C"
+    dreadnoughtus: str = "/Game/ASA/Dinos/Dreadnoughtus/PrimalItemArmor_DreadSaddle_Platform.PrimalItemArmor_DreadSaddle_Platform_C"
+    maelizard: str = "/Game/ASA/Dinos/Maelizard/PrimalItemArmor_MaelizardSaddle.PrimalItemArmor_MaelizardSaddle_C"
+    gacha: str = "/Game/Extinction/CoreBlueprints/Items/Saddle/PrimalItemArmor_GachaSaddle.PrimalItemArmor_GachaSaddle_C"
+    gas_bags: str = "/Game/Extinction/CoreBlueprints/Items/Saddle/PrimalItemArmor_GasBagsSaddle.PrimalItemArmor_GasBagsSaddle_C"
+    snow_owl: str = "/Game/Extinction/CoreBlueprints/Items/Saddle/PrimalItemArmor_OwlSaddle.PrimalItemArmor_OwlSaddle_C"
+    ravager: str = "/Game/Aberration/Dinos/CaveWolf/PrimalItemArmor_CavewolfPromoSaddle.PrimalItemArmor_CavewolfPromoSaddle_C"
+    managarmr: str = "/Game/Extinction/CoreBlueprints/Items/Saddle/PrimalItemArmor_IceJumperSaddle.PrimalItemArmor_IceJumperSaddle_C"
+    velonosaur: str = "/Game/Extinction/CoreBlueprints/Items/Saddle/PrimalItemArmor_SpindlesSaddle.PrimalItemArmor_SpindlesSaddle_C"
 
     all_bps = [yi_ling, archelon, ceratosaurus, deinosuchus, fasolasuchus, gigantoraptor, 
                shastasaurus, xiphactinus, saddle_cart_btt, rockdrake_btt, allo, ankylo, 
@@ -108,7 +118,8 @@ class Saddles:
                megaloceros, stego, tapejara, tapejara_tek, terror_bird, therizinosaurus, thylacoleo, 
                titanosaur_platform, beelzebufo, trike, carbo, tuso, yuty, basilisk, cave_wolf,
                karkinos, mole_rat, rock_drake, rock_drake_tek, camel, mantis, moth, rock_golem,
-               thorny_dragon]
+               thorny_dragon, bison, deinotherium, dreadnoughtus, maelizard, gacha, gas_bags,
+               snow_owl, ravager, managarmr, velonosaur]
     
 class Hazard:
     boots: str = "/Game/Aberration/CoreBlueprints/Items/Armor/HazardSuit/PrimalItemArmor_HazardSuitBoots.PrimalItemArmor_HazardSuitBoots_C"
@@ -262,7 +273,9 @@ class Advanced:
     assault_rifle: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponRifle.PrimalItem_WeaponRifle_C"
     rocket_launcher: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponRocketLauncher.PrimalItem_WeaponRocketLauncher_C"
     tek_rifle: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_TekRifle.PrimalItem_TekRifle_C"
-    all_bps = [compound_bow, fabricated_pistol, fabricated_shotgun, fabricated_sniper, longneck, assault_rifle, rocket_launcher, tek_rifle]
+    chainsaw: str = "/Game/ScorchedEarth/WeaponChainsaw/PrimalItem_ChainSaw.PrimalItem_ChainSaw_C"
+    flamethrower: str = "/Game/ScorchedEarth/WeaponFlamethrower/PrimalItem_WeapFlamethrower.PrimalItem_WeapFlamethrower_C"
+    all_bps = [compound_bow, fabricated_pistol, fabricated_shotgun, fabricated_sniper, longneck, assault_rifle, rocket_launcher, tek_rifle, chainsaw, flamethrower]
 
 class Throwables:
     gas_grenade: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_GasGrenade.PrimalItem_GasGrenade_C"

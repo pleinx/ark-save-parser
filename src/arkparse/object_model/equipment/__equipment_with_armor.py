@@ -94,6 +94,12 @@ class EquipmentWithArmor(EquipmentWithDurability):
             self.__set_armor(value, save)
         else:
             return super().set_stat(stat, value, save)
+    
+    def _get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float, multiplier: float) -> float:
+        if stat == ArkEquipmentStat.ARMOR:
+            return round(rating / multiplier, 1)
+        else:
+            return super()._get_stat_for_rating(stat, rating, multiplier)
 
     def __set_armor(self, armor: float, save: AsaSave = None):
         self.armor = armor

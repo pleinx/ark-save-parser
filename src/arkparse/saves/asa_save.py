@@ -115,6 +115,23 @@ class AsaSave:
         header_data.set_position(name_table_offset)
         self.save_context.names = self.read_table(header_data)
 
+    def find_in_header(self, byte_sequence: bytes) -> Optional[int]:
+        header_data = self.get_custom_value("SaveHeader")
+        if not header_data:
+            return None
+
+        positions = header_data.find_byte_sequence(byte_sequence)
+        if not positions:
+            print(f"Byte sequence {byte_sequence} not found in header")
+            return None
+
+        ArkSaveLogger.debug_log(f"Found byte sequence in header at position {positions}")
+        header_data.set_position(positions[0])
+        ArkSaveLogger.set_file(header_data, "header.bin")
+        ArkSaveLogger.open_hex_view(True)
+
+
+
     def read_table(self, header_data: 'ArkBinaryParser') -> Dict[int, str]:
         count = header_data.read_int()
         self.name_count = count
@@ -326,7 +343,12 @@ class AsaSave:
                 byte_buffer = ArkBinaryParser(row[1], self.save_context)
                 ArkSaveLogger.byte_buffer = byte_buffer
                 ArkSaveLogger.set_file(byte_buffer, "game_object.bin")
-                class_name = byte_buffer.read_name()
+                try:
+                    class_name = byte_buffer.read_name()
+                except Exception as e:
+                    print(f"Error reading class name for object {obj_uuid}: {e}")
+                    ArkSaveLogger.debug_log("Error reading class name for object %s: %s", obj_uuid, e)
+                    class_name = "UnknownClass"
                 ArkSaveLogger.enter_struct(class_name)
 
                 if reader_config.blueprint_name_filter and not reader_config.blueprint_name_filter(class_name):
@@ -378,7 +400,7 @@ class AsaSave:
     def get_game_object_by_id(self, obj_uuid: uuid.UUID) -> Optional['ArkGameObject']:
         bin = self.get_game_obj_binary(obj_uuid)
         reader = ArkBinaryParser(bin, self.save_context)
-        obj = ArkGameObject(obj_uuid, reader.read_name(), reader)
+        obj = ArkGameObject(obj_uuid, binary_reader=reader)
         return obj
 
     def get_custom_value(self, key: str) -> Optional['ArkBinaryParser']:

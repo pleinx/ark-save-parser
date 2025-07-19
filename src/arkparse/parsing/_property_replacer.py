@@ -82,6 +82,11 @@ class PropertyReplacer(PropertyInsertor):
         self.__check_property_alignment(property)
         new_value_bytes = new_value.to_bytes(2, byteorder="little")
         self.replace_bytes(new_value_bytes, position=property.value_position)
+    
+    def replace_16(self, property : ArkProperty, new_value: int):
+        self.__check_property_alignment(property)
+        new_value_bytes = new_value.to_bytes(2, byteorder="little", signed=True)
+        self.replace_bytes(new_value_bytes, position=property.value_position)
 
     def replace_u32(self, property : ArkProperty, new_value: int):
         self.__check_property_alignment(property)

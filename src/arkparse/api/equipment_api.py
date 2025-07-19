@@ -157,15 +157,34 @@ class EquipmentApi(GeneralApi):
         return min_internal, max_internal
 
 
-    def generate_equipment(self, eq_class_ : "EquipmentApi.Classes", blueprint: str, master_stat: ArkEquipmentStat, min_value: float, max_value: float, force_bp: bool = None) -> Equipment:
-        range_min, range_max = self.__get_internal_value_range(eq_class_.generate_from_template(blueprint, self.save, is_bp=False), master_stat, min_value, max_value)
+    def generate_equipment(self, eq_class_ : "EquipmentApi.Classes", blueprint: str, master_stat: ArkEquipmentStat, min_value: float, max_value: float, force_bp: bool = None, from_rating: bool = False, normal_distribution: bool = True, bp_chance: float = 0.3) -> Equipment:
 
-        is_bp = random.choices([True, False], weights=[30, 70], k=1)[0] if force_bp is None else force_bp
+        # Generate equipment based on the specified class and blueprint
+        bp_chance_yes = bp_chance * 100 if force_bp is None else 0 if force_bp else 100
+        bp_chance_no = 100 - bp_chance_yes
+        is_bp = random.choices([True, False], weights=[bp_chance_yes, bp_chance_no], k=1)[0]
         equipment: Equipment = eq_class_.generate_from_template(blueprint, self.save, is_bp=is_bp)
 
+        if from_rating:
+            print(f"from rating {min_value} to {max_value} for {master_stat}")
+            min_value = equipment.get_stat_for_rating(master_stat, min_value)
+            max_value = equipment.get_stat_for_rating(master_stat, max_value)
+
+        print(f"Generating {equipment.class_name} {blueprint} with {master_stat} in range [{min_value}, {max_value}] (is_bp={is_bp})")
+        range_min, range_max = self.__get_internal_value_range(equipment, master_stat, min_value, max_value)
+        print(f"Internal value range for {master_stat} is [{range_min}, {range_max}]")
+        
+        if normal_distribution:
+            mu = (range_min + range_max) / 2
+            sigma = (range_max - range_min) / 2
+
         for stat in equipment.get_implemented_stats():
-            random_value = random.randint(range_min, range_max)
+            if normal_distribution:
+                random_value = random.gauss(mu, sigma)
+            else:
+                random_value = random.uniform(range_min, range_max)
             equipment.set_stat(stat, equipment.get_actual_value(stat, random_value))
+
         equipment.auto_rate()
 
         return equipment

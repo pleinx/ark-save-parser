@@ -4,6 +4,7 @@ from uuid import UUID
 from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
+from arkparse.enums import ArkEquipmentStat
 
 from .__equipment_with_durability import EquipmentWithDurability
 
@@ -16,7 +17,11 @@ class Shield(EquipmentWithDurability):
         self.class_name = "shield"
 
     def auto_rate(self, save: AsaSave = None):
-        self._auto_rate(0.000519, self.get_average_stat(), save)          
+        self._auto_rate(0.000519, self.get_average_stat(), save)    
+
+    def get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float) -> float:
+        value = super()._get_stat_for_rating(stat, rating, 0.000519)
+        return self.get_actual_value(stat, value)
 
     @staticmethod
     def from_object(obj: ArkGameObject):

@@ -230,12 +230,12 @@ class ArkProperty:
     def __read_struct_header(byte_buffer: 'ArkBinaryParser', position: int = 0, in_array: bool = False) -> int:
         byte_buffer.validate_uint32(1) # Added in V14, this is now 1
         new_name = byte_buffer.read_name()
-        ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
+        # ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
         # print(f"New name in v14: {new_name}")
         byte_buffer.validate_uint32(0)
         data_size = byte_buffer.read_uint32()
         size_byte = byte_buffer.read_byte()  # V14, unknown byte
-        ArkSaveLogger.debug_log(f"V14 - unknown byte: {size_byte}")
+        # ArkSaveLogger.debug_log(f"V14 - unknown byte: {size_byte}")
         
         read_pos = (size_byte != 0 and size_byte != 8) or (in_array and size_byte == 0) 
         if read_pos:
@@ -245,7 +245,11 @@ class ArkProperty:
 
     @staticmethod
     def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
-        ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
+        # ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
+        if struct_type == "PaintingKeyValue":
+            ArkSaveLogger.set_file(byte_buffer, f"debug_{struct_type}.bin")
+            byte_buffer.structured_print()
+            ArkSaveLogger.open_hex_view(True)
         
         if not in_array:
             ArkSaveLogger.enter_struct(f"S({struct_type})")
@@ -343,7 +347,7 @@ class ArkProperty:
 
         # print(f"type: {array_type}, data_size: {data_size}, array_length: {array_length}, array_items: {array_items}, array_type_int: {array_type_int}")
 
-        ArkSaveLogger.debug_log(f"Reading array property {key} with type {array_type} at position {start_of_array_values_position}, length {array_length}")
+        # ArkSaveLogger.debug_log(f"Reading array property {key} with type {array_type} at position {start_of_array_values_position}, length {array_length}")
 
         if array_type == "StructProperty":
             array_content_type = byte_buffer.read_name()
