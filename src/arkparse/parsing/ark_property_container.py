@@ -31,10 +31,9 @@ class ArkPropertyContainer:
                 self.properties.append(ark_property)
 
         except Exception as e:
-            ArkSaveLogger.enable_debug = True
-            byte_buffer.find_names()
-            ArkSaveLogger.debug_log(f"Failed to read object properties at position {last_property_position} ()")
             byte_buffer.set_position(last_property_position)
+            ArkSaveLogger.debug_log(f"Error reading properties at position {last_property_position}: {e}")
+            byte_buffer.find_names()
             raise e
         
         ArkSaveLogger.debug_log("Finished reading object properties")

@@ -355,28 +355,18 @@ class AsaSave:
                     ArkSaveLogger.exit_struct()
                     continue
 
-                try:
-                    if class_name not in objects:
-                        objects.append(class_name)
-                    
-                    if obj_uuid not in self.parsed_objects.keys():
-                        ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
-                        
-                        if ark_game_object:
-                            game_objects[obj_uuid] = ark_game_object
-                            self.parsed_objects[obj_uuid] = ark_game_object
-                    else:
-                        game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
-
-                except Exception as e:
-                    pass
-                    ArkSaveLogger.enable_debug = True
-                    byte_buffer.find_names()
-                    raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                if class_name not in objects:
+                    objects.append(class_name)
                 
-                # for object in objects:
-                #     ArkSaveLogger.debug_log("Object: %s", object)
-                ArkSaveLogger.exit_struct()
+                if obj_uuid not in self.parsed_objects.keys():
+                    ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
+                    
+                    if ark_game_object:
+                        game_objects[obj_uuid] = ark_game_object
+                        self.parsed_objects[obj_uuid] = ark_game_object
+                else:
+                    game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
+
 
         for o in self.var_objects:
             sorted_properties = sorted(self.var_objects[o].items(), key=lambda item: item[1], reverse=True)
@@ -427,7 +417,7 @@ class AsaSave:
     def uuid_to_byte_array(obj_uuid: uuid.UUID) -> bytes:
         return obj_uuid.bytes
     
-    def parse_as_predefined_object(self, obj_uuid, class_name, byte_buffer):
+    def parse_as_predefined_object(self, obj_uuid, class_name, byte_buffer: ArkBinaryParser):
         self.nr_parsed += 1
 
         if self.nr_parsed % 2500 == 0:
@@ -452,9 +442,12 @@ class AsaSave:
         try:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)
         except Exception as e:
-            ArkSaveLogger.enable_debug = True
-            # ArkSaveLogger.debug_log("Error parsing object %s: %s", class_name, e)
-            ArkSaveLogger.enable_debug = False
+            if "/Game/" in class_name:
+                ArkSaveLogger.enable_debug = True
+                byte_buffer.find_names()
+                raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+            else:
+                print(f"Error parsing non-standard object of type {class_name}")
 
         return None
         

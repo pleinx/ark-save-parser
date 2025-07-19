@@ -33,6 +33,5 @@ class ArkDinoAncestorEntry:
         id2 = byte_buffer.parse_uint32_property("FemaleDinoID2")
         self.female = ArkDinoAncestor(female_name, id1, id2)
         byte_buffer.validate_name("None")
-
     def __str__(self):
         return f"AncestorEntry:[M:{self.male}, F:{self.female}]"

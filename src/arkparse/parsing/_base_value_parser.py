@@ -57,26 +57,31 @@ class BaseValueParser(BinaryReaderBase):
 
     def read_string(self) -> str:
        
-        length = self.read_uint32()
+        length = self.read_int()
         if length == 0:
             return None
-
+        
         is_multi_byte = length < 0
         abs_length = abs(length)
 
+        result = ""
         if is_multi_byte:
-            result = self.read_chars(abs_length - 1)
-            self.skip_bytes(abs_length * 2)
+            ArkSaveLogger.debug_log(f"Reading multi-byte string of length {abs_length}")
+            ArkSaveLogger.open_hex_view(True)
+            for _ in range(abs_length - 1):
+                result += self.read_bytes(1).decode('utf-8', errors='ignore')
+                self.skip_bytes(1)  # Skip the null
+            terminator = self.read_uint16()  # Read the null terminator
         else:
             pre_read_pos = self.position
             result = self.read_bytes(abs_length - 1).decode('utf-8')
             terminator = self.read_byte()
 
-            if terminator != 0:
-                print(f"Terminator is not zero: {terminator}")
-                self.position = pre_read_pos
-                # ArkSaveLogger.enable_debug = True
-                ArkSaveLogger.open_hex_view()
+        if terminator != 0:
+            print(f"Terminator is not zero: {terminator}")
+            self.position = pre_read_pos
+            # ArkSaveLogger.enable_debug = True
+            ArkSaveLogger.open_hex_view()
                 
 
         return result
@@ -135,7 +140,7 @@ class BaseValueParser(BinaryReaderBase):
         self.position = current_position
         return value
     
-    def read_name(self, default="UNKNOWN_NAME") -> str:
+    def read_name(self, default=None) -> str:
         if not self.save_context.has_name_table():
             return self.read_string()
         name_id = self.read_uint32()

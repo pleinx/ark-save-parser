@@ -78,12 +78,12 @@ class ArkProperty:
         if value_type == ArkValueType.Boolean:
             p = ArkProperty(key, value_type.name, position, 0, ArkProperty.read_property_value(value_type, byte_buffer))
         elif value_type in {ArkValueType.Int, ArkValueType.Double, ArkValueType.UInt32,
-                            ArkValueType.UInt64, ArkValueType.Int16, ArkValueType.Int64,
+                            ArkValueType.UInt64, ArkValueType.Int64,
                             ArkValueType.String, ArkValueType.SoftObject}:
             unknown = byte_buffer.read_byte()
             value_position = byte_buffer.get_position()
             p = ArkProperty(key, value_type.name, position, unknown, ArkProperty.read_property_value(value_type, byte_buffer))
-        elif value_type in (ArkValueType.Name, ArkValueType.Float, ArkValueType.Int8, ArkValueType.Object, ArkValueType.UInt16):
+        elif value_type in (ArkValueType.Name, ArkValueType.Float, ArkValueType.Int8, ArkValueType.Object, ArkValueType.UInt16, ArkValueType.Int16):
             is_pos = byte_buffer.read_byte() == 1
             position = byte_buffer.read_int() if is_pos else 0  # V14, position is now read here
             value_position = byte_buffer.get_position()
@@ -167,9 +167,9 @@ class ArkProperty:
 
         if byte_buffer.get_position() != start_of_data + data_size:
             remaining_data = byte_buffer.read_bytes(start_of_data + data_size - byte_buffer.get_position())
-            ArkSaveLogger.open_hex_view()
-            print("Map read incorrectly, bytes left to read:", remaining_data)
-            raise ValueError("Map read incorrectly, bytes left to read")
+            # ArkSaveLogger.open_hex_view()
+            ArkSaveLogger.debug_log("Map read incorrectly, bytes left to read:", remaining_data)
+            # raise ValueError("Map read incorrectly, bytes left to read")
         
         p = ArkProperty(key, value_type_name, position, 0, ArkPropertyContainer(map_entries))
 
@@ -245,11 +245,11 @@ class ArkProperty:
 
     @staticmethod
     def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
-        # ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
-        if struct_type == "PaintingKeyValue":
-            ArkSaveLogger.set_file(byte_buffer, f"debug_{struct_type}.bin")
-            byte_buffer.structured_print()
-            ArkSaveLogger.open_hex_view(True)
+        ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
+        # if struct_type == "PaintingKeyValue":
+        #     ArkSaveLogger.set_file(byte_buffer, f"debug_{struct_type}.bin")
+        #     byte_buffer.structured_print()
+        #     ArkSaveLogger.open_hex_view(True)
         
         if not in_array:
             ArkSaveLogger.enter_struct(f"S({struct_type})")
@@ -350,6 +350,8 @@ class ArkProperty:
         # ArkSaveLogger.debug_log(f"Reading array property {key} with type {array_type} at position {start_of_array_values_position}, length {array_length}")
 
         if array_type == "StructProperty":
+            # ArkSaveLogger.open_hex_view(True)
+            # print(f"Reading struct array {key} at position {start_of_array_values_position}, items: {array_items}, type: {array_type}")
             array_content_type = byte_buffer.read_name()
             data_size, position, read_pos = ArkProperty.__read_struct_header(byte_buffer, position, in_array=True)
             data_start_postion = byte_buffer.get_position() - (4 if read_pos else 0)
