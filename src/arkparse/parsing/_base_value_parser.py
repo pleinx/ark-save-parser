@@ -67,7 +67,7 @@ class BaseValueParser(BinaryReaderBase):
         result = ""
         if is_multi_byte:
             ArkSaveLogger.debug_log(f"Reading multi-byte string of length {abs_length}")
-            ArkSaveLogger.open_hex_view(True)
+            # ArkSaveLogger.open_hex_view(True)
             for _ in range(abs_length - 1):
                 result += self.read_bytes(1).decode('utf-8', errors='ignore')
                 self.skip_bytes(1)  # Skip the null

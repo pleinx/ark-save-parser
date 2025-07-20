@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from arkparse.logging import ArkSaveLogger
 
 from arkparse.parsing.struct.ark_color import ArkColor
+from arkparse.parsing.struct.ark_int_point import ArkIntPoint
 from arkparse.parsing.struct.ark_linear_color import ArkLinearColor
 from arkparse.parsing.struct.ark_quat import ArkQuat
 from arkparse.parsing.struct.ark_rotator import ArkRotator
@@ -110,11 +111,11 @@ class ArkProperty:
                 enum_bp = byte_buffer.read_name()
                 # print(f"Enum bp: {enum_bp} at position {byte_buffer.get_position()}")
                 byte_buffer.validate_uint32(0)  # 0??
-                byte_buffer.validate_byte(8)  # Data size? = 8 for enum (= name)
+                data_size = byte_buffer.read_byte()
                 byte_buffer.validate_uint32(0)  # 0??
                 enum_name =byte_buffer.read_name()
                 ArkSaveLogger.debug_log(f"[ENUM: key={key}; value={ArkEnumValue(enum_name)}; start_pos={pre_read_pos}")
-                p = ArkProperty(key, ArkValueType.Enum, position, size, ArkEnumValue(enum_name))
+                p = ArkProperty(key, ArkValueType.Enum, position, data_size, ArkEnumValue(enum_name))
         elif value_type == ArkValueType.Struct:
             # V14, now no position -> revert by 4
             byte_buffer.set_position(byte_buffer.get_position() - 4)  # Remove position read
@@ -230,12 +231,11 @@ class ArkProperty:
     def __read_struct_header(byte_buffer: 'ArkBinaryParser', position: int = 0, in_array: bool = False) -> int:
         byte_buffer.validate_uint32(1) # Added in V14, this is now 1
         new_name = byte_buffer.read_name()
-        # ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
-        # print(f"New name in v14: {new_name}")
+        ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
         byte_buffer.validate_uint32(0)
         data_size = byte_buffer.read_uint32()
         size_byte = byte_buffer.read_byte()  # V14, unknown byte
-        # ArkSaveLogger.debug_log(f"V14 - unknown byte: {size_byte}")
+        ArkSaveLogger.debug_log(f"V14 - unknown byte: {size_byte}")
         
         read_pos = (size_byte != 0 and size_byte != 8) or (in_array and size_byte == 0) 
         if read_pos:
@@ -282,6 +282,8 @@ class ArkProperty:
                 p = ArkItemNetId(byte_buffer)
             elif ark_struct_type == ArkStructType.ArkDinoAncestor:
                 p = ArkDinoAncestorEntry(byte_buffer)
+            elif ark_struct_type == ArkStructType.ArkIntPoint:
+                p = ArkIntPoint(byte_buffer)
             elif ark_struct_type == None:
                 return None
             elif in_array:

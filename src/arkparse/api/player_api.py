@@ -148,13 +148,13 @@ class PlayerApi:
 
         if files_in_database:
             self.__get_files_from_db()
-        else:
-            # check for profile data in save dir
+        elif save.save_dir is not None:
             self.get_files_from_directory(save.save_dir)
-            if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not files_in_database:
-                ArkSaveLogger.debug_log("No profile or tribe data found")
-            else:
-                ArkSaveLogger.debug_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
+
+        if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not files_in_database:
+            ArkSaveLogger.debug_log("No profile or tribe data found")
+        else:
+            ArkSaveLogger.debug_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
 
         ArkSaveLogger.debug_log("Parsing player and tribe data from files")
         self.__update_files()
@@ -347,6 +347,13 @@ class PlayerApi:
                 break
         
         return player, value
+    
+    def get_container_of_inventory_by_uuid(self, inv_uuid: UUID, save: AsaSave = None):
+        for player in self.players:
+            inventory = self.get_player_inventory(player, save)
+            if inventory is not None and inventory.object.uuid == inv_uuid:
+                return player
+        return None
     
     def get_player_by_platform_name(self, name: str):
         for p in self.players:

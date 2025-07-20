@@ -11,6 +11,7 @@ from .ark_vector_bool_pair import ArkVectorBoolPair
 from .ark_tracked_actor_id_category_pair_with_bool import ArkTrackedActorIdCategoryPairWithBool
 from .ark_my_persistent_buff_datas import ArkMyPersistentBuffDatas
 from .ark_item_net_id import ArkItemNetId
+from .ark_int_point import ArkIntPoint
 from .ark_dino_ancestor_entry import ArkDinoAncestorEntry
 
 class ArkStructType(Enum):
@@ -25,6 +26,7 @@ class ArkStructType(Enum):
     MyPersistentBuffDatas = "MyPersistentBuffDatas"
     ItemNetId = "ItemNetID"
     ArkDinoAncestor = "DinoAncestorsEntry"
+    ArkIntPoint = "IntPoint"
 
 
     # Static constructor mapping for ArkStructType
@@ -51,6 +53,7 @@ class ArkStructType(Enum):
             "MyPersistentBuffDatas": lambda data: ArkMyPersistentBuffDatas(data),
             "ItemNetID": lambda data: ArkItemNetId(data),
             "DinoAncestorsEntry": lambda data: ArkDinoAncestorEntry(data),
+            "IntPoint": lambda data: ArkIntPoint(data),
         }
         self.constructor = _constructors.get(type_name)
 

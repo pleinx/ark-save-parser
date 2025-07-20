@@ -41,7 +41,7 @@ class AsaSave:
         else:
             raise ValueError("Either path or contents must be provided")
 
-        self.save_dir = path.parent
+        self.save_dir = path.parent if path is not None else None
         self.sqlite_db = temp_save_path
         self.save_context = SaveContext()
         self.var_objects = {}
