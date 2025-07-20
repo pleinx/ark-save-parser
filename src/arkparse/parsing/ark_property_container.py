@@ -16,6 +16,7 @@ class ArkPropertyContainer:
 
     def read_properties(self, byte_buffer: "ArkBinaryParser", propertyClass: Type['ArkProperty'], next_object_index: int) -> None:
         last_property_position = byte_buffer.get_position()
+        ArkSaveLogger.reset_struct_path()
         # ArkSaveLogger.open_hex_view(True)
         try:
             while byte_buffer.has_more() and byte_buffer.get_position() < next_object_index:

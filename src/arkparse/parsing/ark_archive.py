@@ -20,6 +20,9 @@ class ArkArchive:
         ArkSaveLogger.byte_buffer = data
         # ArkSaveLogger.open_hex_view(True)
         save_context.save_version = data.read_int()
+        # print(f"Save version: {save_context.save_version}")
+        if save_context.save_version < 7:
+            raise RuntimeError(f"Unsupported archive version {save_context.save_version} (only Unreal 5.5 is supported)")
         extra1 = data.read_int()  # This is usually 0, but can be used for future extensions
         extra2 = data.read_int()
         ArkSaveLogger.file = str(file)

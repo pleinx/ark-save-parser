@@ -18,7 +18,8 @@ class ArkTrackedActorIdCategoryPairWithBool:
 
         byte_buffer.validate_string("ID")
         byte_buffer.validate_string("IntProperty")
-        byte_buffer.validate_uint64(4)
+        byte_buffer.validate_uint32(0)
+        byte_buffer.validate_uint32(4)
         byte_buffer.skip_bytes(1)
 
         self.id_ = byte_buffer.read_int()
@@ -26,16 +27,20 @@ class ArkTrackedActorIdCategoryPairWithBool:
         byte_buffer.validate_string("Category")
         byte_buffer.validate_string("ByteProperty")
 
-        self.cat_byte = byte_buffer.read_uint64()
+        byte_buffer.read_uint32()
         
         byte_buffer.validate_string("ETrackedActorCategory")
-        byte_buffer.skip_bytes(1)
+        byte_buffer.validate_uint32(1)
+        byte_buffer.validate_string("/Script/ShooterGame")
+        byte_buffer.validate_uint32(0)
+        self.cat_byte = byte_buffer.read_byte()
+        byte_buffer.validate_uint32(0)
         self.category = ArkEnumValue(byte_buffer.read_string())
 
         byte_buffer.validate_string("BoolVal")
         byte_buffer.validate_string("BoolProperty")
         byte_buffer.validate_uint64(0)
-        self.bool_ = byte_buffer.read_uint16() != 0
+        self.bool_ = byte_buffer.read_byte() != 0
 
         byte_buffer.validate_string("None")
 

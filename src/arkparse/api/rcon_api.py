@@ -122,7 +122,7 @@ class GameLogEntry:
         
         if self.type == self.EntryType.PLAYER or self.type == self.EntryType.GAME:
             self.message_prefix = message.split(":")[0]
-            self.message = ''.join(message.split(":")[1:]).strip()
+            self.message = ':'.join(message.split(":")[1:]).strip()
         else:
             self.message = message
             self.message_prefix = ""
@@ -194,6 +194,8 @@ class RconApi:
             return
         entries = response.split("\n")
         entries = [e for e in entries if e.strip() != ""]
+        # for e in entries:
+        #     print(f"Processing log entry: {e}")
         new_entries = [GameLogEntry(time=e.split(" ")[0].strip(':'), message=" ".join(e.split(" ")[1:])) for e in entries]
         self.game_log.extend(new_entries)
         self.last_game_log_entry = new_entries[-1] if len(new_entries) else None

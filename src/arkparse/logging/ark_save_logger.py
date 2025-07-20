@@ -16,19 +16,14 @@ class ArkSaveLogger:
 
     @staticmethod
     def debug_log(message: str, *args):
-        if  ArkSaveLogger.log_limit_enabled is False or ArkSaveLogger.log_limit > 0:
-
+        if  ArkSaveLogger.enable_debug and (ArkSaveLogger.log_limit_enabled is False or ArkSaveLogger.log_limit > 0):
             if ArkSaveLogger.log_limit_enabled:
                 ArkSaveLogger.log_limit -= 1
-
             structPath = ""
             for s in ArkSaveLogger.current_struct_path:
                 structPath = structPath + f"[{s}]"
-
             message = structPath + message
-            
-            if ArkSaveLogger.enable_debug:
-                logging.info(message, *args)
+            logging.info(message, *args)
 
     @staticmethod
     def enter_struct(struct_name: str):
@@ -40,6 +35,10 @@ class ArkSaveLogger:
         # self.debug_log("Exiting struct %s", self.current_struct_path)
         if len(ArkSaveLogger.current_struct_path) > 0:
             ArkSaveLogger.current_struct_path.pop()
+
+    @staticmethod
+    def reset_struct_path():
+        ArkSaveLogger.current_struct_path = []
 
     @staticmethod
     def set_file(reader, name):

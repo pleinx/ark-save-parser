@@ -17,10 +17,11 @@ class ArkVectorBoolPair:
 
         byte_buffer.validate_string("VectorVal")
         byte_buffer.validate_string("StructProperty")
-        byte_buffer.validate_uint64(24)
+        byte_buffer.validate_uint32(1)
         byte_buffer.validate_string("Vector")
-
-        byte_buffer.skip_bytes(17)
+        byte_buffer.validate_uint32(1)
+        byte_buffer.validate_string("/Script/CoreUObject")
+        byte_buffer.skip_bytes(9)
 
         self.vector = ArkVector(byte_buffer)
 
@@ -28,7 +29,7 @@ class ArkVectorBoolPair:
         byte_buffer.validate_string("BoolProperty")
         byte_buffer.validate_uint64(0)
 
-        self.bool_ = byte_buffer.read_uint16() != 0
+        self.bool_ = byte_buffer.read_byte() != 0
 
         byte_buffer.validate_string("None")
 

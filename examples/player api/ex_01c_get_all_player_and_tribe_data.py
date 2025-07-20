@@ -9,3 +9,8 @@ player_api = PlayerApi(save)
 
 for player in player_api.players:
     print(player)
+
+for tribe in player_api.tribes:
+    print(tribe)
+    for p in player_api.tribe_to_player_map[tribe.tribe_id]:
+        print(f"  - {p}")

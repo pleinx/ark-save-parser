@@ -8,7 +8,7 @@ from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 
-save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.ABERRATION).download_save_file(Path.cwd()) # or download the save file from an FTP server
+save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.RAGNAROK).download_save_file(Path.cwd()) # or download the save file from an FTP server
 save = AsaSave(save_path)                                                                                       # load the save file
 dino_api = DinoApi(save)                                                                                        # create a DinoApi object
 

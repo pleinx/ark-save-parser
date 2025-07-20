@@ -41,11 +41,13 @@ class AsaSave:
         else:
             raise ValueError("Either path or contents must be provided")
 
+        self.save_dir = path.parent
         self.sqlite_db = temp_save_path
         self.save_context = SaveContext()
         self.var_objects = {}
         self.var_objects["placed_structs"] = {}
         self.var_objects["g_placed_structs"] = {}
+        
 
         conn_str = f"file:{temp_save_path}?mode={'ro' if read_only else 'rw'}"
         self.connection = sqlite3.connect(conn_str, uri=True)
@@ -53,6 +55,7 @@ class AsaSave:
         self.list_all_items_in_db()
         self.read_header()
         self.read_actor_locations()
+        self.profile_data_in_db = self.profile_data_in_saves()
 
     def __del__(self):
         self.close()
@@ -60,6 +63,13 @@ class AsaSave:
         # clean up temp file
         if self.sqlite_db.exists():
             self.sqlite_db.unlink()
+
+    def profile_data_in_saves(self) -> bool:
+        parser: ArkBinaryParser = self.get_custom_value("GameModeCustomBytes")
+        if len(parser.byte_buffer) < 30:
+            ArkSaveLogger.debug_log("GameModeCustomBytes is too short, profile data not in saves")
+            return False
+        return True
 
     def list_all_items_in_db(self):
         query = "SELECT key, value FROM game"
@@ -77,6 +87,7 @@ class AsaSave:
             cursor = conn.execute(query)
             for row in cursor:
                 ArkSaveLogger.debug_log("Custom key: %s", row[0])
+                
 
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")
@@ -346,7 +357,6 @@ class AsaSave:
                 try:
                     class_name = byte_buffer.read_name()
                 except Exception as e:
-                    print(f"Error reading class name for object {obj_uuid}: {e}")
                     ArkSaveLogger.debug_log("Error reading class name for object %s: %s", obj_uuid, e)
                     class_name = "UnknownClass"
                 ArkSaveLogger.enter_struct(class_name)

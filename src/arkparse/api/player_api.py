@@ -126,18 +126,37 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave):
-        self.players : List[ArkPlayer] = []
-        self.tribes : List[ArkTribe] = []
-        self.tribe_to_player_map : Dict[int, List[ArkPlayer]] = {}
+    def __init__(self, save: AsaSave, ignore_error: bool = False):
+        self.players: List[ArkPlayer] = []
+        self.tribes: List[ArkTribe] = []
+        self.tribe_to_player_map: Dict[int, List[ArkPlayer]] = {}
         self.save: AsaSave = save
         self.pawns: Dict[UUID, ArkGameObject] = None
 
-        self.data : _TribeAndPlayerData = _TribeAndPlayerData(self.save.get_custom_value("GameModeCustomBytes"))
+        self.profile_paths: Set[Path] = set()
+        self.tribe_paths: Set[Path] = set()
+        self.ignore_error = ignore_error
+
+        files_in_database = True
+        if save.profile_data_in_saves() == False:
+            ArkSaveLogger.debug_log("Profile data not found in save, checking database")
+            files_in_database = False
 
         if self.save is not None:
+            ArkSaveLogger.debug_log(f"Retrieving player pawns")
             self.__init_pawns()
 
+        if files_in_database:
+            self.__get_files_from_db()
+        else:
+            # check for profile data in save dir
+            self.get_files_from_directory(save.save_dir)
+            if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not files_in_database:
+                ArkSaveLogger.debug_log("No profile or tribe data found")
+            else:
+                ArkSaveLogger.debug_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
+
+        ArkSaveLogger.debug_log("Parsing player and tribe data from files")
         self.__update_files()
 
     def __del__(self):
@@ -165,25 +184,49 @@ class PlayerApi:
         with open(path, "wb") as f:
             f.write(data)
         return path
+    
+    def __get_files_from_db(self):
+        if self.save is None:
+            raise ValueError("Save not provided")
+        
+        if self.save.get_custom_value("GameModeCustomBytes") is None:
+            raise ValueError("No GameModeCustomBytes found in the save data")
+        
+        self.data = _TribeAndPlayerData(self.save.get_custom_value("GameModeCustomBytes"))
+
+        for index in range(len(self.data.player_data_pointers)):
+            path = self.__store_as_file(self.data.get_ark_profile_raw_data(index), f"{index}.arkprofile")
+            self.profile_paths.add(path)
+
+        for index in range(len(self.data.tribe_data_pointers)):
+            path = self.__store_as_file(self.data.get_ark_tribe_raw_data(index), f"{index}.arktribe")
+            self.tribe_paths.add(path)
+
+    def get_files_from_directory(self, directory: Path):
+        for path in directory.glob("*.arkprofile"):
+            self.profile_paths.add(path)
+        for path in directory.glob("*.arktribe"):
+            self.tribe_paths.add(path)
 
     def __update_files(self):
         new_players: Dict[int, ArkPlayer] = {}
         new_tribes: Dict[int, ArkTribe] = {}
         new_tribe_to_player = {}
 
-        for index in range(len(self.data.player_data_pointers)):
-            path = self.__store_as_file(self.data.get_ark_profile_raw_data(index), f"{index}.arkprofile")
-            player : ArkPlayer = ArkPlayer(path)
+        for path in self.profile_paths:
+            try:
+                player: ArkPlayer = ArkPlayer(path)
+            except Exception as e:
+                if "Unsupported archive version" in str(e):
+                    print(f"Skipping player data {path} due to unsupported archive version: {e}")
+                    continue
+                if self.ignore_error:
+                    continue
+                raise e
 
             # latest is newest??
             if player.id_ in new_players:
                 ArkSaveLogger.debug_log(f"Player with ID {player.id_} already exists, taking latest.")
-                # prev_login = new_players[player.id_].player_data.get_property_value("LoginTime")
-                # new_login = player.player_data.get_property_value("LoginTime")
-                # if prev_login is not None and new_login is not None:
-                #     if new_login > prev_login:
-                #         # Update player data if the new login time is more recent
-                #         new_players[player.id_] = player
            
             new_players[player.id_] = player
 
@@ -194,13 +237,20 @@ class PlayerApi:
                 if pawn_player_id == player.id_:
                     player_pawn = self.pawns[pawn]
                     break
-            if self.save is not None:
+            if self.save is not None and player_pawn is not None:
                 player.get_location_and_inventory(self.save, player_pawn)
         
 
-        for index in range(len(self.data.tribe_data_pointers)):
-            path = self.__store_as_file(self.data.get_ark_tribe_raw_data(index), f"{index}.arktribe")
-            tribe = ArkTribe(path)
+        for path in self.tribe_paths:
+            try:
+                tribe: ArkTribe = ArkTribe(path)
+            except Exception as e:
+                if "Unsupported archive version" in str(e):
+                    print(f"Skipping player data {path} due to unsupported archive version: {e}")
+                    continue
+                if self.ignore_error:
+                    continue
+                raise e
             players = []
             for id in tribe.member_ids:
                 for p in new_players.values():
