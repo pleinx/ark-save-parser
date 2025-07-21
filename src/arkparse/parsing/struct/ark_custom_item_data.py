@@ -27,39 +27,9 @@ class ArkByteArray:
 
         ark_binary_data.validate_name("None")
 
-class ArkEmbeddedDinoData(ArkByteArray):
-    def __init__(self, ark_binary_data: "ArkBinaryParser"):
-        super().__init__(ark_binary_data)
-
-class ArkEmbeddedSaddleData(ArkByteArray):
-    def __init__(self, ark_binary_data: "ArkBinaryParser"):
-        super().__init__(ark_binary_data)
-
-class ArkEmbeddedCostumeData(ArkByteArray):
-    def __init__(self, ark_binary_data: "ArkBinaryParser"):
-        super().__init__(ark_binary_data)
-
-class ArkEmbeddedHatData(ArkByteArray):
-    def __init__(self, ark_binary_data: "ArkBinaryParser"):
-        super().__init__(ark_binary_data)
-
-class ArkEmbeddedGearData(ArkByteArray):
-    def __init__(self, ark_binary_data: "ArkBinaryParser"):
-        super().__init__(ark_binary_data)
-
-class ArkEmbeddedPetData(ArkByteArray):
-    def __init__(self, ark_binary_data: "ArkBinaryParser"):
-        super().__init__(ark_binary_data)
-
 @dataclass
-class ArkCryopodData:
-    nr_of_arrays: int
-    dino_data: ArkEmbeddedDinoData
-    saddle_data: ArkEmbeddedSaddleData
-    costume_data: ArkEmbeddedCostumeData
-    hat_data: ArkEmbeddedHatData
-    gear_data: ArkEmbeddedGearData
-    pet_data: ArkEmbeddedPetData
+class ArkCustomItemData:
+    byte_arrays: list[ArkByteArray] = None
     doubles: list[float] = None
     floats: list[float] = None
     strings: list[str] = None
@@ -123,15 +93,11 @@ class ArkCryopodData:
             ark_binary_data.validate_name("None")
             return
 
-        if nr_of_arrays != 6:
-            raise ValueError(f"Expected 6 arrays, got {nr_of_arrays}")
-        
-        self.dino_data = ArkEmbeddedDinoData(ark_binary_data)
-        self.saddle_data = ArkEmbeddedSaddleData(ark_binary_data)
-        self.costume_data = ArkEmbeddedCostumeData(ark_binary_data)
-        self.hat_data = ArkEmbeddedHatData(ark_binary_data)
-        self.gear_data = ArkEmbeddedGearData(ark_binary_data)
-        self.pet_data = ArkEmbeddedPetData(ark_binary_data)
+        for _ in range(nr_of_arrays):
+            byte_array = ArkByteArray(ark_binary_data)
+            if self.byte_arrays is None:
+                self.byte_arrays = []
+            self.byte_arrays.append(byte_array)
 
         if ark_binary_data.position != arr_start + arr_size:
             raise ValueError(f"Expected to read {arr_size} bytes, but read {ark_binary_data.position - arr_start} bytes")

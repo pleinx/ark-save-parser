@@ -17,7 +17,7 @@ from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct.ark_struct_type import ArkStructType
 from arkparse.parsing.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
-from arkparse.parsing.struct.ark_cryopod_data import ArkCryopodData
+from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 if TYPE_CHECKING:
@@ -283,9 +283,9 @@ class ArkProperty:
                 p = ArkDinoAncestorEntry(byte_buffer)
             elif ark_struct_type == ArkStructType.ArkIntPoint:
                 p = ArkIntPoint(byte_buffer)
-            elif ark_struct_type == ArkStructType.ArkCryopodData:
+            elif ark_struct_type == ArkStructType.ArkCustomItemData:
                 ArkSaveLogger.enter_struct(f"CryopodData")
-                p = ArkCryopodData(byte_buffer)
+                p = ArkCustomItemData(byte_buffer)
                 ArkSaveLogger.exit_struct()
             elif ark_struct_type == None:
                 return None

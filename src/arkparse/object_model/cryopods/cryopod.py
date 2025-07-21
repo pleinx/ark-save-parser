@@ -8,7 +8,7 @@ from arkparse.object_model.equipment.saddle import Saddle
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.inventory_item import InventoryItem
-from arkparse.parsing.struct.ark_cryopod_data import ArkCryopodData
+from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 
 class EmbeddedCryopodData:
     class Item:
@@ -19,14 +19,14 @@ class EmbeddedCryopodData:
         GEAR = 4
         PET = 5
 
-    custom_data: ArkCryopodData
+    custom_data: ArkCustomItemData
     
-    def __init__(self, custom_item_data: ArkCryopodData):
+    def __init__(self, custom_item_data: ArkCustomItemData):
         self.custom_data = custom_item_data
 
     def __unembed__(self, item):
         if item == self.Item.DINO_AND_STATUS:
-            bts = self.custom_data.dino_data.data
+            bts = self.custom_data.byte_arrays[0].data if len(self.custom_data.byte_arrays) > 0 else b""
             if len(bts) != 0:
                 parser: ArkBinaryParser = ArkBinaryParser.from_deflated_data(bts)
                 
@@ -45,7 +45,7 @@ class EmbeddedCryopodData:
             return None, None
 
         elif item == self.Item.SADDLE:
-            bts = self.custom_data.saddle_data.data
+            bts = self.custom_data.byte_arrays[1].data if len(self.custom_data.byte_arrays) > 1 else b""
             if len(bts) != 0:
                 parser = ArkBinaryParser(bts)
                 parser.skip_bytes(4)  # Skip the first 8 bytes (header)
