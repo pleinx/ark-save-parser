@@ -107,7 +107,7 @@ class ArkCryopodData:
             ArkSaveLogger.debug_log(f"Name: {name}")
 
     def __read_header(self, ark_binary_data: "ArkBinaryParser"):
-        ark_binary_data.validate_uint32(1)
+        ark_binary_data.read_uint32()  # size of the data in bytes
         total_size = self.__read_struct_start(ark_binary_data, "CustomDataBytes", "CustomItemByteArrays")
         ArkSaveLogger.debug_log(f"CustomItemData total size: {total_size} bytes")
 
