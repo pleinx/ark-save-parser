@@ -108,7 +108,7 @@ class Utility:
     deathitemcache = "/Game/PrimalEarth/Structures/DeathItemCache.DeathItemCache_C"
 
     all_bps = [simple_bed, sleeping_bag, anvil_bench, small_storage_box, large_bear_trap, large_storage_box,
-               bunk_bed, vault, sleeping_pod, toilet, cryofridge]
+               bunk_bed, vault, sleeping_pod, toilet, cryofridge, deathitemcache]
     
 class TributeTerminals:
     tribute_terminal_purple = "/Game/PrimalEarth/Structures/TributeTerminal_Purple.TributeTerminal_Purple_C"
