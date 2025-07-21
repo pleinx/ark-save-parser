@@ -397,3 +397,15 @@ class DinoApi:
         return best_dino, best_value, best_stat
     
         
+    def get_container_of_inventory(self, inv_uuid: UUID, include_cryopodded: bool = True, tamed_dinos: dict[UUID, TamedDino] = None) -> TamedDino:
+        if tamed_dinos is None:
+            tamed_dinos = self.get_all_tamed(include_cryopodded=include_cryopodded)
+        for _, obj in tamed_dinos.items():
+            if not isinstance(obj, TamedDino):
+                continue
+            obj: TamedDino = obj
+            if obj.inv_uuid == inv_uuid:
+                return obj
+
+        return None
+
