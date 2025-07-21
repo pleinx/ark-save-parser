@@ -22,6 +22,9 @@ If you're curious or want to explore the features yourself, you can find the pro
 
 Hope you find it useful or inspiring or both! 😊
 
+## Discord
+If you use the library a lot or want to chat about functionalities, I made a discord for that, which you can join here: [discord](https://discord.gg/cStrkZVzFE).
+
 ## Disclaimer
 I'm not a professional Python programmer, so if you come across anything that could be done better, please bear with me, or, feel free to contribute! 😉
 
