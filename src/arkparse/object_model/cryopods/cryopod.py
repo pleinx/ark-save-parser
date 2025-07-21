@@ -33,12 +33,12 @@ class EmbeddedCryopodData:
                 objects: List[ArkGameObject] = []
                 parser.skip_bytes(8)  # Skip the first 8 bytes (header)
                 nr_of_obj = parser.read_uint32()
+                parser.save_context.generate_unknown = True
                 for _ in range(nr_of_obj):
-                    parser.save_context.generate_unknown = True
                     objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
-                    parser.save_context.generate_unknown = False
                 for obj in objects:
                     obj.read_props_at_offset(parser)
+                parser.save_context.generate_unknown = False
                     
                 return objects[0], objects[1]
 

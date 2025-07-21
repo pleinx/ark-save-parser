@@ -168,12 +168,6 @@ class BaseApi(StructureApi):
                 structures[new_uuid] = structure
                 self.save.add_obj_to_db(new_uuid, structure.binary.byte_buffer)
 
-                # print(f"Added structure {structure.object.uuid} with blueprint {structure.object.blueprint} to save")
-                # from arkparse.logging import ArkSaveLogger
-                # ArkSaveLogger.enable_debug = True
-                # obj = ArkGameObject(binary_reader=structure.binary)
-                # ArkSaveLogger.enable_debug = False
-
         keystone_uuid = uuid_translation_map[UUID(json.loads(Path(base_file).read_text())["keystone"])]
         base = Base(keystone_uuid, structures)
         # base = Base(structures=structures)

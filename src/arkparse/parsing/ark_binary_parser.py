@@ -205,8 +205,9 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             raise ValueError("Insufficient data for header")
         
         header_parser = ArkBinaryParser(header_data_bytes)
-
-        header_parser.validate_uint32(0x0407)
+        version = header_parser.read_uint32()
+        if version < 0x0407:
+            raise RuntimeError(f"Unsupported embedded data version (only Unreal 5.5 is supported), skipping")
         inflated_size = header_parser.read_uint32()
         names_offset = header_parser.read_uint32()
 
@@ -336,7 +337,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
     def find_byte_sequence(self, pattern: bytes) -> List[int]:
         original_position = self.get_position()
-        max_prints = 75
+        max_prints = 20
         prints = 0
         found = []
         buffer = self.byte_buffer
@@ -346,10 +347,10 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             pos = buffer.find(pattern)
             if pos == -1:
                 break
-            found.append(pos + cur_offset)
+            found.append(pos + cur_offset - 1)
             if prints < max_prints:
                 ArkSaveLogger.debug_log(
-                    f"Found byte sequence at {pos + cur_offset}"
+                    f"Found byte sequence at {pos + cur_offset - 1}"
                 )
                 prints += 1
             buffer = buffer[pos + 1:]

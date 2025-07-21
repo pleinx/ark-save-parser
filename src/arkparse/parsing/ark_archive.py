@@ -20,20 +20,18 @@ class ArkArchive:
         ArkSaveLogger.byte_buffer = data
         # ArkSaveLogger.open_hex_view(True)
         save_context.save_version = data.read_int()
-        # print(f"Save version: {save_context.save_version}")
-        if save_context.save_version < 7:
-            raise RuntimeError(f"Unsupported archive version {save_context.save_version} (only Unreal 5.5 is supported)")
+        ArkSaveLogger.debug_log(f"Archive version: {save_context.save_version}")
+        if save_context.save_version != 7:
+            raise RuntimeError(f"Unsupported archive version {save_context.save_version} (only Unreal 5.5 / binary version 7 is supported)")
         extra1 = data.read_int()  # This is usually 0, but can be used for future extensions
         extra2 = data.read_int()
         ArkSaveLogger.file = str(file)
 
-        # if save_context.save_version != 5:
-        #     raise RuntimeError(f"Unsupported archive version {save_context.save_version}")
-
         count = data.read_int()
-        # print(f"Found {count} objects in " + str(file))
         for _ in range(count):
             self.objects.append(ArkObject.from_reader(data))
+
+        ArkSaveLogger.debug_log(f"Read {len(self.objects)} objects from archive")
 
         for i, obj in enumerate(self.objects):
             ArkSaveLogger.enter_struct(obj.class_name.split(".")[-1])

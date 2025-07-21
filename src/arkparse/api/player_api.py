@@ -41,12 +41,12 @@ class _TribeAndPlayerData:
 
     def __init__(self, store_data: ArkBinaryParser):
         self.data = store_data
-        ArkSaveLogger.set_file(self.data, "TribeAndPlayerData")
+        
         self.tribe_data_pointers: List[int] = []
         self.player_data_pointers: List[int] = []
+        ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
         self.initialize_data()
-
-        # print(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
+        ArkSaveLogger.debug_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
 
     def initialize_data(self) -> None:
         # Read initial flag (unused)
@@ -63,7 +63,7 @@ class _TribeAndPlayerData:
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             uuid_pos = self.data.find_byte_sequence(uuid_bytes)
-            # print(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
+            ArkSaveLogger.debug_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
             self.tribe_data_pointers.append([uuid_bytes, offset, size])
@@ -74,7 +74,6 @@ class _TribeAndPlayerData:
         # print(f"Found {len(positions)} player data offsets in the save data.")
         for i, pos in enumerate(positions):
             # Get ID
-            # print(f"Player data found at offset: {pos}")
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             offset = pos - 36
@@ -83,8 +82,8 @@ class _TribeAndPlayerData:
             last_none = self.get_last_none_before(nones, next_player_data)
             end_pos = last_none + 4
             size = end_pos - offset
-            # print(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
-            self.player_data_pointers.append([uuid_bytes, offset-1, size+1])
+            ArkSaveLogger.debug_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
+            self.player_data_pointers.append([uuid_bytes, offset, size+1])
 
     def get_last_none_before(self, nones: List[int], pos: int = None):
         if pos is None:

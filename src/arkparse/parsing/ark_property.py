@@ -232,11 +232,11 @@ class ArkProperty:
     def __read_struct_header(byte_buffer: 'ArkBinaryParser', position: int = 0, in_array: bool = False) -> int:
         byte_buffer.validate_uint32(1) # Added in V14, this is now 1
         new_name = byte_buffer.read_name()
-        ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
+        # ArkSaveLogger.debug_log(f"New name in v14: {new_name}")
         byte_buffer.validate_uint32(0)
         data_size = byte_buffer.read_uint32()
         size_byte = byte_buffer.read_byte()  # V14, unknown byte
-        ArkSaveLogger.debug_log(f"V14 - unknown byte: {size_byte}")
+        # ArkSaveLogger.debug_log(f"V14 - unknown byte: {size_byte}")
         
         read_pos = (size_byte != 0 and size_byte != 8) or (in_array and size_byte == 0) 
         if read_pos:
