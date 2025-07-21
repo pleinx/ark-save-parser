@@ -151,6 +151,10 @@ class BaseValueParser(BinaryReaderBase):
             name = default
             # print(f"Name with id {name_id} not found, using default: {name}")
             ArkSaveLogger.debug_log(f"Name with id {name_id} not found, using default: {name}")
+
+        if name is None and self.save_context.generate_unknown:
+            name = f"UnknownName_{name_id:08X}"
+            ArkSaveLogger.debug_log(f"Name with id {name_id} not found, generating unknown name: {name}")
         
         if name is None:
             # ArkSaveLogger.enable_debug = True

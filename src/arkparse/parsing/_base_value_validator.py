@@ -44,7 +44,7 @@ class BaseValueValidator(ByteOperator):
         read = self.read_name()
         if read != s:
             ArkSaveLogger.open_hex_view()
-            raise Exception(f"Expected {hex(s)} but got {hex(read)}")
+            raise Exception(f"Expected {s} but got {read}")
         
     def validate_int32(self, i32):
         read = self.read_int()

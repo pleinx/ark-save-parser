@@ -87,9 +87,16 @@ class DinoApi:
                         dino = self.parsed_dinos[obj.uuid]
                 else:
                     parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
+                    
                     if is_tamed:
                         dino = TamedDino(obj.uuid, parser, self.save)
                         self.parsed_tamed_dinos[obj.uuid] = dino
+                        # with open("dino_str.bin", "wb") as f:
+                        #     parser.structured_print(to_file=f)
+                            
+                        # with open("dino_stats.bin", "wb") as f:
+                        #     dino.stats.binary.structured_print(to_file=f)
+                        # input("Press Enter to continue...")
                     else:
                         dino = Dino(obj.uuid, parser, self.save)
                         self.parsed_dinos[obj.uuid] = dino

@@ -29,12 +29,16 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         13: "RequiredTameAffinity",
         14: "TamingTeamID",
         15: "IntProperty",
+        16: "OwningPlayerID",
+        17: "OwningPlayerName",
         19: "StructProperty",
         23: "DinoID1",
         24: "UInt32Property",
+        26: "UntamedPoopTimeCache",
         25: "DinoID2",
         31: "UploadedFromServerName",
         32: "TamedOnServerName",
+        34: "UnknownProperty", # !!!
         36: "TargetingTeam",
         38: "bReplicateGlobalStatusValues",
         39: "bAllowLevelUps",
@@ -43,6 +47,7 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         42: "CurrentStatusValues",
         44: "ArrayProperty",
         55: "bIsFemale",
+        56: "UnknowColor1", # !!!
     }
 
 class ArkBinaryParser(PropertyParser, PropertyReplacer):
@@ -117,8 +122,14 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             output_buffer.append(next_byte)
 
         return bytes(output_buffer)
-    
-    def __structured_print_known(self, lengths: List[int]):
+
+    def __structured_print_known(self, lengths: List[int], to_file: BytesIO = None):
+        def __print(msg: str, end: str = "\n"):
+            if to_file is not None:
+                to_file.write(msg.encode())
+                to_file.write(end.encode())
+            else:
+                print(msg, end=end)
         for length in lengths:
             if self.position >= len(self.byte_buffer):
                 break
@@ -126,11 +137,17 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             for _ in range(length):
                 if self.position >= len(self.byte_buffer):
                     break
-                print(f"{self.read_byte():02x} ", end="")
-            print("")
-            print(f"{self.position}: ", end="")
+                __print(f"{self.read_byte():02x} ", end="")
+            __print("")
+            __print(f"{self.position}: ", end="")
     
-    def structured_print(self):
+    def structured_print(self, to_file: BytesIO = None):
+        def __print(msg: str, end: str = "\n"):
+            if to_file is not None:
+                to_file.write(msg.encode())
+                to_file.write(end.encode())
+            else:
+                print(msg, end=end)
         current_position = self.position
         known_structures = {
             "UInt32Property": [4,1,4,4],
@@ -147,29 +164,36 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             if self.position >= len(self.byte_buffer):
                 break
             
-            if self.position in names:
-                if printed > 0:
-                    print("")
-                    print(f"{self.position}: ", end="")
-                name = names[self.position]
-                print(f"{name}")
-                self.set_position(self.position + 8)
-                print(f"{self.position}: ", end="")
-                printed = 0
-                if name in known_structures:
-                    self.__structured_print_known(known_structures[name])
-                    continue
-            else:
-                print(f"{self.read_byte():02x} ", end="")
+            in_names = self.position in names
+            if in_names:
+                self.set_position(self.position + 4)
+                int_after = self.read_uint32()
+                self.set_position(self.position - 8)
+                in_names = int_after == 0
+                if in_names:
+                    if printed > 0:
+                        __print("")
+                        __print(f"{self.position}: ", end="")
+                    name = names[self.position]
+                    __print(f"{name}")
+                    self.set_position(self.position + 8)
+                    __print(f"{self.position}: ", end="")
+                    printed = 0
+                    if name in known_structures:
+                        self.__structured_print_known(known_structures[name], to_file=to_file)
+                        continue
+            
+            if not in_names:
+                __print(f"{self.read_byte():02x} ", end="")
                 printed += 1
 
                 if printed == 4:
-                    print("")
-                    print(f"{self.position}: ", end="")
+                    __print("")
+                    __print(f"{self.position}: ", end="")
                     printed = 0  
 
         self.position = current_position
-        print(" === End of structured print === ")           
+        __print(" === End of structured print === ")           
 
     @staticmethod
     def from_deflated_data(byte_arr: List[int]):
@@ -182,7 +206,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         
         header_parser = ArkBinaryParser(header_data_bytes)
 
-        header_parser.validate_uint32(0x0406)
+        header_parser.validate_uint32(0x0407)
         inflated_size = header_parser.read_uint32()
         names_offset = header_parser.read_uint32()
 

@@ -17,6 +17,7 @@ from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct.ark_struct_type import ArkStructType
 from arkparse.parsing.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
+from arkparse.parsing.struct.ark_cryopod_data import ArkCryopodData
 
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 if TYPE_CHECKING:
@@ -246,10 +247,6 @@ class ArkProperty:
     @staticmethod
     def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
         ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
-        # if struct_type == "PaintingKeyValue":
-        #     ArkSaveLogger.set_file(byte_buffer, f"debug_{struct_type}.bin")
-        #     byte_buffer.structured_print()
-        #     ArkSaveLogger.open_hex_view(True)
         
         if not in_array:
             ArkSaveLogger.enter_struct(f"S({struct_type})")
@@ -260,7 +257,9 @@ class ArkProperty:
         # print("Struct type:", ark_struct_type)
         if ark_struct_type or in_array:
             p = None
-            if ark_struct_type == ArkStructType.Color:
+            if data_size <= 4:
+                    p = None
+            elif ark_struct_type == ArkStructType.Color:
                 p = ArkColor(byte_buffer)
             elif ark_struct_type == ArkStructType.LinearColor:
                 p = ArkLinearColor(byte_buffer)
@@ -280,10 +279,14 @@ class ArkProperty:
                 p = ArkMyPersistentBuffDatas(byte_buffer, data_size)
             elif ark_struct_type == ArkStructType.ItemNetId:
                 p = ArkItemNetId(byte_buffer)
-            elif ark_struct_type == ArkStructType.ArkDinoAncestor:
+            elif (ark_struct_type == ArkStructType.ArkDinoAncestor):
                 p = ArkDinoAncestorEntry(byte_buffer)
             elif ark_struct_type == ArkStructType.ArkIntPoint:
                 p = ArkIntPoint(byte_buffer)
+            elif ark_struct_type == ArkStructType.ArkCryopodData:
+                ArkSaveLogger.enter_struct(f"CryopodData")
+                p = ArkCryopodData(byte_buffer)
+                ArkSaveLogger.exit_struct()
             elif ark_struct_type == None:
                 return None
             elif in_array:
@@ -359,42 +362,26 @@ class ArkProperty:
             data_start_postion = byte_buffer.get_position() - (4 if read_pos else 0)
 
             ArkSaveLogger.enter_struct(f"Arr({array_content_type})")
+
             ArkSaveLogger.debug_log(f"[STRUCT ARRAY: key=\'{'none'}\'; nr_of_value={array_items}; type={array_content_type}; bin_length={data_size}]")
+
+            # if array_content_type == "CustomItemData":
+            #     with open("temp.bin", "wb") as f:
+            #         byte_buffer.structured_print(f)
+
             struct_array = []
             for _ in range(array_items):
                 struct_array.append(ArkProperty.read_struct_property(byte_buffer, data_size, array_content_type, True))
-
-            if array_content_type == "CustomItemByteArray":
-                struct_array = []
-                for _ in range(array_items):
-                    struct_array.append(ArkProperty.read_property(byte_buffer))
-                    none = ArkProperty.read_property(byte_buffer)
-                    ArkSaveLogger.enter_struct("Arr(CustomItemByteArray)")
-                    if none is not None:
-                        raise ValueError(f"Expected None, got {none}")
-                    
-                    dinostate = struct_array[0].value
-                    # if len(dinostate) > 0:
-                    #     bytes_ = bytes(dinostate)
-                    #     print(f"Bytes: {bytes_}")
-                    #     newReader = ArkBinaryParser(bytes_, byte_buffer.save_context)
-                    #     ArkSaveLogger.set_file(newReader, "debug.bin")
-                    #     newReader.find_names()
-                    #     ArkSaveLogger.open_hex_view(True)
 
             p = ArkProperty(key, type_, position, 0, struct_array)
 
             ArkSaveLogger.debug_log(f"============ END {''}[{array_content_type}] ============")
 
             if(byte_buffer.position != data_start_postion + data_size):
-                # just skip to the end of the struct if an error occurs
-                if not ArkSaveLogger.suppress_warnings:
-                    print("WARNING: Array read incorrectly, bytes left to read:", data_start_postion + data_size - byte_buffer.position)
-                    print("Skipping to the end of the struct, type:", array_content_type)
+                # just skip to the end of the struct if an error occur
+                ArkSaveLogger.warning_log(f"WARNING: Array read incorrectly, bytes left to read: {data_start_postion + data_size - byte_buffer.position}")
+                ArkSaveLogger.warning_log(f"Skipping to the end of the struct, type: {array_content_type}")
                 byte_buffer.set_position(data_start_postion + data_size)
-                # byte_buffer.find_names()
-                # ArkSaveLogger.open_hex_view()
-                # raise ValueError(f"Array read incorrectly, bytes left to read: {data_start_postion + data_size - byte_buffer.position}")
             
             ArkSaveLogger.exit_struct()
             return p

@@ -8,51 +8,55 @@ from arkparse.object_model.equipment.saddle import Saddle
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.inventory_item import InventoryItem
+from arkparse.parsing.struct.ark_cryopod_data import ArkCryopodData
 
 class EmbeddedCryopodData:
     class Item:
         DINO_AND_STATUS = 0
         SADDLE = 1
         COSTUME = 2
-        UNKNOWN = 3
+        HAT = 3
+        GEAR = 4
+        PET = 5
 
-    data_byte_arrays: List[bytes]
+    custom_data: ArkCryopodData
     
-    def __init__(self, data_arrays: List[ArkProperty]):
-        self.data_byte_arrays = [[] if data.value is None else bytes(data.value) for data in data_arrays]
-
-        if len(self.data_byte_arrays) != 4 and len(self.data_byte_arrays) != 0:
-            raise ValueError("Expected 4 or no byte arrays, got ", len(self.data_byte_arrays))
+    def __init__(self, custom_item_data: ArkCryopodData):
+        self.custom_data = custom_item_data
 
     def __unembed__(self, item):
-        if item > (len(self.data_byte_arrays) - 1):
-            if item == self.Item.DINO_AND_STATUS:
-                return None, None
-            
-            return None
-
-        elif item == self.Item.DINO_AND_STATUS:
-            bts = self.data_byte_arrays[0]
+        if item == self.Item.DINO_AND_STATUS:
+            bts = self.custom_data.dino_data.data
             if len(bts) != 0:
                 parser: ArkBinaryParser = ArkBinaryParser.from_deflated_data(bts)
+                
                 objects: List[ArkGameObject] = []
+                parser.skip_bytes(8)  # Skip the first 8 bytes (header)
                 nr_of_obj = parser.read_uint32()
                 for _ in range(nr_of_obj):
+                    parser.save_context.generate_unknown = True
                     objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
-
+                    parser.save_context.generate_unknown = False
                 for obj in objects:
                     obj.read_props_at_offset(parser)
-
+                    
                 return objects[0], objects[1]
 
             return None, None
 
-        elif item <= self.Item.UNKNOWN:
-            bts = self.data_byte_arrays[item]
+        elif item == self.Item.SADDLE:
+            bts = self.custom_data.saddle_data.data
             if len(bts) != 0:
                 parser = ArkBinaryParser(bts)
-                parser.validate_uint32(6)
+                parser.skip_bytes(4)  # Skip the first 8 bytes (header)
+                parser.validate_uint32(7)
+                parser.skip_bytes(8)  # Skip the first 8 bytes (header)
+                parser.save_context.generate_unknown = True
                 obj = ArkGameObject(binary_reader=parser, no_header=True)
+                parser.save_context.generate_unknown = False
+                
+        else:
+            logging.warning(f"Unsupported item type: {item}")
         
         return None
     
@@ -73,7 +77,13 @@ class Cryopod(InventoryItem):
         self.dino = None
         self.saddle = None
         self.costume = None
-        self.embedded_data = EmbeddedCryopodData(self.object.get_array_property_value("ByteArrays", default=[]))
+        custom_item_data = self.object.get_array_property_value("CustomItemDatas")
+        self.embedded_data = EmbeddedCryopodData(custom_item_data[0]) if len(custom_item_data) > 0 else None
+
+        if self.embedded_data is None:
+            self.dino = None
+            self.saddle = None
+            return
         
         dino_obj, status_obj = self.embedded_data.get_dino_obj()
         
@@ -83,9 +93,7 @@ class Cryopod(InventoryItem):
 
         saddle_obj = self.embedded_data.get_saddle_obj()
         if saddle_obj is not None:
-            self.saddle = Saddle.from_object(saddle_obj)
-
-        self.costume = None   
+            self.saddle = Saddle.from_object(saddle_obj)  
 
     def is_empty(self):
         return self.dino is None 

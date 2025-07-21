@@ -82,12 +82,13 @@ class ArkGameObject(ArkPropertyContainer):
                     
                     if from_custom_bytes:
                         binary_reader.validate_uint16(0)
-                        binary_reader.validate_byte(0)
+                        # binary_reader.validate_byte(0)
                         has_rotator = binary_reader.read_uint32() == 1
                         if has_rotator:
                             ArkRotator(binary_reader)  # Placeholder for rotation data
 
                         self.properties_offset = binary_reader.read_uint32()
+                        ArkSaveLogger.debug_log(f"Properties offset: {self.properties_offset}")
                         binary_reader.validate_uint32(0)
 
                 if not from_custom_bytes: 
@@ -170,6 +171,7 @@ class ArkGameObject(ArkPropertyContainer):
         # if reader.position != self.properties_offset:
         #     ArkSaveLogger.open_hex_view()
         #     raise Exception("Invalid offset for properties: ", reader.position, "expected: ", self.properties_offset)
+        reader.validate_byte(0)
         self.read_properties(reader, ArkProperty, reader.size())
         # reader.read_int()
         # self.uuid2 = reader.read_uuid()

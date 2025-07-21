@@ -13,6 +13,7 @@ from .ark_my_persistent_buff_datas import ArkMyPersistentBuffDatas
 from .ark_item_net_id import ArkItemNetId
 from .ark_int_point import ArkIntPoint
 from .ark_dino_ancestor_entry import ArkDinoAncestorEntry
+from .ark_cryopod_data import ArkCryopodData
 
 class ArkStructType(Enum):
     LinearColor = "LinearColor"
@@ -27,7 +28,7 @@ class ArkStructType(Enum):
     ItemNetId = "ItemNetID"
     ArkDinoAncestor = "DinoAncestorsEntry"
     ArkIntPoint = "IntPoint"
-
+    ArkCryopodData = "CustomItemData"
 
     # Static constructor mapping for ArkStructType
     
@@ -54,6 +55,7 @@ class ArkStructType(Enum):
             "ItemNetID": lambda data: ArkItemNetId(data),
             "DinoAncestorsEntry": lambda data: ArkDinoAncestorEntry(data),
             "IntPoint": lambda data: ArkIntPoint(data),
+            "CustomItemData": lambda data: ArkCryopodData(data),
         }
         self.constructor = _constructors.get(type_name)
 

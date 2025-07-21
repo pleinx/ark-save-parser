@@ -13,4 +13,6 @@ from .ark_vector_bool_pair import ArkVectorBoolPair
 from .ark_vector import ArkVector
 from .object_reference import ObjectReference, get_uuid_reference_bytes
 from .unknown_struct import UnknownStruct
+from .ark_cryopod_data import ArkCryopodData
+from .ark_key_value_pair import ArkKeyValuePair
 

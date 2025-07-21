@@ -21,6 +21,7 @@ class SaveContext:
         self.unknown_value: int = 0
         self.npc_zone_volumes: List["NpcZoneVolume"] = []
         self.all_uuids: List[uuid.UUID] = []
+        self.generate_unknown: bool = False
 
     def get_actor_transform(self, uuid_: uuid.UUID) -> Optional[ActorTransform]:
         return self.actor_transforms.get(uuid_)

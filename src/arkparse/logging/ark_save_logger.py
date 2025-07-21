@@ -26,6 +26,16 @@ class ArkSaveLogger:
             logging.info(message, *args)
 
     @staticmethod
+    def warning_log(message: str, *args):
+        if ArkSaveLogger.enable_debug and not ArkSaveLogger.suppress_warnings:
+            structPath = ""
+            for s in ArkSaveLogger.current_struct_path:
+                structPath = structPath + f"[{s}]"
+            message = structPath + message
+            # Print warning in yellow
+            print(f"\033[93m{message}\033[0m")
+
+    @staticmethod
     def enter_struct(struct_name: str):
         # self.debug_log("Entering struct %s", struct_name)
         ArkSaveLogger.current_struct_path.append(struct_name)
