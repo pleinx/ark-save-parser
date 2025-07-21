@@ -37,7 +37,7 @@ class StructureApi:
         if parser is None:
             parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
 
-        if obj.get_property_value("MaxItemCount") is not None:
+        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
             structure = StructureWithInventory(obj.uuid, parser, self.save)
         else:
             structure = Structure(obj.uuid, parser)
@@ -240,8 +240,9 @@ class StructureApi:
 
         return result
     
-    def get_container_of_inventory(self, inv_uuid: UUID) -> StructureWithInventory:
-        structures = self.get_all_with_inventory()
+    def get_container_of_inventory(self, inv_uuid: UUID, structures: dict[UUID, StructureWithInventory] = None) -> StructureWithInventory:
+        if structures is None:
+            structures = self.get_all_with_inventory()
         for _, obj in structures.items():
             if not isinstance(obj, StructureWithInventory):
                 continue
