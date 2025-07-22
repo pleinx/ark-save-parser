@@ -4,8 +4,7 @@ from typing import List, Optional
 from arkparse.logging import ArkSaveLogger
 from arkparse.saves.save_context import SaveContext
 
-from .ark_object import ArkObject
-from arkparse.parsing._legacy_parsing.ark_object import LegacyArkObject
+from arkparse.parsing.ark_object import ArkObject
 from .ark_binary_parser import ArkBinaryParser
 from .ark_property import ArkProperty
 
@@ -16,37 +15,22 @@ class ArkArchive:
 
         save_context: SaveContext = SaveContext()
         data = ArkBinaryParser(file.read_bytes(), save_context)
-        self.data = data
-        ArkSaveLogger.enable_debug = True
         ArkSaveLogger.set_file(data, "debug.bin")
         ArkSaveLogger.byte_buffer = data
-        # ArkSaveLogger.open_hex_view(True)
         save_context.save_version = data.read_int()
-        ArkSaveLogger.debug_log(f"Archive version: {save_context.save_version}")
-        old_save = False
-        if save_context.save_version != 7:
-        	old_save = True
-        	ArkSaveLogger.debug_log(f"Detected old save format (pre Unreal 5.5), using legacy parser")
-            # raise RuntimeError(f"Unsupported archive version {save_context.save_version} (only Unreal 5.5 / binary version 7 is supported)")
-        extra1 = data.read_int()  # This is usually 0, but can be used for future extensions
-        extra2 = data.read_int()
         ArkSaveLogger.file = str(file)
 
-        count = data.read_int()
-        for _ in range(count):
-            if old_save:
-                self.objects.append(LegacyArkObject.from_reader(data))
-            else:
-                self.objects.append(ArkObject.from_reader(data))
+        # if save_context.save_version != 5:
+        #     raise RuntimeError(f"Unsupported archive version {save_context.save_version}")
 
-        ArkSaveLogger.debug_log(f"Read {len(self.objects)} objects from archive")
+        count = data.read_int()
+        # print(f"Found {count} objects in " + str(file))
+        for _ in range(count):
+            self.objects.append(ArkObject.from_reader(data))
 
         for i, obj in enumerate(self.objects):
             ArkSaveLogger.enter_struct(obj.class_name.split(".")[-1])
-            data.set_position(obj.properties_offset + 1)
-            if old_save:
-                data.skip_bytes(7)
-                ArkSaveLogger.open_hex_view(True)
+            data.set_position(obj.properties_offset)
             if ArkSaveLogger.enable_debug:
                 print("\n")
             ArkSaveLogger.debug_log(f"Reading properties for object \'{obj.class_name}\' at {data.get_position()}")
@@ -54,7 +38,7 @@ class ArkArchive:
             next_object_index = data.size()
             if i + 1 < len(self.objects):
                 next_object_index = self.objects[i + 1].properties_offset
-            
+
             obj.read_properties(data, ArkProperty, next_object_index)
             ArkSaveLogger.exit_struct()
 
