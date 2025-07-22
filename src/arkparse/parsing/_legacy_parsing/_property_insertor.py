@@ -1,4 +1,4 @@
-from ._base_value_validator import BaseValueValidator
+from arkparse.parsing._base_value_validator import BaseValueValidator
 from typing import List
 
 class PropertyInsertor(BaseValueValidator):

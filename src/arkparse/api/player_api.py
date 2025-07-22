@@ -66,7 +66,7 @@ class _TribeAndPlayerData:
             ArkSaveLogger.debug_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
-            self.tribe_data_pointers.append([uuid_bytes, offset, size])
+            self.tribe_data_pointers.append([uuid_bytes, offset+1, size])
 
     def _get_player_offsets(self) -> None:
         positions = self.data.find_byte_sequence(self.PLAYER_DATA_NAME)
@@ -239,7 +239,7 @@ class PlayerApi:
             if self.save is not None and player_pawn is not None:
                 player.get_location_and_inventory(self.save, player_pawn)
         
-
+        
         for path in self.tribe_paths:
             try:
                 tribe: ArkTribe = ArkTribe(path)
@@ -250,13 +250,18 @@ class PlayerApi:
                 if self.ignore_error:
                     continue
                 raise e
+            
             players = []
             for id in tribe.member_ids:
+                found = None
                 for p in new_players.values():
                     p: ArkPlayer
-                    if p.id_ == id:
+                    if p.id_ == id and found is None:
                         players.append(p)
-                        break
+                        found = p
+        
+                if found is None:
+                    ArkSaveLogger.debug_log(f"Player with ID {id} not found in player list")
 
             # latest is newest??
             if tribe.tribe_id in new_tribes:
@@ -265,6 +270,7 @@ class PlayerApi:
                 
             new_tribes[tribe.tribe_id] = tribe
             new_tribe_to_player[tribe.tribe_id] = players
+            ArkSaveLogger.enable_debug = False
 
         self.players = new_players.values()
         self.tribes = new_tribes.values()

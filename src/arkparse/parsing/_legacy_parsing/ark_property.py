@@ -11,11 +11,12 @@ from .struct.ark_my_persistent_buff_datas import ArkMyPersistentBuffDatas
 from .struct.ark_item_net_id import ArkItemNetId
 from .struct.ark_struct_type import ArkStructType
 from .struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
-from .ark_property_container import ArkPropertyContainer
+
 from .ark_binary_parser import ArkBinaryParser
 from .ark_value_type import ArkValueType
 from arkparse.enums.ark_enum import ArkEnumValue
 
+from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.struct.ark_color import ArkColor
 from arkparse.parsing.struct.ark_linear_color import ArkLinearColor
 from arkparse.parsing.struct.ark_quat import ArkQuat

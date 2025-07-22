@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+__TEMP_FILE_DIR_CLEARED = False
+
 def __create_temp_files_folder():
     """
     Creates a folder named `asp/temp_files` under the appropriate directory
@@ -17,6 +19,20 @@ def __create_temp_files_folder():
         base_dir = Path(os.getenv('XDG_CACHE_HOME', Path.home() / '.cache'))
     
     temp_files_dir = base_dir / 'asp' / 'temp_files'
+
+    global __TEMP_FILE_DIR_CLEARED
+    if not __TEMP_FILE_DIR_CLEARED:
+        # Clear the temp files directory if it exists
+        if temp_files_dir.exists():
+            for item in temp_files_dir.iterdir():
+                if item.is_file() or item.is_symlink():
+                    item.unlink()
+                elif item.is_dir():
+                    for sub_item in item.iterdir():
+                        sub_item.unlink()
+                    item.rmdir()
+        __TEMP_FILE_DIR_CLEARED = True
+        
     temp_files_dir.mkdir(parents=True, exist_ok=True)
     return temp_files_dir
 

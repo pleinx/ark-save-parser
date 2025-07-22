@@ -1,4 +1,4 @@
-from ._base_value_validator import BaseValueValidator
+from arkparse.parsing._base_value_validator import BaseValueValidator
 
 class PropertyParser(BaseValueValidator):
     def __init__(self, data: bytes, save_context=None):

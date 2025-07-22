@@ -81,56 +81,14 @@ class ArkCharacterStats:
         if main_stats_prop.type != "Struct":
             raise ValueError("'MyPersistentCharacterStats' is not of type 'Struct'.")
 
-        # Assuming 'value' contains another ArkPropertyContainer or a dict with 'properties'
-        if not isinstance(main_stats_prop.value, ArkPropertyContainer):
-            raise ValueError("'MyPersistentCharacterStats' value is not an ArkPropertyContainer.")
+        main_properties: ArkPropertyContainer = main_stats_prop.value
 
-        main_properties = main_stats_prop.value
-
-        # Parse level
-        level_prop = main_properties.find_property("CharacterStatusComponent_ExtraCharacterLevel")
-        if not level_prop:
-            self.level = 1
-        else:
-            self.level = 1 + level_prop.value if level_prop.type in ["UInt16", "Int"] else 0
-
-        # Parse experience
-        experience_prop = main_properties.find_property("CharacterStatusComponent_ExperiencePoints")
-        if not experience_prop:
-            raise ValueError("Missing 'CharacterStatusComponent_ExperiencePoints' property.")
-        self.experience = experience_prop.value if experience_prop.type == "Float" else 0.0
-
-        # Parse engram_points
-        engram_points_prop = main_properties.find_property("PlayerState_TotalEngramPoints")
-        if not engram_points_prop:
-            self.engram_points = 0
-        else:
-            self.engram_points = engram_points_prop.value if engram_points_prop.type == "Int" else 0
-
-        # Parse explorer_notes
-        explorer_notes_prop = main_properties.find_property("PerMapExplorerNoteUnlocks")
-        if explorer_notes_prop and explorer_notes_prop.type == "Array":
-            self.explorer_notes = explorer_notes_prop.value
-        else:
-            self.explorer_notes = []
-
-        # Parse emotes
-        emotes_prop = main_properties.find_property("EmoteUnlocks")
-        if emotes_prop and emotes_prop.type == "Array":
-            self.emotes = emotes_prop.value
-        else:
-            self.emotes = []
-
-        # Parse engrams
-        self.engrams = []
-        engrams_prop = main_properties.find_property("PlayerState_EngramBlueprints")
-        if engrams_prop and engrams_prop.type == "Array":
-            # Extract the 'value' from each dictionary in the array
-            for item in engrams_prop.value:
-                item : ObjectReference = item
-                self.engrams.append(item.value)
-        else:
-            self.engrams = []
+        self.level = 1 + main_properties.get_property_value("CharacterStatusComponent_ExtraCharacterLevel", 0)
+        self.experience = main_properties.get_property_value("CharacterStatusComponent_ExperiencePoints", 0.0)
+        self.engram_points = main_properties.get_property_value("PlayerState_TotalEngramPoints", 0)
+        self.explorer_notes = main_properties.get_array_property_value("PerMapExplorerNoteUnlocks", [])
+        self.emotes = main_properties.get_array_property_value("EmoteUnlocks", [])
+        self.engrams = main_properties.get_array_property_value("PlayerState_EngramBlueprints", [])
 
         # Parse stats
         stat_points_props = main_properties.find_all_properties_of_name("CharacterStatusComponent_NumberOfLevelUpPointsApplied")
