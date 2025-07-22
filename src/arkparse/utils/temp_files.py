@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import errno
 
 __TEMP_FILE_DIR_CLEARED = False
 
@@ -25,12 +26,22 @@ def __create_temp_files_folder():
         # Clear the temp files directory if it exists
         if temp_files_dir.exists():
             for item in temp_files_dir.iterdir():
-                if item.is_file() or item.is_symlink():
-                    item.unlink()
-                elif item.is_dir():
-                    for sub_item in item.iterdir():
-                        sub_item.unlink()
-                    item.rmdir()
+                try:
+                    if item.is_file() or item.is_symlink():
+                        item.unlink()
+                    elif item.is_dir():
+                        for sub_item in item.iterdir():
+                            try:
+                                sub_item.unlink()
+                            except OSError as e:
+                                if e.errno != errno.EACCES:
+                                    raise
+                                # Ignore locked files
+                        item.rmdir()
+                except OSError as e:
+                    if e.errno != errno.EACCES:
+                        raise
+                    # Ignore locked files
         __TEMP_FILE_DIR_CLEARED = True
         
     temp_files_dir.mkdir(parents=True, exist_ok=True)

@@ -136,21 +136,21 @@ class PlayerApi:
         self.tribe_paths: Set[Path] = set()
         self.ignore_error = ignore_error
 
-        files_in_database = True
+        self.from_store = True
         if save.profile_data_in_saves() == False:
             ArkSaveLogger.debug_log("Profile data not found in save, checking database")
-            files_in_database = False
+            self.from_store = False
 
         if self.save is not None:
             ArkSaveLogger.debug_log(f"Retrieving player pawns")
             self.__init_pawns()
 
-        if files_in_database:
+        if self.from_store:
             self.__get_files_from_db()
         elif save.save_dir is not None:
             self.get_files_from_directory(save.save_dir)
 
-        if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not files_in_database:
+        if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not self.from_store:
             ArkSaveLogger.debug_log("No profile or tribe data found")
         else:
             ArkSaveLogger.debug_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
@@ -214,7 +214,7 @@ class PlayerApi:
 
         for path in self.profile_paths:
             try:
-                player: ArkPlayer = ArkPlayer(path)
+                player: ArkPlayer = ArkPlayer(path, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
                     print(f"Skipping player data {path} due to unsupported archive version: {e}")
@@ -242,7 +242,7 @@ class PlayerApi:
         
         for path in self.tribe_paths:
             try:
-                tribe: ArkTribe = ArkTribe(path)
+                tribe: ArkTribe = ArkTribe(path, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
                     print(f"Skipping player data {path} due to unsupported archive version: {e}")
@@ -270,7 +270,6 @@ class PlayerApi:
                 
             new_tribes[tribe.tribe_id] = tribe
             new_tribe_to_player[tribe.tribe_id] = players
-            ArkSaveLogger.enable_debug = False
 
         self.players = new_players.values()
         self.tribes = new_tribes.values()

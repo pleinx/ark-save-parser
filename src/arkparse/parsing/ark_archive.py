@@ -12,7 +12,7 @@ from .ark_binary_parser import ArkBinaryParser
 from .ark_property import ArkProperty
 
 class ArkArchive:
-    def __init__(self, file: Path):
+    def __init__(self, file: Path, from_store: bool = True):
         self.objects: List[ArkObject] = []
         
         # Set up the save context and binary parser
@@ -30,10 +30,10 @@ class ArkArchive:
         if save_context.save_version != 7:
             old_save = True
             propertyClass = LegacyArkProperty
-            self.data = LegacyArkBinaryParser(file.read_bytes()[8:], save_context)
-            # ArkSaveLogger.set_file(self.data, "leg_debug.bin")
-            save_context.save_version = self.data.read_int()
             ArkSaveLogger.debug_log(f"Detected old save format (pre Unreal 5.5), using legacy parser")
+            data_offset = 8 if from_store else 0
+            self.data = LegacyArkBinaryParser(file.read_bytes()[data_offset:], save_context)
+            save_context.save_version = self.data.read_int()
         
         ArkSaveLogger.debug_log(f"Archive version: {save_context.save_version}")
 

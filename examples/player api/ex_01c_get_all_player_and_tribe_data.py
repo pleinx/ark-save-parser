@@ -3,7 +3,7 @@ from pathlib import Path
 from arkparse.saves.asa_save import AsaSave
 from arkparse.logging import ArkSaveLogger
 
-save_path = Path.cwd() / "temp" / "pleinx" / "Aberration_WP.ark" # Adjust the path as needed
+save_path = Path.cwd() / "temp" / "Aberration_WP.ark" # Adjust the path as needed
 save = AsaSave(save_path)
 
 player_api = PlayerApi(save)
