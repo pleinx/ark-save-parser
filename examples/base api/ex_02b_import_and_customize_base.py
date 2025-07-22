@@ -42,7 +42,7 @@ base.pad_turret_ammo(nr_of_stacks, SAVE)
 
 # Add 10 element to all tek generators
 nr_of_element = 10
-base.set_nr_of_element_in_generators(nr_of_element, SAVE)
+base.set_nr_of_fuel_in_generators(nr_of_element, SAVE)
 
 # Store the save
 SAVE.store_db(save_storage_path)
