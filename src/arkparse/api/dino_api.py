@@ -105,10 +105,15 @@ class DinoApi:
                     if obj.uuid in self.parsed_cryopods:
                         dino = self.parsed_cryopods[obj.uuid].dino
                     else:
-                        cryopod = Cryopod(obj.uuid, ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context))
-                        self.parsed_cryopods[obj.uuid] = cryopod
-                        if cryopod.dino is not None:
-                            dino = cryopod.dino
+                        try:
+                            cryopod = Cryopod(obj.uuid, ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context))
+                            self.parsed_cryopods[obj.uuid] = cryopod
+                            if cryopod.dino is not None:
+                                dino = cryopod.dino
+                        except Exception as e:
+                            if "Unsupported embedded data version" in str(e):
+                                print(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
+                                continue
             
             if dino is not None:
                 dinos[key] = dino

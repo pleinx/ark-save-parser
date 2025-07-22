@@ -453,9 +453,11 @@ class AsaSave:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)
         except Exception as e:
             if "/Game/" in class_name:
-                ArkSaveLogger.enable_debug = True
-                byte_buffer.find_names()
-                raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                if ArkSaveLogger.allow_invalid_objects is False:
+                    ArkSaveLogger.enable_debug = True
+                    byte_buffer.find_names()
+                    raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                print(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
                 print(f"Error parsing non-standard object of type {class_name}")
 

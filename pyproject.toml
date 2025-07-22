@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arkparse"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
     # List your dependencies here
 ]
 authors = [
-  { name = "Vincent Heneau", email = "vincent.henau.github@gmail.com" },
+  { name = "Vincent Henau", email = "vincent.henau.github@gmail.com" },
 ]
 description = "A package to parse and modify ark save files"
 readme = "README.md"

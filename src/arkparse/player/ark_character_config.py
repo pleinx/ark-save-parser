@@ -75,14 +75,7 @@ class ArkCharacterConfig:
             )
 
         # Parse hair_growth
-        hair_growth_props = properties.find_property("PercentOfFullHeadHairGrowth")
-        if not hair_growth_props:
-            raise ValueError("Missing 'PercentOfFullHeadHairGrowth' property.")
-        self.hair_growth = (
-            hair_growth_props.value
-            if hair_growth_props.type == "Float"
-            else 0.0
-        )
+        self.hair_growth = properties.get_property_value("PercentOfFullHeadHairGrowth", 0.0)
 
         # Parse bone_modifiers
         bone_modifiers_props = properties.find_all_properties_of_name("RawBoneModifiers")

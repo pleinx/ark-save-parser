@@ -41,12 +41,12 @@ class _TribeAndPlayerData:
 
     def __init__(self, store_data: ArkBinaryParser):
         self.data = store_data
-        ArkSaveLogger.set_file(self.data, "TribeAndPlayerData")
+        
         self.tribe_data_pointers: List[int] = []
         self.player_data_pointers: List[int] = []
+        ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
         self.initialize_data()
-
-        # print(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
+        ArkSaveLogger.debug_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
 
     def initialize_data(self) -> None:
         # Read initial flag (unused)
@@ -63,10 +63,10 @@ class _TribeAndPlayerData:
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             uuid_pos = self.data.find_byte_sequence(uuid_bytes)
-            # print(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
+            ArkSaveLogger.debug_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
-            self.tribe_data_pointers.append([uuid_bytes, offset, size])
+            self.tribe_data_pointers.append([uuid_bytes, offset+1, size])
 
     def _get_player_offsets(self) -> None:
         positions = self.data.find_byte_sequence(self.PLAYER_DATA_NAME)
@@ -74,7 +74,6 @@ class _TribeAndPlayerData:
         # print(f"Found {len(positions)} player data offsets in the save data.")
         for i, pos in enumerate(positions):
             # Get ID
-            # print(f"Player data found at offset: {pos}")
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             offset = pos - 36
@@ -83,8 +82,8 @@ class _TribeAndPlayerData:
             last_none = self.get_last_none_before(nones, next_player_data)
             end_pos = last_none + 4
             size = end_pos - offset
-            # print(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
-            self.player_data_pointers.append([uuid_bytes, offset-1, size+1])
+            ArkSaveLogger.debug_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
+            self.player_data_pointers.append([uuid_bytes, offset, size+1])
 
     def get_last_none_before(self, nones: List[int], pos: int = None):
         if pos is None:
@@ -137,21 +136,21 @@ class PlayerApi:
         self.tribe_paths: Set[Path] = set()
         self.ignore_error = ignore_error
 
-        files_in_database = True
+        self.from_store = True
         if save.profile_data_in_saves() == False:
             ArkSaveLogger.debug_log("Profile data not found in save, checking database")
-            files_in_database = False
+            self.from_store = False
 
         if self.save is not None:
             ArkSaveLogger.debug_log(f"Retrieving player pawns")
             self.__init_pawns()
 
-        if files_in_database:
+        if self.from_store:
             self.__get_files_from_db()
         elif save.save_dir is not None:
             self.get_files_from_directory(save.save_dir)
 
-        if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not files_in_database:
+        if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not self.from_store:
             ArkSaveLogger.debug_log("No profile or tribe data found")
         else:
             ArkSaveLogger.debug_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
@@ -215,7 +214,7 @@ class PlayerApi:
 
         for path in self.profile_paths:
             try:
-                player: ArkPlayer = ArkPlayer(path)
+                player: ArkPlayer = ArkPlayer(path, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
                     print(f"Skipping player data {path} due to unsupported archive version: {e}")
@@ -240,10 +239,10 @@ class PlayerApi:
             if self.save is not None and player_pawn is not None:
                 player.get_location_and_inventory(self.save, player_pawn)
         
-
+        
         for path in self.tribe_paths:
             try:
-                tribe: ArkTribe = ArkTribe(path)
+                tribe: ArkTribe = ArkTribe(path, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
                     print(f"Skipping player data {path} due to unsupported archive version: {e}")
@@ -251,13 +250,18 @@ class PlayerApi:
                 if self.ignore_error:
                     continue
                 raise e
+            
             players = []
             for id in tribe.member_ids:
+                found = None
                 for p in new_players.values():
                     p: ArkPlayer
-                    if p.id_ == id:
+                    if p.id_ == id and found is None:
                         players.append(p)
-                        break
+                        found = p
+        
+                if found is None:
+                    ArkSaveLogger.debug_log(f"Player with ID {id} not found in player list")
 
             # latest is newest??
             if tribe.tribe_id in new_tribes:

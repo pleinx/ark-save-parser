@@ -13,6 +13,7 @@ class ArkSaveLogger:
     temp_file_path = TEMP_FILES_DIR
     log_limit = 0
     log_limit_enabled = False
+    allow_invalid_objects = False
 
     @staticmethod
     def debug_log(message: str, *args):
@@ -27,7 +28,7 @@ class ArkSaveLogger:
 
     @staticmethod
     def warning_log(message: str, *args):
-        if ArkSaveLogger.enable_debug and not ArkSaveLogger.suppress_warnings:
+        if not ArkSaveLogger.suppress_warnings:
             structPath = ""
             for s in ArkSaveLogger.current_struct_path:
                 structPath = structPath + f"[{s}]"

@@ -85,8 +85,8 @@ class ArkPlayer:
         self.config = ArkCharacterConfig(props)
         self.stats = ArkCharacterStats(props)
     
-    def __init__(self, file: Path):
-        _archive = ArkArchive(file)
+    def __init__(self, file: Path, from_store: bool):
+        _archive = ArkArchive(file, from_store)
         
         self.player_data = _archive.get_object_by_class("/Game/PrimalEarth/CoreBlueprints/PrimalPlayerDataBP.PrimalPlayerDataBP_C")
         self.__init_player_data(self.player_data)

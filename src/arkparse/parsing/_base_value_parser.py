@@ -74,7 +74,7 @@ class BaseValueParser(BinaryReaderBase):
             terminator = self.read_uint16()  # Read the null terminator
         else:
             pre_read_pos = self.position
-            result = self.read_bytes(abs_length - 1).decode('utf-8')
+            result = self.read_bytes(abs_length - 1).decode('utf-8', errors='ignore')
             terminator = self.read_byte()
 
         if terminator != 0:
@@ -154,7 +154,7 @@ class BaseValueParser(BinaryReaderBase):
 
         if name is None and self.save_context.generate_unknown:
             name = f"UnknownName_{name_id:08X}"
-            ArkSaveLogger.debug_log(f"Name with id {name_id} not found, generating unknown name: {name}")
+            ArkSaveLogger.warning_log(f"Name with id {name_id} not found, generating unknown name: {name}")
         
         if name is None:
             # ArkSaveLogger.enable_debug = True
