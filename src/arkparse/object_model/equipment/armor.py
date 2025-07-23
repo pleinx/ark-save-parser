@@ -140,10 +140,7 @@ class Armor(EquipmentWithArmor):
                  "HyperthermalResistance": self.hyperthermal_insulation,
                  "HypothermalResistance": self.hypothermal_insulation,
                  "CrafterCharacterName": self.crafter.char_name if self.crafter is not None else None,
-                 "CrafterTribeName": self.crafter.tribe_name if self.crafter is not None else None,
-                 "ActorTransformX": self.object.location.x if self.object.location is not None else None,
-                 "ActorTransformY": self.object.location.y if self.object.location is not None else None,
-                 "ActorTransformZ": self.object.location.z if self.object.location is not None else None }
+                 "CrafterTribeName": self.crafter.tribe_name if self.crafter is not None else None }
 
     def toJsonStr(self):
         return json.dumps(toJsonObj(), indent=4, cls=DefaultJsonEncoder)
