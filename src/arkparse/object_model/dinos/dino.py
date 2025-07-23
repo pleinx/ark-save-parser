@@ -209,3 +209,7 @@ class Dino(ParsedObjectBase):
 
     def to_json_str(self):
         return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+
+    def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False):
+        self.stats.store_binary(path, name, prefix="status_", no_suffix=no_suffix)
+        return super().store_binary(path, name, prefix=prefix, no_suffix=no_suffix)
