@@ -1,10 +1,12 @@
 import json
 from uuid import UUID
 from typing import List
+import json
 
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing.struct.actor_transform import ActorTransform
+from arkparse.parsing.struct.ark_vector import ArkVector
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkDinoTrait
@@ -211,5 +213,21 @@ class Dino(ParsedObjectBase):
         return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False):
+        loc_name = name if name is not None else str(self.object.uuid)
         self.stats.store_binary(path, name, prefix="status_", no_suffix=no_suffix)
+        self.location.store_json(path, loc_name)
         return super().store_binary(path, name, prefix=prefix, no_suffix=no_suffix)
+
+    def set_location(self, location: ActorTransform, save: AsaSave):
+        current_location = self.object.find_property("SavedBaseWorldLocation")
+        
+        if current_location is None:
+            raise ValueError("SavedBaseWorldLocation property not found in the object")
+
+        as_vector: ArkVector = ArkVector(x=location.x, y=location.y, z=location.z)
+        self.binary.replace_struct_property(current_location, as_vector.to_bytes())
+        self.object = ArkGameObject(self.object.uuid, self.object.blueprint, self.binary)
+
+        save.modify_actor_transform(self.object.uuid, location.to_bytes())
+        save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
+        self.location = location

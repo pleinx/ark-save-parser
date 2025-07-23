@@ -309,9 +309,6 @@ class AsaSave:
         actor_transforms = self.get_custom_value("ActorTransforms")
 
         if actor_transforms:
-            # if not uuid in self.save_context.actor_transform_positions:
-            #         raise ValueError(f"Actor transform with UUID {uuid} not found in database")
-            #     actor_transforms.set_position(self.save_context.actor_transform_positions[uuid])
             byte_sequence = self.uuid_to_byte_array(uuid)
             positions = actor_transforms.find_byte_sequence(byte_sequence)
             actor_transforms.set_position(positions[0])

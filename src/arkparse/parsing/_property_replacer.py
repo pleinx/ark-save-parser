@@ -11,17 +11,12 @@ class PropertyReplacer(PropertyInsertor):
 
     def __check_property_alignment(self, property: ArkProperty) -> int:
         if property.position != 0:
-            return # can't check alignment if the property is not at the start of the data
+            return property.name_position # can't check alignment if the property is not the fist occurence
         
-        prev_position = property.value_position
         actual_index = self.set_property_position(property.name)
         shift = actual_index - property.name_position
         if shift != 0:
             raise ValueError(f"Property {property.name} at {property.name_position} has unexpected shift {shift}, expected 0")
-            property.name_position += shift
-            property.value_position += shift
-            print(f"Aligned property {property.name} from {prev_position} to {property.name_position} with value position {property.value_position}")
-            ArkSaveLogger.debug_log(f"Aligned property {property.name} from {prev_position} to {property.name_position} with value position {property.value_position}")
         return actual_index
 
     def set_property_position(self, property_name: str, occurrence_index: int = 0) -> int:
@@ -117,6 +112,26 @@ class PropertyReplacer(PropertyInsertor):
         self.__check_property_alignment(property)
         new_value_bytes = new_value.to_bytes(1, byteorder="little")
         self.replace_bytes(new_value_bytes, position=property.value_position)
+
+    def replace_struct_property(self, property: ArkProperty, new_value: bytes):
+        print(property)
+        pos = self.__check_property_alignment(property)
+        self.set_position(pos)
+        self.validate_name(property.name)
+        self.validate_name("StructProperty")
+        self.validate_uint32(1)
+        self.skip_bytes(8)  # skip struct type name
+        self.validate_uint32(1)
+        self.validate_name("/Script/CoreUObject")
+        self.validate_uint32(0)
+        data_length = self.read_uint32()
+
+        if (self.position + 1 != property.value_position) and (self.position + 4 != property.value_position):
+            raise ValueError(f"Invalid property alignment, expected position {self.position + 1} or {self.position + 4}, got {property.value_position}")
+        if len(new_value) != data_length:
+            raise ValueError(f"New value length {len(new_value)} does not match expected data length {data_length}")
+        
+        self.replace_bytes(new_value, position=property.value_position)
 
     def replace_array(self, array_name: str, property_type: str, new_items: List[bytes], position: int = None):
         if self.save_context is None:

@@ -73,7 +73,8 @@ class MapCoords:
             return f"({self.lat}, {self.long})"
         
     def as_actor_transform(self, map) -> "ActorTransform":
-        return ActorTransform(vector=ArkVector(*MapCoordinateParameters(map).transform_from(self.lat, self.long)))
+
+        return ActorTransform(vector=MapCoordinateParameters(map).transform_from(self.lat, self.long))
 
 @dataclass
 class ActorTransform:
