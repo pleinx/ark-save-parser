@@ -399,5 +399,6 @@ class JsonApi:
         self.export_shields(equipment_api=equipment_api, export_folder_path=export_folder_path)
         self.export_saddles(equipment_api=equipment_api, export_folder_path=export_folder_path)
         self.export_player_pawns(player_api=player_api, export_folder_path=export_folder_path)
+        self.export_items(export_folder_path=export_folder_path)
         self.export_dinos(export_folder_path=export_folder_path)
         self.export_structures(export_folder_path=export_folder_path)
