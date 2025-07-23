@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+from struct import pack
 
 if TYPE_CHECKING:
     from arkparse.parsing import ArkBinaryParser
@@ -19,7 +20,10 @@ class ArkVector:
             self.x = x
             self.y = y
             self.z = z
-    
+
+    def to_bytes(self) -> bytes:
+        return pack('<ddd', self.x, self.y, self.z)
+
     def __str__(self):
-        return f"({self.x}, {self.y}, {self.z})"
+        return f"Vector({self.x}, {self.y}, {self.z})"
     

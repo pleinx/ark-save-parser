@@ -66,5 +66,5 @@ class TamedDino(Dino):
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=True):
         if self.inventory is None and force_inventory:
             raise ValueError("Cannot store TamedDino without inventory.")
-        self.inventory.store_binary(path, name, prefix, no_suffix)
+        self.inventory.store_binary(path, name, no_suffix=no_suffix)
         return super().store_binary(path, name, prefix, no_suffix)

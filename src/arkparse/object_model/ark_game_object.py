@@ -177,7 +177,7 @@ class ArkGameObject(ArkPropertyContainer):
         # self.uuid2 = reader.read_uuid()
 
     def print_properties(self):
-        print(f"Properties for {self.blueprint}:")
+        print(f"Properties for {self.blueprint} ({self.uuid}):")
         super().print_properties()
 
     def read_double(self, reader: ArkBinaryParser, property_name: str) -> float:
