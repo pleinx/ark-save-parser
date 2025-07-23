@@ -370,7 +370,8 @@ class JsonApi:
                 if "/PrimalItemArmor_" not in class_name and \
                         "/PrimalItem_" not in class_name and \
                         "/PrimalItemAmmo_" not in class_name and \
-                        "/PrimalItemC4Ammo" not in class_name:
+                        "/PrimalItemC4Ammo" not in class_name and \
+                        "/PrimalItemResource_" not in class_name:
                     continue
 
                 obj = self.save.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
