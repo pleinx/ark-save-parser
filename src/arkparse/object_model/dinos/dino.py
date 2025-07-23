@@ -121,14 +121,16 @@ class Dino(ParsedObjectBase):
 
         save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
-    # TODO: This function should return an array of int representing the color codes ordered by region
     def get_color_set_indices(self) -> List[int]:
-        colorSetIndices: List[int] = self.object.get_array_property_value("ColorSetIndices", [])
+        colorSetIndices: List[int] = []
+        for i in range(6):
+            colorSetIndices.append(self.object.get_property_value("ColorSetIndices", 0, position=i))
         return colorSetIndices
 
-    # TODO: This function should return an array of string representing the color names ordered by region
     def get_color_set_names(self) -> List[str]:
-        colorSetNames: List[int] = self.object.get_array_property_value("ColorSetNames", [])
+        colorSetNames: List[str] = []
+        for i in range(6):
+            colorSetNames.append(self.object.get_property_value("ColorSetNames", "None", position=i))
         return colorSetNames
 
     def get_uploaded_from_server_name(self) -> str:
