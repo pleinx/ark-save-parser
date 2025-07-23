@@ -7,6 +7,7 @@ from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
+from arkparse.utils.json_utils import DefaultJsonEncoder
 
 from .__equipment import Equipment
 from .__equipment_with_armor import EquipmentWithArmor
@@ -114,4 +115,35 @@ class Armor(EquipmentWithArmor):
         return armor
     
     def __str__(self):
-        return f"Armor: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} -BP: {self.is_bp} -Crafted: {self.is_crafted()} -Quality: {self.quality} -Rating: {self.rating}"
+        return f"Armor: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} - BP: {self.is_bp} - Crafted: {self.is_crafted()} - Quality: {self.quality} - Rating: {self.rating}"
+
+    def toJsonObj(self):
+        return { "UUID": self.object.uuid.__str__() if self.object.uuid is not None else None,
+                 "UUID2": self.object.uuid2.__str__() if self.object.uuid2 is not None else None,
+                 "ItemNetId1": self.id_.id1 if self.id_ is not None else None,
+                 "ItemNetId2": self.id_.id2 if self.id_ is not None else None,
+                 "OwnerInventoryUUID": self.owner_inv_uuid.__str__() if self.owner_inv_uuid is not None else None,
+                 "ShortName": self.get_short_name(),
+                 "ClassName": self.class_name,
+                 "ItemArchetype": self.object.blueprint,
+                 "ImplementedStats": self.get_implemented_stats().__str__() if self.get_implemented_stats() is not None else None,
+                 "bIsBlueprint": self.is_bp,
+                 "bEquippedItem": self.is_equipped,
+                 "bIsRated": self.is_rated(),
+                 "bIsCrafted": self.is_crafted(),
+                 "ItemQuantity": self.quantity,
+                 "ItemQualityIndex": self.quality,
+                 "ItemRating": self.rating,
+                 "Armor": self.armor,
+                 "Durability": self.durability,
+                 "SavedDurability": self.current_durability,
+                 "HyperthermalResistance": self.hyperthermal_insulation,
+                 "HypothermalResistance": self.hypothermal_insulation,
+                 "CrafterCharacterName": self.crafter.char_name if self.crafter is not None else None,
+                 "CrafterTribeName": self.crafter.tribe_name if self.crafter is not None else None,
+                 "ActorTransformX": self.object.location.x if self.object.location is not None else None,
+                 "ActorTransformY": self.object.location.y if self.object.location is not None else None,
+                 "ActorTransformZ": self.object.location.z if self.object.location is not None else None }
+
+    def toJsonStr(self):
+        return json.dumps(toJsonObj(), indent=4, cls=DefaultJsonEncoder)

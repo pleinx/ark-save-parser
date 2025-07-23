@@ -11,6 +11,7 @@ from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
 from arkparse import AsaSave
+from arkparse.utils.json_utils import DefaultJsonEncoder
 
 @dataclass
 class Structure(ParsedObjectBase):
@@ -140,4 +141,65 @@ class Structure(ParsedObjectBase):
             f"Last in ally range time serialized: {self.last_in_ally_range_time_serialized}",
         ]
         return "\n".join(parts)
-        
+
+    def get_linked_structures_str(self):
+        result = ""
+        if self.linked_structures is not None:
+            for linked_structure in self.linked_structure_uuids:
+                if len(result) > 0:
+                    result = result + ","
+                result = result + linked_structure.__str__()
+        return result
+
+    def toJsonObj(self):
+        inv_uuid: ObjectReference = self.object.get_property_value("MyInventoryComponent")
+        if inv_uuid is not None:
+            inv_uuid = UUID(inv_uuid.value)
+        return { "UUID": self.object.uuid.__str__() if self.object.uuid is not None else None,
+                 "InventoryUUID": inv_uuid.__str__() if inv_uuid is not None else None,
+                 "LinkedStructureUUIDS": self.get_linked_structures_str(),
+                 "StructureID": self.id_,
+                 "MaxHealth": self.max_health,
+                 "Health": self.current_health,
+                 "OwningPlayerID": self.owner.id_ if self.owner is not None else None,
+                 "OwningPlayerName": self.owner.player_name if self.owner is not None else None,
+                 "TargetingTeam": self.owner.tribe_id if self.owner is not None else None,
+                 "OwnerName": self.owner.tribe_name if self.owner is not None else None,
+                 "TribeGroupInventoryRank": self.object.get_property_value("TribeGroupInventoryRank", None),
+                 "TribeGroupStructureRank": self.object.get_property_value("TribeGroupStructureRank", None),
+                 "AttachedToDinoID1": self.object.get_property_value("AttachedToDinoID1", None),
+                 "BoxName": self.object.get_property_value("BoxName", None),
+                 "CurrentItemCount": self.object.get_property_value("CurrentItemCount", None),
+                 "CurrentPinCode": self.object.get_property_value("CurrentPinCode", None),
+                 "MyCustomCosmeticStructureSkinID": self.object.get_property_value("MyCustomCosmeticStructureSkinID", None),
+                 "MyCustomCosmeticStructureSkinVariantID": self.object.get_property_value("MyCustomCosmeticStructureSkinVariantID", None),
+                 "StructureSkinClass": self.object.get_property_value("StructureSkinClass", None),
+                 "NumBullets": self.object.get_property_value("NumBullets", None),
+                 "bSavedWhenStasised": self.saved_when_stasised,
+                 "bWasPlacementSnapped": self.was_placement_snapped,
+                 "bAutoCraftActivated": self.object.get_property_value("bAutoCraftActivated", None),
+                 "bContainerActivated": self.object.get_property_value("bContainerActivated", None),
+                 "bGeneratedCrateItems": self.object.get_property_value("bGeneratedCrateItems", None),
+                 "bHasFruitItems": self.object.get_property_value("bHasFruitItems", None),
+                 "bHasFuel": self.object.get_property_value("bHasFuel", None),
+                 "bHasItems": self.object.get_property_value("bHasItems", None),
+                 "bHasResetDecayTime": self.has_reset_decay_time,
+                 "bIsLocked": self.object.get_property_value("bIsLocked", None),
+                 "bIsPinLocked": self.object.get_property_value("bIsPinLocked", None),
+                 "bIsPowered": self.object.get_property_value("bIsPowered", None),
+                 "bIsUnderwater": self.object.get_property_value("bIsUnderwater", None),
+                 "bIsWatered": self.object.get_property_value("bIsWatered", None),
+                 "bLastToggleActivated": self.object.get_property_value("bLastToggleActivated", None),
+                 "OriginalPlacerPlayerID": self.owner.original_placer_id if self.owner is not None else None,
+                 "OriginalPlacedTimeStamp": self.object.get_property_value("OriginalPlacedTimeStamp", None),
+                 "LastInAllyRangeTimeSerialized": self.last_in_ally_range_time_serialized,
+                 "LastEnterStasisTime": self.last_enter_stasis_time,
+                 "OriginalCreationTime": self.original_creation_time,
+                 "LastFireTime": self.object.get_property_value("LastFireTime", None),
+                 "NetDestructionTime": self.object.get_property_value("NetDestructionTime", None),
+                 "ActorTransformX": self.location.x if self.location is not None else None,
+                 "ActorTransformY": self.location.y if self.location is not None else None,
+                 "ActorTransformZ": self.location.z if self.location is not None else None }
+
+    def toJsonStr(self):
+        return json.dumps(self.toJsonObj(), indent=4, cls=DefaultJsonEncoder)

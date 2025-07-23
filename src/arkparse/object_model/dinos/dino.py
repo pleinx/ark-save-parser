@@ -8,6 +8,7 @@ from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkDinoTrait
+from arkparse.utils.json_utils import DefaultJsonEncoder
 
 from .stats import DinoStats
 
@@ -119,4 +120,89 @@ class Dino(ParsedObjectBase):
         self.object = ArkGameObject(self.object.uuid, self.object.blueprint, self.binary)
 
         save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
-    
+
+    # TODO: This function should return an array of int representing the color codes ordered by region
+    def get_color_set_indices(self) -> List[int]:
+        colorSetIndices: List[int] = self.object.get_array_property_value("ColorSetIndices", [])
+        return colorSetIndices
+
+    # TODO: This function should return an array of string representing the color names ordered by region
+    def get_color_set_names(self) -> List[str]:
+        colorSetNames: List[int] = self.object.get_array_property_value("ColorSetNames", [])
+        return colorSetNames
+
+    def get_uploaded_from_server_name(self) -> str:
+        server_name = self.object.get_property_value("UploadedFromServerName", None)
+        if server_name is not None and server_name.startswith("\n"):
+            server_name = server_name[1:]
+        return server_name
+
+    def toJsonObj(self):
+        inv_uuid: ObjectReference = self.object.get_property_value("MyInventoryComponent")
+        if inv_uuid is not None:
+            inv_uuid = UUID(inv_uuid.value)
+        return { "UUID": self.object.uuid.__str__() if self.object.uuid is not None else None,
+                 "UUID2": self.object.uuid2.__str__() if self.object.uuid2 is not None else None,
+                 "InventoryUUID": inv_uuid.__str__() if inv_uuid is not None else None,
+                 "DinoID1": self.id1,
+                 "DinoID2": self.id2,
+                 "bIsFemale": self.is_female,
+                 "bIsCryopodded": self.is_cryopodded,
+                 "ShortName": self.get_short_name(),
+                 "ClassName": "dino",
+                 "ItemArchetype": self.object.blueprint,
+                 "BaseLevel": self.stats.base_level if self.stats is not None else None,
+                 "CurrentLevel": self.stats.current_level if self.stats is not None else None,
+                 "BaseStatPoints": self.stats.base_stat_points.to_string_all() if self.stats is not None and self.stats.base_stat_points is not None else None,
+                 "AddedStatPoints": self.stats.added_stat_points.to_string_all() if self.stats is not None and self.stats.added_stat_points is not None else None,
+                 "MutatedStatPoints": self.stats.mutated_stat_points.to_string_all() if self.stats is not None and self.stats.mutated_stat_points is not None else None,
+                 "StatValues": self.stats.stat_values.to_string_all() if self.stats is not None and self.stats.stat_values is not None else None,
+                 "GeneTraits": ', '.join(self.gene_traits) if self.gene_traits is not None else None,
+                 "ColorSetIndices": self.get_color_set_indices().__str__(),
+                 "ColorSetNames": self.get_color_set_names().__str__(),
+                 "BabyAge": self.object.get_property_value("BabyAge", None),
+                 "ForcedWildBabyAge": self.object.get_property_value("ForcedWildBabyAge", None),
+                 "ImprinterName": self.object.get_property_value("ImprinterName", None),
+                 "ImprinterPlayerUniqueNetId": self.object.get_property_value("ImprinterPlayerUniqueNetId", None),
+                 "OwningPlayerID": self.object.get_property_value("OwningPlayerID", None),
+                 "OwningPlayerName": self.object.get_property_value("OwningPlayerName", None),
+                 "RandomMutationsFemale": self.object.get_property_value("RandomMutationsFemale", None),
+                 "RandomMutationsMale": self.object.get_property_value("RandomMutationsMale", None),
+                 "RequiredTameAffinity": self.object.get_property_value("RequiredTameAffinity", None),
+                 "StoredXP": self.object.get_property_value("StoredXP", None),
+                 "UploadedFromServerName": self.get_uploaded_from_server_name(),
+                 "TamedOnServerName": self.object.get_property_value("TamedOnServerName", None),
+                 "TamedName": self.object.get_property_value("TamedName", None),
+                 "TamerString": self.object.get_property_value("TamerString", None),
+                 "TamingTeamID": self.object.get_property_value("TamingTeamID", None),
+                 "TargetingTeam": self.object.get_property_value("TargetingTeam", None),
+                 "TribeName": self.object.get_property_value("TribeName", None),
+                 "bBabyInitiallyUnclaimed": self.object.get_property_value("bBabyInitiallyUnclaimed", None),
+                 "bDontWander": self.object.get_property_value("bDontWander", None),
+                 "bEnableTamedMating": self.object.get_property_value("bEnableTamedMating", None),
+                 "bEnableTamedWandering": self.object.get_property_value("bEnableTamedWandering", None),
+                 "bForceDisablingTaming": self.object.get_property_value("bForceDisablingTaming", None),
+                 "bIsBaby": self.object.get_property_value("bIsBaby", None),
+                 "bIsDead": self.object.get_property_value("bIsDead", None),
+                 "bIsFemale": self.object.get_property_value("bIsFemale", None),
+                 "bIsFlying": self.object.get_property_value("bIsFlying", None),
+                 "bIsParentWildDino": self.object.get_property_value("bIsParentWildDino", None),
+                 "bIsSleeping": self.object.get_property_value("bIsSleeping", None),
+                 "bSavedWhenStasised": self.object.get_property_value("bSavedWhenStasised", None),
+                 "DinoDownloadedAtTime": self.object.get_property_value("DinoDownloadedAtTime", None),
+                 "LastEnterStasisTime": self.object.get_property_value("LastEnterStasisTime", None),
+                 "LastInAllyRangeSerialized": self.object.get_property_value("LastInAllyRangeSerialized", None),
+                 "LastUnstasisStructureTime": self.object.get_property_value("LastUnstasisStructureTime", None),
+                 "LastUpdatedBabyAgeAtTime": self.object.get_property_value("LastUpdatedBabyAgeAtTime", None),
+                 "LastUpdatedGestationAtTime": self.object.get_property_value("LastUpdatedGestationAtTime", None),
+                 "LastUpdatedMatingAtTime": self.object.get_property_value("LastUpdatedMatingAtTime", None),
+                 "NextAllowedMatingTime": self.object.get_property_value("NextAllowedMatingTime", None),
+                 "OriginalCreationTime": self.object.get_property_value("OriginalCreationTime", None),
+                 "TamedAtTime": self.object.get_property_value("TamedAtTime", None),
+                 "TamedTimeStamp": self.object.get_property_value("TamedTimeStamp", None),
+                 "ActorTransformX": self.location.x if self.location is not None else None,
+                 "ActorTransformY": self.location.y if self.location is not None else None,
+                 "ActorTransformZ": self.location.z if self.location is not None else None }
+
+    def toJsonStr(self, include_inv_id: bool = False):
+        return json.dumps(toJsonObj(include_inv_id), indent=4, cls=DefaultJsonEncoder)
