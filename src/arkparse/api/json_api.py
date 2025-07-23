@@ -70,7 +70,7 @@ def get_actual_value(object: ArkGameObject, stat: ArkEquipmentStat, internal_val
 def primalItemToJsonObj(object: ArkGameObject):
     itemID: ArkItemNetId = object.get_property_value("ItemID")
     owner_in: ObjectReference = object.get_property_value("OwnerInventory", default=ObjectReference())
-    owner_inv_uuid = UUID(owner_in.value) if owner_in is not None else None
+    owner_inv_uuid = UUID(owner_in.value) if owner_in is not None and hasattr(owner_in, "value") and owner_in.value is not None else None
     result = { "UUID": object.uuid.__str__() if object.uuid is not None else None,
                "UUID2": object.uuid2.__str__() if object.uuid2 is not None else None,
                "ItemNetId1": itemID.id1 if itemID is not None else None,
@@ -87,9 +87,7 @@ def primalItemToJsonObj(object: ArkGameObject):
                         "CustomItemDatas" not in prop.name and \
                         "ItemID" not in prop.name and \
                         "OwnerInventory" not in prop.name:
-                    #print("Prop: " + prop.name)
                     prop_value = object.get_property_value(prop.name, None)
-                    #test = json.dumps(prop_value, indent=4, cls=DefaultJsonEncoder)
                     if "NextSpoilingTime" in prop.name or "SavedDurability" in prop.name:
                         if math.isnan(prop.value):
                             prop_value = None
@@ -100,10 +98,11 @@ def primalItemToJsonObj(object: ArkGameObject):
         result["Armor"] = get_actual_value(object, ArkEquipmentStat.ARMOR, armor)
         dura = object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
         result["Durability"] = get_actual_value(object, ArkEquipmentStat.DURABILITY, dura)
-        hypo = object.get_property_value("ItemStatValues", position=ArkEquipmentStat.HYPOTHERMAL_RESISTANCE.value, default=0)
-        result["HypothermalResistance"] = get_actual_value(object, ArkEquipmentStat.HYPOTHERMAL_RESISTANCE, hypo)
-        hyper = object.get_property_value("ItemStatValues", position=ArkEquipmentStat.HYPERTHERMAL_RESISTANCE.value, default=0)
-        result["HyperthermalResistance"] = get_actual_value(object, ArkEquipmentStat.HYPERTHERMAL_RESISTANCE, hyper)
+        if "Saddle" not in object.blueprint:
+            hypo = object.get_property_value("ItemStatValues", position=ArkEquipmentStat.HYPOTHERMAL_RESISTANCE.value, default=0)
+            result["HypothermalResistance"] = get_actual_value(object, ArkEquipmentStat.HYPOTHERMAL_RESISTANCE, hypo)
+            hyper = object.get_property_value("ItemStatValues", position=ArkEquipmentStat.HYPERTHERMAL_RESISTANCE.value, default=0)
+            result["HyperthermalResistance"] = get_actual_value(object, ArkEquipmentStat.HYPERTHERMAL_RESISTANCE, hyper)
 
     if "/PrimalItem_" in object.blueprint:
         damage = object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DAMAGE.value, default=0)
@@ -371,7 +370,9 @@ class JsonApi:
                         "/PrimalItem_" not in class_name and \
                         "/PrimalItemAmmo_" not in class_name and \
                         "/PrimalItemC4Ammo" not in class_name and \
-                        "/PrimalItemResource_" not in class_name:
+                        "/PrimalItemResource_" not in class_name \
+                        "/DroppedItemGeneric_" not in class_name and \
+                        "/PrimalItemConsumable_" not in class_name:
                     continue
 
                 obj = self.save.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
