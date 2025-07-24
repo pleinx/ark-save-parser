@@ -183,6 +183,23 @@ print(f"Level: {most_mutations.stats.current_level}")
 print(f"Owner: {most_mutations.owner}")
 ```
 
+---
+
+#### e. **JSON API: Export parsed data as JSON**
+
+```python
+from pathlib import Path
+
+from src.arkparse import AsaSave
+from src.arkparse.api.json_api import JsonApi
+
+save_path = Path.cwd() / "Ragnarok_WP.ark" # replace with path to your save file
+save = AsaSave(save_path) # loads save file
+json_api = JsonApi(save) # initializes the JSON API
+
+json_api.export_items() # exports items to JSON
+```
+
 ## Contributing
 
 I welcome contributions! If you have updates to this library that you would like to share, feel free!
