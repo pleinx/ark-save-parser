@@ -1,4 +1,4 @@
-
+import json
 from uuid import UUID
 
 from arkparse import AsaSave
@@ -46,28 +46,8 @@ class Saddle(EquipmentWithArmor):
     def __str__(self):
         return f"Saddle: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - BP: {self.is_bp} - Crafted: {self.is_crafted()}"
 
-    def toJsonObj(self):
-        return { "UUID": self.object.uuid.__str__() if self.object.uuid is not None else None,
-                 "UUID2": self.object.uuid2.__str__() if self.object.uuid2 is not None else None,
-                 "ItemNetId1": self.id_.id1 if self.id_ is not None else None,
-                 "ItemNetId2": self.id_.id2 if self.id_ is not None else None,
-                 "OwnerInventoryUUID": self.owner_inv_uuid.__str__() if self.owner_inv_uuid is not None else None,
-                 "ShortName": self.get_short_name(),
-                 "ClassName": self.class_name,
-                 "ItemArchetype": self.object.blueprint,
-                 "ImplementedStats": self.get_implemented_stats().__str__() if self.get_implemented_stats() is not None else None,
-                 "bIsBlueprint": self.is_bp,
-                 "bEquippedItem": self.is_equipped,
-                 "bIsRated": self.is_rated(),
-                 "bIsCrafted": self.is_crafted(),
-                 "ItemQuantity": self.quantity,
-                 "ItemQualityIndex": self.quality,
-                 "ItemRating": self.rating,
-                 "Armor": self.armor,
-                 "Durability": self.durability,
-                 "SavedDurability": self.current_durability,
-                 "CrafterCharacterName": self.crafter.char_name if self.crafter is not None else None,
-                 "CrafterTribeName": self.crafter.tribe_name if self.crafter is not None else None }
+    def to_json_obj(self):
+        return super().to_json_obj()
 
-    def toJsonStr(self):
-        return json.dumps(toJsonObj(), indent=4, cls=DefaultJsonEncoder)
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)

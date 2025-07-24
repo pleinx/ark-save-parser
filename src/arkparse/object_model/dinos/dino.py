@@ -1,4 +1,4 @@
-
+import json
 from uuid import UUID
 from typing import List
 
@@ -11,6 +11,8 @@ from arkparse.enums import ArkDinoTrait
 from arkparse.utils.json_utils import DefaultJsonEncoder
 
 from .stats import DinoStats
+from ...parsing.struct import ObjectReference
+
 
 class Dino(ParsedObjectBase):
     id1: int = 0
@@ -139,16 +141,15 @@ class Dino(ParsedObjectBase):
             server_name = server_name[1:]
         return server_name
 
-    def toJsonObj(self):
-        inv_uuid: ObjectReference = self.object.get_property_value("MyInventoryComponent")
-        if inv_uuid is not None:
-            inv_uuid = UUID(inv_uuid.value)
-        return { "UUID": self.object.uuid.__str__() if self.object.uuid is not None else None,
-                 "UUID2": self.object.uuid2.__str__() if self.object.uuid2 is not None else None,
+    def to_json_obj(self):
+        inv_uuid = None
+        inv_comp: ObjectReference = self.object.get_property_value("MyInventoryComponent")
+        if inv_comp is not None:
+            inv_uuid = UUID(inv_comp.value)
+        return { "UUID": self.object.uuid.__str__(),
                  "InventoryUUID": inv_uuid.__str__() if inv_uuid is not None else None,
                  "DinoID1": self.id1,
                  "DinoID2": self.id2,
-                 "bIsFemale": self.is_female,
                  "bIsCryopodded": self.is_cryopodded,
                  "ShortName": self.get_short_name(),
                  "ClassName": "dino",
@@ -206,5 +207,5 @@ class Dino(ParsedObjectBase):
                  "ActorTransformY": self.location.y if self.location is not None else None,
                  "ActorTransformZ": self.location.z if self.location is not None else None }
 
-    def toJsonStr(self, include_inv_id: bool = False):
-        return json.dumps(toJsonObj(include_inv_id), indent=4, cls=DefaultJsonEncoder)
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)

@@ -151,11 +151,12 @@ class Structure(ParsedObjectBase):
                 result = result + linked_structure.__str__()
         return result
 
-    def toJsonObj(self):
-        inv_uuid: ObjectReference = self.object.get_property_value("MyInventoryComponent")
-        if inv_uuid is not None:
-            inv_uuid = UUID(inv_uuid.value)
-        return { "UUID": self.object.uuid.__str__() if self.object.uuid is not None else None,
+    def to_json_obj(self):
+        inv_uuid = None
+        inv_comp: ObjectReference = self.object.get_property_value("MyInventoryComponent")
+        if inv_comp is not None:
+            inv_uuid = UUID(inv_comp.value)
+        return { "UUID": self.object.uuid.__str__(),
                  "InventoryUUID": inv_uuid.__str__() if inv_uuid is not None else None,
                  "LinkedStructureUUIDS": self.get_linked_structures_str(),
                  "StructureID": self.id_,
@@ -201,5 +202,5 @@ class Structure(ParsedObjectBase):
                  "ActorTransformY": self.location.y if self.location is not None else None,
                  "ActorTransformZ": self.location.z if self.location is not None else None }
 
-    def toJsonStr(self):
-        return json.dumps(self.toJsonObj(), indent=4, cls=DefaultJsonEncoder)
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
