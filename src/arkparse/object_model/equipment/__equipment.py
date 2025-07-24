@@ -1,4 +1,4 @@
-
+import json
 from uuid import UUID
 import os
 
@@ -8,6 +8,8 @@ from arkparse.object_model.misc.object_crafter import ObjectCrafter
 from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.enums import ArkItemQuality, ArkEquipmentStat
 from arkparse.saves.asa_save import AsaSave
+from arkparse.utils.json_utils import DefaultJsonEncoder
+
 
 class Equipment(InventoryItem):
     is_equipped: bool = False
@@ -146,3 +148,26 @@ class Equipment(InventoryItem):
             cls = Equipment
 
         return cls(item.object.uuid, parser)
+
+    def to_json_obj(self):
+        return {"UUID": self.object.uuid.__str__(),
+                "ItemNetId1": self.id_.id1 if self.id_ is not None else None,
+                "ItemNetId2": self.id_.id2 if self.id_ is not None else None,
+                "OwnerInventoryUUID": self.owner_inv_uuid.__str__() if self.owner_inv_uuid is not None else None,
+                "ShortName": self.get_short_name(),
+                "ClassName": self.class_name,
+                "ItemArchetype": self.object.blueprint,
+                "ImplementedStats": self.get_implemented_stats().__str__() if self.get_implemented_stats() is not None else None,
+                "bIsBlueprint": self.is_bp,
+                "bEquippedItem": self.is_equipped,
+                "bIsRated": self.is_rated(),
+                "bIsCrafted": self.is_crafted(),
+                "ItemQuantity": self.quantity,
+                "ItemQualityIndex": self.quality,
+                "ItemRating": self.rating,
+                "SavedDurability": self.current_durability,
+                "CrafterCharacterName": self.crafter.char_name if self.crafter is not None else None,
+                "CrafterTribeName": self.crafter.tribe_name if self.crafter is not None else None}
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)

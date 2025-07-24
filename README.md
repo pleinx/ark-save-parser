@@ -66,9 +66,6 @@ There are quite a few examples under the examples folder, organized by api. Thes
 
 #### a. **Player API: Retrieve Player and Inventory Information**
 
-```markdown
-### Player API: Retrieve Player and Inventory Information
-
 ```python
 from arkparse import AsaSave
 from arkparse.enums import ArkMap
@@ -86,15 +83,42 @@ for player in player_api.players:
     print(inventory)
     print("\n")
 ```
+
 ---
 
 #### b. **Structure API: Analyze Structures and Generate Heatmaps**
 
-```markdown
-### Structure API: Analyze Structures and Generate Heatmaps
-
 Retrieve and filter structures by owner, location, or type. Generate heatmaps for visualization and analysis.
-### Equipment API: Manage Equipment and Blueprints
+
+```python
+from pathlib import Path
+from uuid import UUID
+from typing import Dict
+
+from arkparse import AsaSave, Classes
+from arkparse.api import StructureApi
+from arkparse.ftp import ArkFtpClient
+from arkparse.enums import ArkMap
+from arkparse.object_model.structures import StructureWithInventory
+
+# retrieve the save file (can also retrieve it from a local path)
+save_path = ArkFtpClient.from_config(Path("../../ftp_config.json"), ArkMap.ABERRATION).download_save_file(Path.cwd())
+save = AsaSave(save_path)
+
+structure_api = StructureApi(save)
+owning_tribe = 0 # add the tribe id here (check the player api examples to see how to get the tribe id)
+
+vaults: Dict[UUID, StructureWithInventory] = structure_api.get_by_class([Classes.structures.placed.utility.vault])
+vaults_owned_by = [v for v in vaults.values() if v.owner.tribe_id == owning_tribe]
+
+print(f"Vaults owned by tribe {owning_tribe}:")
+for v in vaults_owned_by:
+    print(v)
+```
+
+---
+
+#### c. **Equipment API: Manage Equipment and Blueprints**
 
 ```python
 from pathlib import Path
@@ -128,9 +152,6 @@ print(f"Highest damage on longneck bp: {highest_dmg_bp.damage}")
 
 #### d. **Dino API: Analyze and Find Dinosaurs**
 
-```markdown
-### Dino API: Analyze and Find Dinosaurs
-
 ```python
 from pathlib import Path
 
@@ -161,6 +182,24 @@ print(f"Location: {most_mutations.location.as_map_coords(ArkMap.ABERRATION)}")
 print(f"Level: {most_mutations.stats.current_level}")
 print(f"Owner: {most_mutations.owner}")
 ```
+
+---
+
+#### e. **JSON API: Export parsed data as JSON**
+
+```python
+from pathlib import Path
+
+from src.arkparse import AsaSave
+from src.arkparse.api.json_api import JsonApi
+
+save_path = Path.cwd() / "Ragnarok_WP.ark" # replace with path to your save file
+save = AsaSave(save_path) # loads save file
+json_api = JsonApi(save) # initializes the JSON API
+
+json_api.export_items() # exports items to JSON
+```
+
 ## Contributing
 
 I welcome contributions! If you have updates to this library that you would like to share, feel free!

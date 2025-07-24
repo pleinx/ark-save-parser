@@ -1,4 +1,4 @@
-
+import json
 from uuid import UUID
 
 from arkparse import AsaSave
@@ -8,11 +8,14 @@ from arkparse.enums import ArkEquipmentStat
 from arkparse.classes.equipment import Armor as ArmorBps, Shields as ShieldBps, Saddles as SaddleBps, Weapons, Misc
 
 from .__equipment import Equipment
+from ...utils.json_utils import DefaultJsonEncoder
+
 
 class EquipmentWithDurability(Equipment):
     durability: float = 0
 
-    def __get_default_dura(self, bp: str) -> float:
+    @staticmethod
+    def get_default_dura(bp: str) -> float:
         if bp in ArmorBps.chitin.all_bps:
             return 50
         elif bp in ArmorBps.ghillie.all_bps or bp in ArmorBps.leather.all_bps or bp in ArmorBps.desert.all_bps:
@@ -39,7 +42,8 @@ class EquipmentWithDurability(Equipment):
             return 120
         elif bp == ArmorBps.misc.night_vision_goggles:
             return 45
-        elif bp in [SaddleBps.tapejara_tek, SaddleBps.rex_tek, SaddleBps.mosa_tek, SaddleBps.megalodon_tek, SaddleBps.rock_drake_tek]:
+        elif bp in [SaddleBps.tapejara_tek, SaddleBps.rex_tek, SaddleBps.mosa_tek, SaddleBps.megalodon_tek,
+                    SaddleBps.rock_drake_tek]:
             return 120
         elif bp == SaddleBps.mole_rat:
             return 500
@@ -118,14 +122,14 @@ class EquipmentWithDurability(Equipment):
 
     def get_internal_value(self, stat: ArkEquipmentStat) -> int:
         if stat == ArkEquipmentStat.DURABILITY:
-            d = self.__get_default_dura(self.object.blueprint)
+            d = EquipmentWithDurability.get_default_dura(self.object.blueprint)
             return int((self.durability - d)/(d*0.00025))
         else:
             raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
         
     def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
         if stat == ArkEquipmentStat.DURABILITY:
-            d = self.__get_default_dura(self.object.blueprint)
+            d = EquipmentWithDurability.get_default_dura(self.object.blueprint)
             value = d * (0.00025*internal_value + 1)
             return value
         else:
@@ -139,10 +143,18 @@ class EquipmentWithDurability(Equipment):
 
     def __set_durability(self, durability: float, save: AsaSave = None):
         self.durability = durability
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)  
+        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)
 
     def _get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float, multiplier: float) -> float:
         if stat == ArkEquipmentStat.DURABILITY:
             return round(rating / multiplier, 1)
         else:
             return super()._get_stat_for_rating(stat, rating, multiplier)
+
+    def to_json_obj(self):
+        json_obj = super().to_json_obj()
+        json_obj["Durability"] = self.durability
+        return json_obj
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)

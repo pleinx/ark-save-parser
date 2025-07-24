@@ -1,4 +1,4 @@
-
+import json
 from uuid import UUID
 import os
 
@@ -7,6 +7,7 @@ from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
+from arkparse.utils.json_utils import DefaultJsonEncoder
 
 from .__equipment import Equipment
 from .__equipment_with_armor import EquipmentWithArmor
@@ -114,4 +115,13 @@ class Armor(EquipmentWithArmor):
         return armor
     
     def __str__(self):
-        return f"Armor: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} -BP: {self.is_bp} -Crafted: {self.is_crafted()} -Quality: {self.quality} -Rating: {self.rating}"
+        return f"Armor: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} - BP: {self.is_bp} - Crafted: {self.is_crafted()} - Quality: {self.quality} - Rating: {self.rating}"
+
+    def to_json_obj(self):
+        json_obj = super().to_json_obj()
+        json_obj["HyperthermalResistance"] = self.hyperthermal_insulation
+        json_obj["HypothermalResistance"] = self.hypothermal_insulation
+        return json_obj
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)

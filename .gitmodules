@@ -1,3 +1,0 @@
-[submodule "src/binary-reader"]
-	path = src/binary-reader
-	url = git@github.com:VincentHenauGithub/binary-visualizer.git
