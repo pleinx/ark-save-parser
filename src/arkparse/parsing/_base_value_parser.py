@@ -78,7 +78,7 @@ class BaseValueParser(BinaryReaderBase):
             terminator = self.read_byte()
 
         if terminator != 0:
-            print(f"Terminator is not zero: {terminator}")
+            ArkSaveLogger.warning_log(f"Terminator is not zero: {terminator}")
             self.position = pre_read_pos
             # ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()

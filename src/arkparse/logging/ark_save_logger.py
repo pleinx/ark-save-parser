@@ -116,7 +116,7 @@ class ArkSaveLogger:
 
         if set_globally:
             global_config = read_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME)
-            global_config[log_type] = state
+            global_config["levels"][log_type] = state
             write_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME, global_config)
 
     @staticmethod
