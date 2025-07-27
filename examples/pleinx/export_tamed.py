@@ -141,25 +141,25 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
         "food-t": stats_entry["food-t"],
         "oxy-t": stats_entry["oxy-t"],
         "craft-t": stats_entry["craft-t"],
-        "c0": "1",
-        "c1": "1",
-        "c2": "1",
-        "c3": "1",
-        "c4": "1",
-        "c5": "1",
+        "c0": "1",      # TODO
+        "c1": "1",      # TODO
+        "c2": "1",      # TODO
+        "c3": "1",      # TODO
+        "c4": "1",      # TODO
+        "c5": "1",      # TODO
         "mut-f": dino.stats.mutated_stat_points.get_level(),
         "mut-m": dino.stats.mutated_stat_points.get_level(),
         "cryo": dino.is_cryopodded,
         "ccc": ccc,
         "dinoid": str(dino_id),
-        "isMating": False,
-        "isNeutered": False,
-        "isClone": False,
-        "tamedServer": dino.get_uploaded_from_server_name(),
+        "isMating": False,          # TODO
+        "isNeutered": False,        # TODO
+        "isClone": False,           # TODO
+        "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": "100",
-        "traits": [],
-        "inventory": []
+        "maturation": "100",        # TODO
+        "traits": [],               # TODO
+        "inventory": []             # TODO
     }
 
     tamed_dinos.append(entry)
