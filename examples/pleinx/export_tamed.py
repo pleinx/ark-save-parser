@@ -106,10 +106,10 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     entry = {
         "id": str(dino_id),
         "tribeid": tribe_id,
-        "tribe": tribe_lookup.get(tribe_id, None),
+        "tribe": tribe_lookup.get(tribe_id, None),  # TODO check why tribe name is often empty
         "tamer": tamer_name,
         "imprinter": imprinter_name,
-        "imprint": 0.0,
+        "imprint": 0.0,     # TODO
         "creature": creature_name,
         "name": dino.tamed_name if dino.tamed_name else "",
         "sex": "Female" if dino.is_female else "Male",
