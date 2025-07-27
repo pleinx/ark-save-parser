@@ -9,6 +9,8 @@ from pprint import pprint
 import argparse
 from pathlib import Path
 import os
+import ast
+from datetime import datetime
 
 # Args
 parser = argparse.ArgumentParser(description="")
@@ -66,11 +68,18 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     if not isinstance(dino, TamedDino):
         continue
 
+    dino_json_data = dino.to_json_obj()
+
     # public_attrs = [attr for attr in dir(dino.stats) if not attr.startswith('_')]
     # if(public_attrs is not []):
         # pprint(public_attrs)
         # coords = dino.location.as_map_coords(ArkMap.ABERRATION)
         # pprint(dir(coords))
+
+#     if(dino_id=="26a06cb2-3cc3-e149-aaf5-1e28cdabdc51"):
+#         public_attrs = [attr for attr in dir(dino.owner) if not attr.startswith('_')]
+#         if(public_attrs is not []):
+#             pprint(public_attrs)
 
     creature_name = dino.get_short_name()
 
@@ -88,6 +97,8 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
         dino.owner.tamer_tribe_id if dino.owner else None
     )
 
+    tribe_name = tribe_lookup.get(tribe_id, None)
+
     tamer_name = dino.cryopod.dino.owner.tamer_string if dino.is_cryopodded else (
         dino.owner.tamer_string if dino.owner else None
     )
@@ -95,6 +106,22 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     imprinter_name = dino.cryopod.dino.owner.imprinter if dino.is_cryopodded else (
         dino.owner.imprinter if dino.owner else None
     )
+
+    if not tribe_name:
+        tribe_name = dino_json_data.get("TribeName", None)
+
+    if not imprinter_name:
+        imprinter_name = dino_json_data.get("ImprinterName", None)
+
+    tamed_at_str = dino_json_data.get("TamedTimeStamp", None)
+    tamed_at_mysql = None
+
+    if tamed_at_str:
+        try:
+            dt = datetime.strptime(tamed_at_str, "%Y.%m.%d-%H.%M.%S")
+            tamed_at_mysql = dt.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            tamed_at_mysql = None
 
     # Extract stats
     stats_entry = {}
@@ -106,7 +133,7 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     entry = {
         "id": str(dino_id),
         "tribeid": tribe_id,
-        "tribe": tribe_lookup.get(tribe_id, None),  # TODO check why tribe name is often empty
+        "tribe": tribe_name,  # TODO check why tribe name is often empty
         "tamer": tamer_name,
         "imprinter": imprinter_name,
         "imprint": 0.0,     # TODO
@@ -141,14 +168,8 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
         "food-t": stats_entry["food-t"],
         "oxy-t": stats_entry["oxy-t"],
         "craft-t": stats_entry["craft-t"],
-        "c0": "1",      # TODO
-        "c1": "1",      # TODO
-        "c2": "1",      # TODO
-        "c3": "1",      # TODO
-        "c4": "1",      # TODO
-        "c5": "1",      # TODO
-        "mut-f": dino.stats.mutated_stat_points.get_level(),
-        "mut-m": dino.stats.mutated_stat_points.get_level(),
+        "mut-f": dino_json_data.get("RandomMutationsFemale", None),
+        "mut-m": dino_json_data.get("RandomMutationsMale", None),
         "cryo": dino.is_cryopodded,
         "ccc": ccc,
         "dinoid": str(dino_id),
@@ -159,8 +180,23 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
         "uploadedServer": dino.get_uploaded_from_server_name(),
         "maturation": "100",        # TODO
         "traits": [],               # TODO
-        "inventory": []             # TODO
+        "inventory": [],            # TODO
+        "tamedAtTime": tamed_at_mysql
     }
+
+    # Adding Dino Colors
+    color_indices_str = dino_json_data.get("ColorSetIndices", "[]")
+    try:
+        color_indices = ast.literal_eval(color_indices_str)
+    except (ValueError, SyntaxError):
+        color_indices = [None] * 6
+
+    entry["c0"] = color_indices[0] if len(color_indices) > 0 else None
+    entry["c1"] = color_indices[1] if len(color_indices) > 1 else None
+    entry["c2"] = color_indices[2] if len(color_indices) > 2 else None
+    entry["c3"] = color_indices[3] if len(color_indices) > 3 else None
+    entry["c4"] = color_indices[4] if len(color_indices) > 4 else None
+    entry["c5"] = color_indices[5] if len(color_indices) > 5 else None
 
     tamed_dinos.append(entry)
 
