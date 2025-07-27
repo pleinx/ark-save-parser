@@ -107,7 +107,7 @@ class ArkGameObject(ArkPropertyContainer):
                 if no_header:
                     self.blueprint = self.get_property_value("ItemArchetype").value
             except Exception as e:
-                ArkSaveLogger.error_log(f"Error while reading object {self.blueprint} ({self.uuid}):", e)
+                ArkSaveLogger.error_log(f"Error while reading object {self.blueprint} ({self.uuid}): {e}")
                 ArkSaveLogger.set_file(binary_reader, "debug.bin")
                 raise e
     

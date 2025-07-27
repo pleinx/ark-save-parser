@@ -34,7 +34,7 @@ class ArkPropertyContainer:
         except Exception as e:
             byte_buffer.set_position(last_property_position)
             ArkSaveLogger.error_log(f"Error reading properties at position {last_property_position}: {e}")
-            byte_buffer.find_names(type=2)
+            # byte_buffer.find_names(type=2)
             raise e
         
         ArkSaveLogger.parser_log("Finished reading object properties")

@@ -11,18 +11,8 @@ class ArkItemNetId:
     id2 : int
 
     def __init__(self, byte_buffer: "ArkBinaryParser"):
-        byte_buffer.validate_name("ItemID1")
-        byte_buffer.validate_name("UInt32Property")
-        byte_buffer.validate_uint32(0)
-        byte_buffer.validate_uint32(4)
-        byte_buffer.validate_byte(0)
-        self.id1 = byte_buffer.read_uint32()
-        byte_buffer.validate_name("ItemID2")
-        byte_buffer.validate_name("UInt32Property")
-        byte_buffer.validate_uint32(0)
-        byte_buffer.validate_uint32(4)
-        byte_buffer.validate_byte(0)
-        self.id2 = byte_buffer.read_uint32()
+        self.id1 = byte_buffer.parse_uint32_property("ItemID1")
+        self.id2 = byte_buffer.parse_uint32_property("ItemID2")
         byte_buffer.validate_name("None")
 
         ArkSaveLogger.parser_log(f"ArkItemNetId: {self.id1}, {self.id2}")

@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from ..ark_binary_parser import ArkBinaryParser
 
 from arkparse.logging import ArkSaveLogger
-from arkparse.enums import ArkEnumValue
+from arkparse.enums.ark_enum import ArkEnumValue
 
 @dataclass
 class ArkTrackedActorIdCategoryPairWithBool:

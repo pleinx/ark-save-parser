@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Type, Optional, Any
 from decimal import Decimal
-from arkparse.enums import ArkEnumValue
+from arkparse.enums.ark_enum import ArkEnumValue
 from .ark_set import ArkSet
 
 class ArkValueType(Enum):

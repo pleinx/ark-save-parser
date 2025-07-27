@@ -1,4 +1,5 @@
 from ._base_value_validator import BaseValueValidator
+from .struct.object_reference import ObjectReference
 
 class PropertyParser(BaseValueValidator):
     def __init__(self, data: bytes, save_context=None):
@@ -7,8 +8,9 @@ class PropertyParser(BaseValueValidator):
     def parse_double_property(self, property_name: str) -> float:
         self.validate_name(property_name)
         self.validate_name("DoubleProperty")
+        self.validate_uint32(0)
         self.validate_byte(0x08)
-        self.validate_uint64(0)
+        self.validate_uint32(0)
         value = self.read_double()
         return value
         
@@ -54,3 +56,21 @@ class PropertyParser(BaseValueValidator):
         self.validate_uint32(0)
         value = self.read_string()
         return value
+    
+    def parse_name_property(self, property_name: str) -> str:
+        self.validate_name(property_name)
+        self.validate_name("NameProperty")
+        self.validate_uint32(0)
+        self.validate_byte(0x08)
+        self.validate_uint32(0)
+        value = self.read_name()
+        return value
+    
+    def parse_object_reference_property(self, property_name: str) -> "ObjectReference":
+        self.validate_name(property_name)
+        self.validate_name("ObjectProperty")
+        self.validate_uint32(0)
+        self.read_uint32()
+        self.validate_byte(0)
+        object_reference = ObjectReference(self)
+        return object_reference

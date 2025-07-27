@@ -9,6 +9,7 @@ from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
 from .ark_value_type import ArkValueType
 from collections import deque
+from arkparse.utils.temp_files import TEMP_FILES_DIR
 
 if TYPE_CHECKING:
     from arkparse import AsaSave
@@ -25,7 +26,7 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         9: "ColorSetNames",
         10: "NameProperty",
         11: "TamingTeamID",
-        12: "UInt64Property",  # ???
+        12: "ObjectProperty",
         13: "RequiredTameAffinity",
         14: "TamingTeamID",
         15: "IntProperty",
@@ -123,13 +124,14 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
         return bytes(output_buffer)
 
+    def __structured_print_print(self, msg: str, to_file: BytesIO, end: str = "\n"):
+        if to_file is not None:
+            to_file.write(msg.encode())
+            to_file.write(end.encode())
+        else:
+            print(msg, end=end)
+
     def __structured_print_known(self, lengths: List[int], to_file: BytesIO = None):
-        def __print(msg: str, end: str = "\n"):
-            if to_file is not None:
-                to_file.write(msg.encode())
-                to_file.write(end.encode())
-            else:
-                print(msg, end=end)
         for length in lengths:
             if self.position >= len(self.byte_buffer):
                 break
@@ -137,17 +139,23 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             for _ in range(length):
                 if self.position >= len(self.byte_buffer):
                     break
-                __print(f"{self.read_byte():02x} ", end="")
-            __print("")
-            __print(f"{self.position}: ", end="")
-    
-    def structured_print(self, to_file: BytesIO = None):
-        def __print(msg: str, end: str = "\n"):
-            if to_file is not None:
-                to_file.write(msg.encode())
-                to_file.write(end.encode())
-            else:
-                print(msg, end=end)
+                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
+            self.__structured_print_print("", to_file)
+            self.__structured_print_print(f"{self.position}: ", to_file, end="")
+
+    def __structured_print_string_property(self, to_file: BytesIO = None):
+        self.validate_uint32(0)
+        self.read_uint32()
+        self.validate_byte(0)
+        value = self.read_string()
+        self.__structured_print_print(f"{value}", to_file)
+        self.__structured_print_print(f"{self.position}: ", to_file, end="")
+
+    def structured_print(self, to_file: BytesIO = None, to_default_file: bool = False):
+        if to_default_file:
+            file_path = TEMP_FILES_DIR / "structured_print.txt"
+            to_file = file_path.open("wb")
+
         current_position = self.position
         known_structures = {
             "UInt32Property": [4,1,4,4],
@@ -172,28 +180,30 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 in_names = int_after == 0
                 if in_names:
                     if printed > 0:
-                        __print("")
-                        __print(f"{self.position}: ", end="")
+                        self.__structured_print_print("", to_file)
+                        self.__structured_print_print(f"{self.position}: ", to_file, end="")
                     name = names[self.position]
-                    __print(f"{name}")
+                    self.__structured_print_print(f"{name}", to_file)
                     self.set_position(self.position + 8)
-                    __print(f"{self.position}: ", end="")
+                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
                     printed = 0
                     if name in known_structures:
                         self.__structured_print_known(known_structures[name], to_file=to_file)
                         continue
-            
+                    elif name == "StrProperty":
+                        self.__structured_print_string_property(to_file=to_file)
+                        continue            
             if not in_names:
-                __print(f"{self.read_byte():02x} ", end="")
+                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
                 printed += 1
 
                 if printed == 4:
-                    __print("")
-                    __print(f"{self.position}: ", end="")
+                    self.__structured_print_print("", to_file)
+                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
                     printed = 0  
 
         self.position = current_position
-        __print(" === End of structured print === ")           
+        self.__structured_print_print(" === End of structured print === ", to_file)
 
     @staticmethod
     def from_deflated_data(byte_arr: List[int]):

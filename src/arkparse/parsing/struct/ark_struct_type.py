@@ -14,6 +14,11 @@ from .ark_item_net_id import ArkItemNetId
 from .ark_int_point import ArkIntPoint
 from .ark_dino_ancestor_entry import ArkDinoAncestorEntry
 from .ark_custom_item_data import ArkCustomItemData
+from .ark_server_custom_folder import ArkServerCustomFolder
+from .ark_crafting_resource_requirement import ArkCraftingResourceRequirement
+from .ark_player_death_reason import ArkPlayerDeathReason
+from .ark_primal_saddle_structure import ArkPrimalSaddleStructure
+from .ark_gene_trait_struct import ArkGeneTraitStruct
 
 class ArkStructType(Enum):
     LinearColor = "LinearColor"
@@ -29,6 +34,11 @@ class ArkStructType(Enum):
     ArkDinoAncestor = "DinoAncestorsEntry"
     ArkIntPoint = "IntPoint"
     ArkCustomItemData = "CustomItemData"
+    ArkServerCustomFolder = "ServerCustomFolder"
+    ArkCraftingResourceRequirement = "CraftingResourceRequirement"
+    ArkPlayerDeathReason = "PlayerDeathReason"
+    ArkPrimalSaddleStructure = "PrimalSaddleStructure"
+    ArkGeneTraitStruct = "GeneTraitStruct"
 
     # Static constructor mapping for ArkStructType
     
@@ -56,6 +66,11 @@ class ArkStructType(Enum):
             "DinoAncestorsEntry": lambda data: ArkDinoAncestorEntry(data),
             "IntPoint": lambda data: ArkIntPoint(data),
             "CustomItemData": lambda data: ArkCustomItemData(data),
+            "ServerCustomFolder": lambda data: ArkServerCustomFolder(data),
+            "CraftingResourceRequirement": lambda data: ArkCraftingResourceRequirement(data),
+            "PlayerDeathReason": lambda data: ArkPlayerDeathReason(data),
+            "PrimalSaddleStructure": lambda data: ArkPrimalSaddleStructure(data),
+            "GeneTraitStruct": lambda data: ArkGeneTraitStruct(data),
         }
         self.constructor = _constructors.get(type_name)
 

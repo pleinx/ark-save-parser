@@ -25,6 +25,7 @@ class AsaSave:
     name_offset = 0
     name_count = 0
     last_name_end = 0   
+    faulty_objects = 0
 
     def __init__(self, path: Path = None, contents: bytes = None, read_only: bool = False):
 
@@ -79,15 +80,14 @@ class AsaSave:
             rowCount = 0
             for row in cursor:
                 rowCount += 1
-            ArkSaveLogger.save_log("Found %d items in game table", rowCount)
+            ArkSaveLogger.save_log(f"Found {rowCount} items in game table")
 
         # get custom values
         query = "SELECT key, value FROM custom"
         with self.connection as conn:
             cursor = conn.execute(query)
             for row in cursor:
-                ArkSaveLogger.save_log("Custom key: %s", row[0])
-                
+                ArkSaveLogger.save_log(f"Custom key: {row[0]}")
 
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")
@@ -103,22 +103,22 @@ class AsaSave:
         ArkSaveLogger.set_file(header_data, "header.bin")
            
         self.save_context.save_version = header_data.read_short()
-        ArkSaveLogger.save_log("Save version: %d", self.save_context.save_version)
+        ArkSaveLogger.save_log(f"Save version: {self.save_context.save_version}")
 
         if self.save_context.save_version >= 14:
-            ArkSaveLogger.save_log("V14 unknown value 1: %d", header_data.read_uint32())
-            ArkSaveLogger.save_log("V14 unknown value 2: %d", header_data.read_uint32())
-            
+            ArkSaveLogger.save_log(f"V14 unknown value 1: {header_data.read_uint32()}")
+            ArkSaveLogger.save_log(f"V14 unknown value 2: {header_data.read_uint32()}")
+
         name_table_offset = header_data.read_int()
         self.name_offset = name_table_offset
-        ArkSaveLogger.save_log("Name table offset: %d", name_table_offset)
+        ArkSaveLogger.save_log(f"Name table offset: {name_table_offset}")
         self.save_context.game_time = header_data.read_double()
-        ArkSaveLogger.save_log("Game time: %f", self.save_context.game_time)
+        ArkSaveLogger.save_log(f"Game time: {self.save_context.game_time}")
 
 
         if self.save_context.save_version >= 12:
             self.save_context.unknown_value = header_data.read_uint32()
-            ArkSaveLogger.save_log("Unknown value: %d", self.save_context.unknown_value)
+            ArkSaveLogger.save_log(f"Unknown value: {self.save_context.unknown_value}")
 
         self.save_context.sections = self.read_locations(header_data)
         
@@ -180,7 +180,7 @@ class AsaSave:
         parts = []
 
         num_parts = header_data.read_uint32()
-        ArkSaveLogger.save_log("Number of header locations: %d", num_parts)
+        ArkSaveLogger.save_log(f"Number of header locations: {num_parts}")
 
         for _ in range(num_parts):
             try:
@@ -345,6 +345,7 @@ class AsaSave:
         game_objects = {}
         row_index = 0
         objects = []
+        self.faulty_objects = 0
 
         ArkSaveLogger.enter_struct("GameObjects")
 
@@ -394,6 +395,11 @@ class AsaSave:
             sorted_properties = sorted(self.var_objects[o].items(), key=lambda item: item[1], reverse=True)
             for p, count in sorted_properties:
                 print("  - " + p + " " + str(count))
+        
+        if self.faulty_objects > 0:
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
+            ArkSaveLogger.error_log(f"{self.faulty_objects} objects could not be parsed, if possible, please report this to the developers.")
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, False)
         
         return game_objects
     
@@ -464,10 +470,21 @@ class AsaSave:
         try:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)
         except Exception as e:
-            if "/Game/" in class_name:
-                if ArkSaveLogger.allow_invalid_objects is False:
+            if "/Game/" in class_name or "/Script/" in class_name:
+                if ArkSaveLogger._allow_invalid_objects is False:
                     byte_buffer.find_names(type=2)
+                    byte_buffer.structured_print(to_default_file=True)
+                    ArkSaveLogger.error_log(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                    ArkSaveLogger.error_log("Reparsing with logging:")
+                    ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
+                    try:
+                        ArkGameObject(obj_uuid, class_name, byte_buffer)
+                    except Exception as _:
+                        ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
+                        ArkSaveLogger.open_hex_view(True)
+
                     raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                self.faulty_objects += 1
                 ArkSaveLogger.warning_log(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")

@@ -92,7 +92,7 @@ class BaseValueParser(BinaryReaderBase):
         return result
 
     def read_boolean(self) -> bool:
-        return self.read_uint16() != 0
+        return self.read_byte() != 0
 
     def read_float(self) -> float:
         if self.position + 4 > len(self.byte_buffer):
@@ -140,12 +140,17 @@ class BaseValueParser(BinaryReaderBase):
         self.position = current_position
         return value
     
-    def read_name(self, default=None) -> str:
+    def read_name(self, default=None, is_peek=False) -> str:
         if not self.save_context.has_name_table():
             return self.read_string()
+
+        pos = self.position    
         name_id = self.read_uint32()
         name = self.save_context.get_name(name_id)
         # print(f"Reading name with id {name_id} at position {self.position}, name: {name}")
+
+        if is_peek:
+            return name if name is not None else default
 
         if name is None and default is not None:
             name = default
@@ -159,24 +164,23 @@ class BaseValueParser(BinaryReaderBase):
         if name is None:
             # ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
-            raise ValueError(f"Name is None, for name index {hex(name_id)}")
+            raise ValueError(f"Name is None, for name index {hex(name_id)} at position {pos}")
 
         if name == "NPCZoneVolume" or "NPCZoneVolume_" in name or "_NPCZoneVolume" in name or "NPCCountVolume" in name:
             return name + "_" + hex(self.read_int())
 
         always_zero = self.read_int()
 
-        if always_zero != 0:
-            # ArkSaveLogger.enable_debug = True
-            # ArkSaveLogger.open_hex_view()
-            # raise ValueError(f"Always zero is not zero: {always_zero}, for name {name}")
-            print("ERROR: Always zero is not zero:", always_zero, "for name", name)
+        no_prints = ["DontDoMaterialSpawning", "CorruptSpawnInValue", "LadderSocket"]
+        if always_zero != 0 and name not in no_prints:
+            ArkSaveLogger.warning_log(f"Always zero is not zero: {always_zero}, for name {name} at position {pos}")
         
         return name
     
-    def peek_name(self) -> str:
+    def peek_name(self, ahead: int = 0) -> str:
         pos = self.position
-        name = self.read_name()
+        self.position += ahead
+        name = self.read_name(default="", is_peek=True)
         self.position = pos
         return name
     

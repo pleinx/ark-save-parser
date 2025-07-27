@@ -13,6 +13,11 @@ from arkparse.parsing.struct.ark_rotator import ArkRotator
 from arkparse.parsing.struct.ark_vector import ArkVector
 from arkparse.parsing.struct.ark_unique_net_id_repl import ArkUniqueNetIdRepl
 from arkparse.parsing.struct.ark_vector_bool_pair import ArkVectorBoolPair
+from arkparse.parsing.struct.ark_server_custom_folder import ArkServerCustomFolder
+from arkparse.parsing.struct.ark_crafting_resource_requirement import ArkCraftingResourceRequirement
+from arkparse.parsing.struct.ark_player_death_reason import ArkPlayerDeathReason
+from arkparse.parsing.struct.ark_primal_saddle_structure import ArkPrimalSaddleStructure
+from arkparse.parsing.struct.ark_gene_trait_struct import ArkGeneTraitStruct
 from arkparse.parsing.struct.ark_tracked_actor_id_category_pair_with_bool import (
     ArkTrackedActorIdCategoryPairWithBool,
 )
@@ -72,6 +77,11 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.ArkDinoAncestor: lambda bb, ds: ArkDinoAncestorEntry(bb),
     ArkStructType.ArkIntPoint: lambda bb, ds: ArkIntPoint(bb),
     ArkStructType.ArkCustomItemData: lambda bb, ds: ArkCustomItemData(bb),
+    ArkStructType.ArkServerCustomFolder: lambda bb, ds: ArkServerCustomFolder(bb),
+    ArkStructType.ArkCraftingResourceRequirement: lambda bb, ds: ArkCraftingResourceRequirement(bb),
+    ArkStructType.ArkPlayerDeathReason: lambda bb, ds: ArkPlayerDeathReason(bb),
+    ArkStructType.ArkPrimalSaddleStructure: lambda bb, ds: ArkPrimalSaddleStructure(bb),
+    ArkStructType.ArkGeneTraitStruct: lambda bb, ds: ArkGeneTraitStruct(bb),
 }
 
 # Flags driving how a primitive value is read
@@ -240,18 +250,35 @@ class ArkProperty:
     # ---------------------------------------------------------------------------------------------
     @staticmethod
     def read_map_property(key: str, value_type_name: str, position: int, bb: "ArkBinaryParser", data_size: int) -> "ArkProperty":
+        ArkSaveLogger.parser_log(f"Reading map property {key} with value type {value_type_name} at position {position} with data size {data_size}")
         key_type = bb.read_value_type_by_name()
-        bb.validate_uint32(0)
-        value_type = bb.read_value_type_by_name()
-        count = bb.read_int()
+        struct_names = bb.read_uint32()
+        map_name = ""
 
-        map_name = bb.read_name()
-        data_size, position, read_pos = ArkProperty.__read_struct_header(bb, 0, in_array=True)
-        start_of_data = bb.get_position() - 4 if read_pos else 0
-        _ = bb.read_int()  # seems to be 1
+        if key_type == ArkValueType.Struct:
+            value_type = bb.read_name()
+        else:
+            value_type = bb.read_value_type_by_name()
+            struct_names = bb.read_int()
+            map_name = bb.read_name()
+
+        data_size, position, read_pos, _ = ArkProperty.__read_struct_header(bb, 0, in_map=True, nr_of_struct_names=struct_names)
+        start_of_data = bb.get_position() - 4
+        is_end = bb.position + data_size - 4 > bb.size()
+        if bb.peek_name() != "" or (not is_end and bb.peek_name(data_size-4) != ""):
+            ArkSaveLogger.parser_log(f"Restoring position to {start_of_data} for MapStruct")
+            bb.set_position(bb.position - 4)
+
+        map_items = bb.read_uint32()
+
+        if key_type == ArkValueType.Struct:
+            ArkSaveLogger.warning_log( f"Map with struct key type {key_type} is currently not supported, skipping")
+            bb.set_position(start_of_data + data_size)
+            return None
+        
 
         entries: List[ArkProperty] = []
-        for _ in range(count):
+        for _ in range(map_items):
             if value_type == ArkValueType.Struct:
                 entries.append(ArkProperty.read_struct_map(key_type, bb, map_name))
             else:
@@ -305,7 +332,7 @@ class ArkProperty:
         bb.set_position(bb.get_position() - 4)
         array_type = bb.read_name()
         array_items = data_size
-        _array_type_int = bb.read_int()
+        nr_of_struct_names = bb.read_int()
         array_length = None
 
         if array_type != "StructProperty":
@@ -321,8 +348,18 @@ class ArkProperty:
 
         if array_type == "StructProperty":
             array_content_type = bb.read_name()
-            data_size, position, read_pos = ArkProperty.__read_struct_header(bb, position, in_array=True)
-            data_start_position = bb.get_position() - (4 if read_pos else 0)
+            data_size, position, _, _ = ArkProperty.__read_struct_header(bb, position, in_array=True, nr_of_struct_names=nr_of_struct_names)
+            data_start_position = bb.get_position() - 4
+
+            is_end = bb.position + data_size - 4 > bb.size()
+            if bb.peek_name() != "" or (not is_end and bb.peek_name(data_size-4) != ""):
+                ArkSaveLogger.parser_log(f"Restoring position to {data_start_position} for StructProperty")
+                bb.set_position(bb.position - 4)
+
+            array_items = bb.read_uint32()
+
+            # if array_content_type == "PrimalCharacterStatusValueModifier":
+            #     ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
 
             with log_block(f"Arr({array_content_type})"):
                 ArkSaveLogger.parser_log(
@@ -340,6 +377,12 @@ class ArkProperty:
                 )
                 ArkSaveLogger.warning_log(f"Skipping to the end of the struct, type: {array_content_type}")
                 bb.set_position(data_start_position + data_size)
+                bb.structured_print(to_default_file=True)
+                input("Press Enter to continue...")
+                ArkSaveLogger.open_hex_view(True)
+
+            # if array_content_type == "PrimalCharacterStatusValueModifier":
+            #     ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
 
             return prop
 
@@ -377,59 +420,68 @@ class ArkProperty:
     # Struct reading
     # ---------------------------------------------------------------------------------------------
     @staticmethod
-    def __read_struct_header(bb: "ArkBinaryParser", position: int = 0, in_array: bool = False) -> Tuple[int, int, bool]:
+    def __read_struct_header(bb: "ArkBinaryParser", position: int = 0, in_array: bool = False, in_map: bool = False, nr_of_struct_names: int = 1) -> Tuple[int, int, bool]:
         bb.validate_uint32(1)  # V14 marker
-        _new_name = bb.read_name()
-        bb.validate_uint32(0)
+        for _ in range(nr_of_struct_names):
+            _new_name = bb.read_name()
+            bb.validate_uint32(0)
         data_size = bb.read_uint32()
         size_byte = bb.read_byte()  # V14 unknown byte
 
-        read_pos = (size_byte not in (0, 8)) or (in_array and size_byte == 0)
+        no_pos_values = [0, 8]
+        if in_array or in_map:
+            no_pos_values = []
+
+        read_pos = (size_byte not in no_pos_values)
         if read_pos:
             position = bb.read_uint32()
 
-        return data_size, position, read_pos
+        return data_size, position, read_pos, size_byte
 
     @staticmethod
     def read_struct_property(bb: "ArkBinaryParser", data_size: int, struct_type: str, in_array: bool) -> Any:
-        ArkSaveLogger.parser_log(f"Reading struct property {struct_type} with data size {data_size}")
-
         if not in_array:
             with log_block(f"S({struct_type})"):
-                data_size, position, _ = ArkProperty.__read_struct_header(bb)
+                data_size, _, _, _ = ArkProperty.__read_struct_header(bb)
                 value_position = bb.get_position()
                 return ArkProperty._read_struct_body(bb, data_size, struct_type, in_array), value_position
         else:
+            ArkSaveLogger.parser_log(f"Reading struct property {struct_type} with data size {data_size}")
             value_position = bb.get_position()
             return ArkProperty._read_struct_body(bb, data_size, struct_type, in_array), value_position
 
     @staticmethod
     def _read_struct_body(bb: "ArkBinaryParser", data_size: int, struct_type: str, in_array: bool) -> Any:
         ark_struct_type = ArkStructType.from_type_name(struct_type)
-
-        if ark_struct_type or in_array:
+        
+        if (ark_struct_type is not None) or in_array:
+            if in_array and bb.peek_name() == "None":
+                ArkSaveLogger.parser_log("Exiting struct (None marker)")
+                return bb.read_name()
             if data_size <= 4:
+                ArkSaveLogger.parser_log(f"Reading struct {struct_type} as primitive value")
                 return None
             if ark_struct_type in _STRUCT_READERS:
+                ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size}")
                 return _STRUCT_READERS[ark_struct_type](bb, data_size)
-            if ark_struct_type is None:
-                return None
             if in_array:
-                if bb.peek_name() == "None":
-                    return bb.read_name()
-                ArkSaveLogger.enable_debug = True
-                ArkSaveLogger.open_hex_view(True)
-                raise ValueError(f"Unsupported struct type {ark_struct_type}")
+                ArkSaveLogger.warning_log(f"Unsupported struct type {struct_type} in array")
+                # uncomment the lines below if you want to make objects of unknown structs
+                # ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
+                # bb.structured_print(to_default_file=True)
+                # ArkSaveLogger.error_log(f"Unsupported struct type {struct_type} in array")
+                # ArkSaveLogger.open_hex_view(True)
+                # raise ValueError(f"Unsupported struct type {struct_type}")
 
+        ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size} as property list")
         # Fallback: struct as property list
         position = bb.get_position()
         props = ArkProperty.read_struct_properties(bb)
         if bb.get_position() != position + data_size and not in_array:
-            if not ArkSaveLogger.suppress_warnings:
-                print("WARNING: Struct reading position mismatch for type", struct_type)
-                print(
-                    f"StructType: {struct_type}, DataSize: {data_size}, Position: {position}, CurrentPosition: {bb.get_position()}"
-                )
+            ArkSaveLogger.warning_log("WARNING: Struct reading position mismatch for type", struct_type)
+            ArkSaveLogger.warning_log(
+                f"StructType: {struct_type}, DataSize: {data_size}, Position: {position}, CurrentPosition: {bb.get_position()}"
+            )
             bb.set_position(position + data_size)
         return props
 
@@ -481,4 +533,4 @@ class ArkProperty:
     def _fixup_if_left(bb: "ArkBinaryParser", start: int, size: int, label: str) -> None:
         if bb.get_position() != start + size:
             remaining = bb.read_bytes(start + size - bb.get_position())
-            ArkSaveLogger.parser_log(f"{label} read incorrectly, bytes left to read:", remaining)
+            ArkSaveLogger.parser_log(f"{label} read incorrectly, bytes left to read: {remaining}")
