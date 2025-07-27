@@ -26,7 +26,7 @@ class PropertyReplacer(PropertyInsertor):
                 cur_pos = self.read_uint32()
                 # print(f"Found property: {name} at {self.position-8} (position {cur_pos})")
                 if cur_pos == position:
-                    ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                    ArkSaveLogger.parser_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                     self.set_position(i)
                     return i
                 cur_pos += 1

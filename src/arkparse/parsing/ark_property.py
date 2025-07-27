@@ -48,7 +48,7 @@ def log_block(title: str):
 
 
 def log_property_read(key: str, vtype: ArkValueType, start_pos: int, data_size: int, value: Any, position: int) -> None:
-    ArkSaveLogger.debug_log(
+    ArkSaveLogger.parser_log(
         f"[property read: key={key}; type={vtype}; bin_pos={start_pos}; bin_size={data_size}; value={value}; index_pos={position}]"
     )
 
@@ -143,7 +143,7 @@ class ArkProperty:
         key = byte_buffer.read_name()
 
         if key is None or key == "None":
-            ArkSaveLogger.debug_log("Exiting struct (None marker)")
+            ArkSaveLogger.parser_log("Exiting struct (None marker)")
             ArkSaveLogger.exit_struct()
             return None
 
@@ -153,7 +153,7 @@ class ArkProperty:
         start_data_position = byte_buffer.get_position()
 
         if value_type in _LOGGABLE_COMPLEX:
-            ArkSaveLogger.debug_log(
+            ArkSaveLogger.parser_log(
                 f"[prop={key};  type={value_type}; bin_pos={start_data_position}; size={data_size}; index_pos={position}]"
             )
 
@@ -231,7 +231,7 @@ class ArkProperty:
         _enum_byte_size = bb.read_byte()
         bb.validate_uint32(0)
         enum_name = bb.read_name()
-        ArkSaveLogger.debug_log(f"[ENUM: key={key}; value={ArkEnumValue(enum_name)}; start_pos={pre_read_pos}]")
+        ArkSaveLogger.parser_log(f"[ENUM: key={key}; value={ArkEnumValue(enum_name)}; start_pos={pre_read_pos}]")
         value_position = bb.get_position()
         return ArkProperty(key, ArkValueType.Enum, position, data_size, ArkEnumValue(enum_name)), value_position
 
@@ -292,8 +292,8 @@ class ArkProperty:
         if start_of_data + data_size != bb.get_position():
             print("Set read incorrectly, bytes left to read, expected:", start_of_data + data_size - bb.get_position())
 
-        ArkSaveLogger.debug_log(f"Read set property {key} with {count} values of type {value_type_name}")
-        ArkSaveLogger.debug_log(f"Set values: {values}")
+        ArkSaveLogger.parser_log(f"Read set property {key} with {count} values of type {value_type_name}")
+        ArkSaveLogger.parser_log(f"Set values: {values}")
 
         prop = ArkProperty(key, value_type_name, position, 0, ArkSet(value_type, values))
     
@@ -325,7 +325,7 @@ class ArkProperty:
             data_start_position = bb.get_position() - (4 if read_pos else 0)
 
             with log_block(f"Arr({array_content_type})"):
-                ArkSaveLogger.debug_log(
+                ArkSaveLogger.parser_log(
                     f"[STRUCT ARRAY: key='none'; nr_of_value={array_items}; type={array_content_type}; bin_length={data_size}]"
                 )
                 struct_array = [
@@ -345,7 +345,7 @@ class ArkProperty:
 
         # Value array branch
         with log_block(f"Arr({array_type})"):
-            ArkSaveLogger.debug_log(
+            ArkSaveLogger.parser_log(
                 f"[VALUE ARRAY: key={key}; nr_of_values={array_length}; type={array_type}]"
             )
 
@@ -363,13 +363,13 @@ class ArkProperty:
 
                 if array_type != "ByteProperty":
                     for i, v in enumerate(values):
-                        ArkSaveLogger.debug_log(f"value {i}: {v}")
+                        ArkSaveLogger.parser_log(f"value {i}: {v}")
                 else:
-                    ArkSaveLogger.debug_log(f"Array value: {values}")
+                    ArkSaveLogger.parser_log(f"Array value: {values}")
 
                 prop = ArkProperty(key, type_, position, end_of_struct, values)
 
-        ArkSaveLogger.debug_log(f"============ END Arr({array_type}) ============")
+        ArkSaveLogger.parser_log(f"============ END Arr({array_type}) ============")
         
         return prop
 
@@ -392,7 +392,7 @@ class ArkProperty:
 
     @staticmethod
     def read_struct_property(bb: "ArkBinaryParser", data_size: int, struct_type: str, in_array: bool) -> Any:
-        ArkSaveLogger.debug_log(f"Reading struct property {struct_type} with data size {data_size}")
+        ArkSaveLogger.parser_log(f"Reading struct property {struct_type} with data size {data_size}")
 
         if not in_array:
             with log_block(f"S({struct_type})"):
@@ -438,7 +438,7 @@ class ArkProperty:
         props: List[ArkProperty] = []
         struct_property = ArkProperty.read_property(bb)
         if struct_property is not None:
-            ArkSaveLogger.debug_log(
+            ArkSaveLogger.parser_log(
                 f"Struct properties: {struct_property.name} {struct_property.type} {struct_property.value}"
             )
         while struct_property:
@@ -446,13 +446,13 @@ class ArkProperty:
             if bb.has_more():
                 struct_property = ArkProperty.read_property(bb)
                 if struct_property is not None:
-                    ArkSaveLogger.debug_log(
+                    ArkSaveLogger.parser_log(
                         f"Struct properties: {struct_property.name} {struct_property.type} {struct_property.value}"
                     )
             else:
                 break
 
-        ArkSaveLogger.debug_log(f"Read {len(props)} struct properties")
+        ArkSaveLogger.parser_log(f"Read {len(props)} struct properties")
         return ArkPropertyContainer(props)
 
     # ---------------------------------------------------------------------------------------------
@@ -474,11 +474,11 @@ class ArkProperty:
         with log_block("SfO"):
             obj_name = bb.read_name()
             bb.validate_bytes_as_string("00 00 00 00", 4)
-            ArkSaveLogger.debug_log(f"Read soft object property {obj_name}")
+            ArkSaveLogger.parser_log(f"Read soft object property {obj_name}")
             return obj_name
 
     @staticmethod
     def _fixup_if_left(bb: "ArkBinaryParser", start: int, size: int, label: str) -> None:
         if bb.get_position() != start + size:
             remaining = bb.read_bytes(start + size - bb.get_position())
-            ArkSaveLogger.debug_log(f"{label} read incorrectly, bytes left to read:", remaining)
+            ArkSaveLogger.parser_log(f"{label} read incorrectly, bytes left to read:", remaining)

@@ -276,7 +276,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 raise ValueError(f"{self.save_context.get_name(self.read_uint32())}: Name {name} not found in save context, ensure it is present before generating object")
             self.replace_bytes(name_id.to_bytes(length=4, byteorder='little'), position=int(position))
 
-            ArkSaveLogger.debug_log(f"Replaced name id at position {position} with {hex(name_id)} for name {name}")
+            ArkSaveLogger.parser_log(f"Replaced name id at position {position} with {hex(name_id)} for name {name}")
 
     def read_part(self) -> str:
         part_index = self.read_int()
@@ -289,7 +289,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         return [self.read_uuid() for _ in range(uuid_count)]
 
     
-    def find_names(self, no_print=False):
+    def find_names(self, no_print=False, type=0):
         if not self.save_context.has_name_table():
             return []
         
@@ -298,7 +298,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         prints = 0
 
         if not no_print:
-            ArkSaveLogger.debug_log("--- Looking for names ---")
+            ArkSaveLogger.parser_log("--- Looking for names ---")
         found = {}
         for i in range(self.size() - 4):
             self.set_position(i)
@@ -310,7 +310,13 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 self.set_position(i)
                 if prints < max_prints:
                     if not no_print:
-                        ArkSaveLogger.debug_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                        message = f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})"
+                        if type == 0:
+                            ArkSaveLogger.parser_log(message)
+                        elif type == 1:
+                            ArkSaveLogger.warning_log(message)
+                        elif type == 2:
+                            ArkSaveLogger.error_log(message)
                     prints += 1
                 i += 3  # Adjust index to avoid overlapping reads
         self.set_position(original_position)
@@ -322,7 +328,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #     max_prints = 75
     #     prints = 0
 
-    #     ArkSaveLogger.debug_log("--- Looking for byte sequence ---")
+    #     ArkSaveLogger.parser_log("--- Looking for byte sequence ---")
     #     found = []
     #     for i in range(self.size() - len(bytes)):
     #         self.set_position(i)
@@ -330,12 +336,13 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #             found.append(i)
     #             self.set_position(i)
     #             if prints < max_prints:
-    #                 ArkSaveLogger.debug_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
+    #                 ArkSaveLogger.parser_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
     #                 prints += 1
     #     self.set_position(original_position)
     #     return found
 
-    def find_byte_sequence(self, pattern: bytes) -> List[int]:
+    def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1) -> List[int]:
+        # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
         original_position = self.get_position()
         max_prints = 20
         prints = 0
@@ -347,10 +354,10 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             pos = buffer.find(pattern)
             if pos == -1:
                 break
-            found.append(pos + cur_offset - 1)
+            found.append(pos + cur_offset + adjust_offset)
             if prints < max_prints:
-                ArkSaveLogger.debug_log(
-                    f"Found byte sequence at {pos + cur_offset - 1}"
+                ArkSaveLogger.parser_log(
+                    f"Found byte sequence at {pos + cur_offset + adjust_offset}"
                 )
                 prints += 1
             buffer = buffer[pos + 1:]

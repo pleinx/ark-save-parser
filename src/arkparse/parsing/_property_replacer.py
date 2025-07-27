@@ -36,12 +36,12 @@ class PropertyReplacer(PropertyInsertor):
                 # print("Reading pos at", self.position)
                 # print(f"Found property: {name} at {self.position-8} (position {cur_pos})")
                 if cur_pos == occurrence_index:
-                    ArkSaveLogger.debug_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                    ArkSaveLogger.parser_log(f"Found property: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                     self.set_position(i)
                     return i
                 i += 16
                 cur_pos += 1
-        ArkSaveLogger.debug_log(f"Property {property_name} not found, returning position {self.position}")
+        ArkSaveLogger.parser_log(f"Property {property_name} not found, returning position {self.position}")
         return None   
 
     def replace_string(self, property : ArkProperty, value: str):

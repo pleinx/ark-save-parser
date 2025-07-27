@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 from typing import List, Dict
 from datetime import datetime
+from arkparse.logging import ArkSaveLogger
 import re
 import threading
 import uuid
@@ -162,7 +163,7 @@ class RconApi:
             with source.Client(self.host, self.port, passwd=self.password, timeout=3) as rcon:
                 return rcon.run(cmd)
         except Exception as e:
-            print(f"Failed to send command: {e}")
+            ArkSaveLogger.error_log(f"Failed to send command: {e}")
             return None
         
     def send_message(self, message: str):
@@ -240,7 +241,7 @@ class RconApi:
                         if not line:
                             continue
                         if ":" not in line:
-                            print(f"Skipping malformed line {line_number}: '{line}'")
+                            ArkSaveLogger.warning_log(f"Malformed line {line_number}: '{line}'")
                             continue
                         time_str, message = line.split(":", 1)
                         time_str = time_str.strip()
@@ -257,8 +258,10 @@ class RconApi:
                 if self.game_log:
                     self.last_game_log_entry = self.game_log[-1]
             except FileNotFoundError:
+                ArkSaveLogger.warning_log(f"Log file '{path}' not found.")
                 raise FileNotFoundError(f"Log file '{path}' not found.")
             except Exception as e:
+                ArkSaveLogger.error_log(f"An error occurred while importing the log: {e}")
                 raise ValueError(f"An error occurred while importing the log: {e}")
     
     def export_log(self, path: Path):

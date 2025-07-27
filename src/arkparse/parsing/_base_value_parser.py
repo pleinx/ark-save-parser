@@ -66,7 +66,7 @@ class BaseValueParser(BinaryReaderBase):
 
         result = ""
         if is_multi_byte:
-            ArkSaveLogger.debug_log(f"Reading multi-byte string of length {abs_length}")
+            ArkSaveLogger.parser_log(f"Reading multi-byte string of length {abs_length}")
             # ArkSaveLogger.open_hex_view(True)
             for _ in range(abs_length - 1):
                 result += self.read_bytes(1).decode('utf-8', errors='ignore')
@@ -150,7 +150,7 @@ class BaseValueParser(BinaryReaderBase):
         if name is None and default is not None:
             name = default
             # print(f"Name with id {name_id} not found, using default: {name}")
-            ArkSaveLogger.debug_log(f"Name with id {name_id} not found, using default: {name}")
+            ArkSaveLogger.parser_log(f"Name with id {name_id} not found, using default: {name}")
 
         if name is None and self.save_context.generate_unknown:
             name = f"UnknownName_{name_id:08X}"

@@ -25,7 +25,7 @@ class ArkItemNetId:
         self.id2 = byte_buffer.read_uint32()
         byte_buffer.validate_name("None")
 
-        ArkSaveLogger.debug_log(f"ArkItemNetId: {self.id1}, {self.id2}")
+        ArkSaveLogger.parser_log(f"ArkItemNetId: {self.id1}, {self.id2}")
 
 
     def replace(self, byte_buffer: "ArkBinaryParser", new_id1: int = None, new_id2: int = None):

@@ -214,7 +214,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         max_prints = 150
         prints = 0
 
-        ArkSaveLogger.debug_log("--- Looking for names ---")
+        ArkSaveLogger.parser_log("--- Looking for names ---")
         found = {}
         for i in range(self.size() - 4):
             self.set_position(i)
@@ -225,7 +225,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 found[i] = name
                 self.set_position(i)
                 if prints < max_prints:
-                    ArkSaveLogger.debug_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                    ArkSaveLogger.parser_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
                     prints += 1
                 i += 3  # Adjust index to avoid overlapping reads
         self.set_position(original_position)
@@ -238,7 +238,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #     max_prints = 75
     #     prints = 0
 
-    #     ArkSaveLogger.debug_log("--- Looking for byte sequence ---")
+    #     ArkSaveLogger.parser_log("--- Looking for byte sequence ---")
     #     found = []
     #     for i in range(self.size() - len(bytes)):
     #         self.set_position(i)
@@ -246,7 +246,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #             found.append(i)
     #             self.set_position(i)
     #             if prints < max_prints:
-    #                 ArkSaveLogger.debug_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
+    #                 ArkSaveLogger.parser_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
     #                 prints += 1
     #     self.set_position(original_position)
     #     return found
@@ -264,7 +264,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 break
             found.append(pos)
             if prints < max_prints:
-                ArkSaveLogger.debug_log(
+                ArkSaveLogger.parser_log(
                     f"Found byte sequence at {pos}"
                 )
                 prints += 1

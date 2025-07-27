@@ -166,13 +166,13 @@ class EquipmentApi(GeneralApi):
         equipment: Equipment = eq_class_.generate_from_template(blueprint, self.save, is_bp=is_bp)
 
         if from_rating:
-            print(f"from rating {min_value} to {max_value} for {master_stat}")
+            # print(f"from rating {min_value} to {max_value} for {master_stat}")
             min_value = equipment.get_stat_for_rating(master_stat, min_value)
             max_value = equipment.get_stat_for_rating(master_stat, max_value)
 
-        print(f"Generating {equipment.class_name} {blueprint} with {master_stat} in range [{min_value}, {max_value}] (is_bp={is_bp})")
+        # print(f"Generating {equipment.class_name} {blueprint} with {master_stat} in range [{min_value}, {max_value}] (is_bp={is_bp})")
         range_min, range_max = self.__get_internal_value_range(equipment, master_stat, min_value, max_value)
-        print(f"Internal value range for {master_stat} is [{range_min}, {range_max}]")
+        # print(f"Internal value range for {master_stat} is [{range_min}, {range_max}]")
         
         if normal_distribution:
             mu = (range_min + range_max) / 2

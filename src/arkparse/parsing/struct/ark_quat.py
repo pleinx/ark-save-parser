@@ -18,4 +18,4 @@ class ArkQuat:
         self.z = byte_buffer.read_double()
         self.w = byte_buffer.read_double()
 
-        ArkSaveLogger.debug_log(f"Read ArkQuat: x={self.x}, y={self.y}, z={self.z}, w={self.w}")
+        ArkSaveLogger.parser_log(f"Read ArkQuat: x={self.x}, y={self.y}, z={self.z}, w={self.w}")

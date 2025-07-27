@@ -44,7 +44,7 @@ class ArkCustomItemData:
     def __init__(self, ark_binary_data: "ArkBinaryParser"):
         total_size = self.__read_header(ark_binary_data)
         data_start = ark_binary_data.position
-        ArkSaveLogger.debug_log(f"Reading CustomItemData at position {data_start}, expected size: {total_size} bytes")
+        ArkSaveLogger.parser_log(f"Reading CustomItemData at position {data_start}, expected size: {total_size} bytes")
 
         self._read_arrays(ark_binary_data)
 
@@ -64,22 +64,22 @@ class ArkCustomItemData:
 
         ark_binary_data.validate_name("None")        
 
-        ArkSaveLogger.debug_log(f"CustomItemData of type {self.custom_data_name} read successfully, total size: {total_size} bytes")
+        ArkSaveLogger.parser_log(f"CustomItemData of type {self.custom_data_name} read successfully, total size: {total_size} bytes")
         for string in self.strings:
-            ArkSaveLogger.debug_log(f"String: {string}")
+            ArkSaveLogger.parser_log(f"String: {string}")
         for obj in self.objects:
-            ArkSaveLogger.debug_log(f"Object: {obj}")
+            ArkSaveLogger.parser_log(f"Object: {obj}")
         for double in self.doubles:
-            ArkSaveLogger.debug_log(f"Double: {double}")
+            ArkSaveLogger.parser_log(f"Double: {double}")
         for float_value in self.floats:
-            ArkSaveLogger.debug_log(f"Float: {float_value}")
+            ArkSaveLogger.parser_log(f"Float: {float_value}")
         for name in self.names:
-            ArkSaveLogger.debug_log(f"Name: {name}")
+            ArkSaveLogger.parser_log(f"Name: {name}")
 
     def __read_header(self, ark_binary_data: "ArkBinaryParser"):
         ark_binary_data.read_uint32()  # size of the data in bytes
         total_size = self.__read_struct_start(ark_binary_data, "CustomDataBytes", "CustomItemByteArrays")
-        ArkSaveLogger.debug_log(f"CustomItemData total size: {total_size} bytes")
+        ArkSaveLogger.parser_log(f"CustomItemData total size: {total_size} bytes")
 
         return total_size
     

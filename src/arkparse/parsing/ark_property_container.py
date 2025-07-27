@@ -27,17 +27,17 @@ class ArkPropertyContainer:
                     # last property read and was None marker
                     break
                 # else:
-                #     ArkSaveLogger.debug_log(f"Base property read, binary index is {byte_buffer.get_position()} value is {ark_property.value}")
+                #     ArkSaveLogger.parser_log(f"Base property read, binary index is {byte_buffer.get_position()} value is {ark_property.value}")
 
                 self.properties.append(ark_property)
 
         except Exception as e:
             byte_buffer.set_position(last_property_position)
-            ArkSaveLogger.debug_log(f"Error reading properties at position {last_property_position}: {e}")
-            byte_buffer.find_names()
+            ArkSaveLogger.error_log(f"Error reading properties at position {last_property_position}: {e}")
+            byte_buffer.find_names(type=2)
             raise e
         
-        ArkSaveLogger.debug_log("Finished reading object properties")
+        ArkSaveLogger.parser_log("Finished reading object properties")
 
     def print_properties(self):
         for property in self.properties:

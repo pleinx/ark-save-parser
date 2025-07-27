@@ -26,7 +26,7 @@ class ArkPlayer:
 
     _archive: ArkArchive
     persistent_buffs : List[PersistentBuffData]
-    location: ActorTransform
+    location: ActorTransform = None
     inventory: Inventory
 
     name: str

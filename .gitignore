@@ -172,3 +172,4 @@ out/*
 /*.ark
 test_saves/*
 temp
+src/binary-reader

@@ -97,6 +97,8 @@ class EquipmentWithDurability(Equipment):
             return 40
         elif bp == Weapons.gathering.fishing_rod:
             return 40
+        elif bp == Misc.climb_pick:
+            return 65
         else:
             print(f"WARNING: No durability found for {bp}")
             return 1
