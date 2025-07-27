@@ -14,7 +14,8 @@ import sys
 
 # Args
 parser = argparse.ArgumentParser(description="")
-parser.add_argument("--map", type=str, required=True, help="MapName e.g. Aberration_WP")
+parser.add_argument("--savegame", type=str, required=True, help="MapName e.g. Aberration_WP")
+parser.add_argument("--output", type=str, required=True, help="MapName e.g. Aberration_WP")
 args = parser.parse_args()
 
 # Mapping for custom JSON stat keys
@@ -42,7 +43,7 @@ MAP_NAME_MAPPING = {
 }
 
 # Load ASA save
-save_path = Path(f"D:/Projects/ark-save-parser.fork/temp/{args.map}/{args.map}.ark")
+save_path = Path(f"{args.savegame}")
 if not save_path.exists():
     raise FileNotFoundError(f"Save file not found at: {save_path}")
 
@@ -50,8 +51,10 @@ save = AsaSave(save_path)
 
 # Extract map name
 map_folder = save_path.parent.name
-map_name = map_folder.replace("_WP", "")
-export_folder = Path(f"D:/Projects/ark-save-parser.fork/temp/ASV_Export/{map_folder}")
+# Extract map name from file
+map_name = save_path.stem  # e.g 'Aberration_WP'
+
+export_folder = Path(f"{args.output}/{map_folder}")
 export_folder.mkdir(parents=True, exist_ok=True)
 json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
@@ -76,7 +79,7 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     lat, lon = (0.0, 0.0)
     ccc = ""
     if not dino.is_cryopodded and dino.location:
-        coords = dino.location.as_map_coords(MAP_NAME_MAPPING.get(args.map))
+        coords = dino.location.as_map_coords(MAP_NAME_MAPPING.get(map_name))
         if(coords):
             lat = coords.lat
             lon = coords.long
@@ -140,38 +143,34 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
         "food-t": stats_entry["food-t"],
         "oxy-t": stats_entry["oxy-t"],
         "craft-t": stats_entry["craft-t"],
-        "c0": "1", # TODO
-        "c1": "1", # TODO
-        "c2": "1", # TODO
-        "c3": "1", # TODO
-        "c4": "1", # TODO
-        "c5": "1", # TODO
+        "c0": "",
+        "c1": "",
+        "c2": "",
+        "c3": "",
+        "c4": "",
+        "c5": "",
         "mut-f": dino.stats.mutated_stat_points.get_level(),
         "mut-m": dino.stats.mutated_stat_points.get_level(),
         "cryo": dino.is_cryopodded,
         "ccc": ccc,
         "dinoid": str(dino_id),
-        "isMating": False,      # TODO
-        "isNeutered": False,    # TODO
-        "isClone": False,       # TODO
-        "tamedServer": dino.get_uploaded_from_server_name(),    # TODO
+        "isMating": False,
+        "isNeutered": False,
+        "isClone": False,
+        "tamedServer": dino.get_uploaded_from_server_name(),
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": "100", # TODO
-        "traits": [],        # TODO
-        "inventory": []      # TODO
+        "maturation": "",
+        "traits": [],
+        "inventory": []
     }
 
     tamed_dinos.append(entry)
 
-# EXPORT as JSON
+# EXPORT
 json_data = {
     "map": map_folder,
     "data": tamed_dinos
 }
-
-# Delete JSON before exporting
-if json_output_path.exists():
-    json_output_path.unlink()
 
 with open(json_output_path, "w", encoding="utf-8") as f:
     json.dump(json_data, f, ensure_ascii=False, indent=2)

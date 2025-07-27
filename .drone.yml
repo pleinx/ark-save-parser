@@ -1,0 +1,25 @@
+kind: pipeline
+type: docker
+name: ark-save-parser
+
+trigger:
+  event:
+    - push
+  branch:
+    - main
+
+steps:
+  - name: Install & Run Parser for All Saves
+    image: python:3.11-slim
+    environment:
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - name: docker_socket
+        path: /var/run/docker.sock
+    commands:
+      - echo helloFromDocker
+
+volumes:
+  - name: docker_socket
+    host:
+      path: /var/run/docker.sock
