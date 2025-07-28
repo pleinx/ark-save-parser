@@ -30,26 +30,26 @@ class ArkArchive:
         if save_context.save_version != 7:
             old_save = True
             propertyClass = LegacyArkProperty
-            ArkSaveLogger.debug_log(f"Detected old save format (pre Unreal 5.5), using legacy parser")
+            ArkSaveLogger.parser_log(f"Detected old save format (pre Unreal 5.5), using legacy parser")
             data_offset = 8 if from_store else 0
             self.data = LegacyArkBinaryParser(file.read_bytes()[data_offset:], save_context)
             save_context.save_version = self.data.read_int()
         
-        ArkSaveLogger.debug_log(f"Archive version: {save_context.save_version}")
+        ArkSaveLogger.parser_log(f"Archive version: {save_context.save_version}")
 
         # Parse 5.5 specific data
         if not old_save:
             # For Unreal 5.5 there are 2 extra 32-bit integers here
             extra1 = self.data.read_int()
             extra2 = self.data.read_int()
-            ArkSaveLogger.debug_log(f"5.5 specific extra data read: {extra1}, {extra2}")
+            ArkSaveLogger.parser_log(f"5.5 specific extra data read: {extra1}, {extra2}")
 
         # Read the number of objects in the archive
         count = self.data.read_int()        
 
         for _ in range(count):
             self.objects.append(ArkObject.from_reader(self.data))
-        ArkSaveLogger.debug_log(f"Read {len(self.objects)} objects from archive (expected={count})")
+        ArkSaveLogger.parser_log(f"Read {len(self.objects)} objects from archive (expected={count})")
 
         if len(self.objects) == 0:
             ArkSaveLogger.open_hex_view(True)
@@ -59,7 +59,7 @@ class ArkArchive:
             ArkSaveLogger.enter_struct(obj.class_name.split(".")[-1])
             extra_offset = 0 if old_save else 1 # Don't quite remember why this is? TBD to find out
             self.data.set_position(obj.properties_offset + extra_offset)
-            ArkSaveLogger.debug_log(f"Reading properties for object \'{obj.class_name}\' at {self.data.get_position()}")
+            ArkSaveLogger.parser_log(f"Reading properties for object \'{obj.class_name}\' at {self.data.get_position()}")
 
             next_object_index = self.data.size()
             if i + 1 < len(self.objects):

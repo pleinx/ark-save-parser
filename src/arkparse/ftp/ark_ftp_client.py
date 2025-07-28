@@ -7,6 +7,7 @@ from pathlib import Path
 import json
 
 from arkparse.enums import ArkMap
+from arkparse.logging import ArkSaveLogger
 
 SAVE_FILES_LOCATION = ["arksa", "ShooterGame", "Saved", "SavedArks"]
 INI_FOLDER_LOCATION = ["arksa", "ShooterGame", "Saved", "Config", "WindowsServer"]
@@ -189,10 +190,10 @@ class ArkFtpClient:
 
         except ftplib.error_perm as e:
             error_message = f"Permission error: {e}"
-            print('    ' * indent + f"    {error_message}")
+            ArkSaveLogger.warning_log(f"Permission error: {e}")
         except Exception as e:
             error_message = f"Unexpected error: {e}"
-            print('    ' * indent + f"    {error_message}")
+            ArkSaveLogger.error_log(f"Unexpected error: {e}")
 
     def list_all_profile_files(self, map: ArkMap = None):
         map: dict = self._check_map(map)
@@ -254,6 +255,15 @@ class ArkFtpClient:
             local_file = output_directory / file_name
             self.download_file(file_name, local_file)
             return local_file
+        
+    def remove_save_file(self, map: ArkMap = None):
+        map: dict = self._check_map(map)
+        self.__nav_to_save_files(map)
+        file_name = map["folder"] + SAVE_FOLDER_EXTENSION + SAVE_FILE_EXTENSION
+        try:
+            self.ftp.delete(file_name)
+        except ftplib.error_perm as e:
+            raise RuntimeError(f"Failed to remove save file {file_name}: {e}")
         
     def upload_save_file(self, path: Path = None, file_contents: bytes = None, map: ArkMap = None):
         if path is not None:

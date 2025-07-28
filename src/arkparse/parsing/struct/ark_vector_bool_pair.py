@@ -33,7 +33,7 @@ class ArkVectorBoolPair:
 
         byte_buffer.validate_string("None")
 
-        ArkSaveLogger.debug_log(
+        ArkSaveLogger.parser_log(
             f"Read vector bool pair {self.vector} {self.vector}")
 
     def __str__(self):

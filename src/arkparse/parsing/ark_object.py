@@ -49,7 +49,7 @@ class ArkObject(ArkPropertyContainer):
         properties_offset = reader.read_int()
         reader.validate_uint32(0)
 
-        ArkSaveLogger.debug_log(f"Read ArkObject: {class_name} with UUID {uuid} at offset {properties_offset}")
+        ArkSaveLogger.parser_log(f"Read ArkObject: {class_name} with UUID {uuid} at offset {properties_offset}")
 
         return cls(
             uuid=uuid,

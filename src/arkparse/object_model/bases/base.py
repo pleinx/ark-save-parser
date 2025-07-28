@@ -109,7 +109,7 @@ class Base:
             # ArkSaveLogger.enable_debug = False  
 
             if not space_available:
-                print(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
+                # print(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
                 break
 
     def pad_turret_ammo(self, nr_of_stacks: int, save: AsaSave):

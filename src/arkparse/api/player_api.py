@@ -46,7 +46,7 @@ class _TribeAndPlayerData:
         self.player_data_pointers: List[int] = []
         ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
         self.initialize_data()
-        ArkSaveLogger.debug_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
+        ArkSaveLogger.api_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
 
     def initialize_data(self) -> None:
         # Read initial flag (unused)
@@ -63,7 +63,7 @@ class _TribeAndPlayerData:
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             uuid_pos = self.data.find_byte_sequence(uuid_bytes)
-            ArkSaveLogger.debug_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
+            ArkSaveLogger.api_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
             self.tribe_data_pointers.append([uuid_bytes, offset+1, size])
@@ -82,7 +82,7 @@ class _TribeAndPlayerData:
             last_none = self.get_last_none_before(nones, next_player_data)
             end_pos = last_none + 4
             size = end_pos - offset
-            ArkSaveLogger.debug_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
+            ArkSaveLogger.api_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
             self.player_data_pointers.append([uuid_bytes, offset, size+1])
 
     def get_last_none_before(self, nones: List[int], pos: int = None):
@@ -138,11 +138,11 @@ class PlayerApi:
 
         self.from_store = True
         if save.profile_data_in_saves() == False:
-            ArkSaveLogger.debug_log("Profile data not found in save, checking database")
+            ArkSaveLogger.api_log("Profile data not found in save, checking database")
             self.from_store = False
 
         if self.save is not None:
-            ArkSaveLogger.debug_log(f"Retrieving player pawns")
+            ArkSaveLogger.api_log(f"Retrieving player pawns")
             self.__init_pawns()
 
         if self.from_store:
@@ -151,21 +151,21 @@ class PlayerApi:
             self.get_files_from_directory(save.save_dir)
 
         if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not self.from_store:
-            ArkSaveLogger.debug_log("No profile or tribe data found")
+            ArkSaveLogger.api_log("No profile or tribe data found")
         else:
-            ArkSaveLogger.debug_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
+            ArkSaveLogger.api_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
 
-        ArkSaveLogger.debug_log("Parsing player and tribe data from files")
+        ArkSaveLogger.api_log("Parsing player and tribe data from files")
         self.__update_files()
 
     def __del__(self):
-        ArkSaveLogger.debug_log("Stopping PlayerApi")
+        ArkSaveLogger.api_log("Stopping PlayerApi")
         self.players = {}
         self.tribes = {}
         self.tribe_to_player_map = {}
         self.pawns = {}
         self.save = None
-        ArkSaveLogger.debug_log("PlayerApi stopped")
+        ArkSaveLogger.api_log("PlayerApi stopped")
 
     def __init_pawns(self):
         if self.save is not None:
@@ -217,7 +217,7 @@ class PlayerApi:
                 player: ArkPlayer = ArkPlayer(path, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
-                    print(f"Skipping player data {path} due to unsupported archive version: {e}")
+                    ArkSaveLogger.warning_log(f"Skipping player data {path} due to unsupported archive version: {e}")
                     continue
                 if self.ignore_error:
                     continue
@@ -225,7 +225,7 @@ class PlayerApi:
 
             # latest is newest??
             if player.id_ in new_players:
-                ArkSaveLogger.debug_log(f"Player with ID {player.id_} already exists, taking latest.")
+                ArkSaveLogger.api_log(f"Player with ID {player.id_} already exists, taking latest.")
            
             new_players[player.id_] = player
 
@@ -245,7 +245,7 @@ class PlayerApi:
                 tribe: ArkTribe = ArkTribe(path, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
-                    print(f"Skipping player data {path} due to unsupported archive version: {e}")
+                    ArkSaveLogger.warning_log(f"Skipping player data {path} due to unsupported archive version: {e}")
                     continue
                 if self.ignore_error:
                     continue
@@ -261,11 +261,11 @@ class PlayerApi:
                         found = p
         
                 if found is None:
-                    ArkSaveLogger.debug_log(f"Player with ID {id} not found in player list")
+                    ArkSaveLogger.api_log(f"Player with ID {id} not found in player list")
 
             # latest is newest??
             if tribe.tribe_id in new_tribes:
-                ArkSaveLogger.debug_log(f"Tribe with ID {tribe.tribe_id} already exists, taking latest.")
+                ArkSaveLogger.api_log(f"Tribe with ID {tribe.tribe_id} already exists, taking latest.")
                 # print(f"Tribe {tribe.name} with ID {tribe.tribe_id} already exists, taking latest.")
                 
             new_tribes[tribe.tribe_id] = tribe
@@ -440,7 +440,8 @@ class PlayerApi:
         
         self.__check_pawns(save)
         pawn = self.get_player_pawn(player, self.save)
-        player.get_location_and_inventory(save, pawn)
+        if pawn is not None:
+            player.get_location_and_inventory(save, pawn)
 
         return player.location
 

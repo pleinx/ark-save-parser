@@ -116,10 +116,7 @@ class Structure(ParsedObjectBase):
     def store_binary(self, path: Path, loc_only=False, prefix: str = "str_"):
         if not loc_only:
             super().store_binary(path, prefix=prefix)
-        
-        loc_path = path / ("loc_" + str(self.object.uuid) + ".json")
-        with open(loc_path, "w") as f:
-            f.write(json.dumps(self.object.location.as_json(), indent=4))
+        self.location.store_json(path, self.object.uuid)
 
     def __str__(self):
         return f"Structure ({self.get_short_name()}): owned by {self.owner.player_name} {self.current_health}/{self.max_health} {self.location}"

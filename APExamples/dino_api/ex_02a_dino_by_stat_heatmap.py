@@ -44,5 +44,5 @@ for key, dino in dinos.items():
 # Dino(type=Arthro_Character_BP_Aberrant, lv=140): (91.97, 50.07) melee_damage=36
 # Dino(type=Arthro_Character_BP_Aberrant, lv=150): (82.31, 68.03) health=39 food=35 melee_damage=35
 
-heatmap = dino_api.create_heatmap(dinos=dinos) # create a heatmap of the dinos
-draw_heatmap(heatmap, ArkMap.ABERRATION)       # draw the heatmap for the Aberration map
+heatmap = dino_api.create_heatmap(dinos=dinos, map=ArkMap.RAGNAROK) # create a heatmap of the dinos
+draw_heatmap(heatmap, ArkMap.RAGNAROK)                              # draw the heatmap for the Ragnarok map

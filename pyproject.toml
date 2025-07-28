@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arkparse"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
     # List your dependencies here
 ]
@@ -28,4 +28,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/arkparse"]
+packages = ["src/arkparse", "APExamples"]

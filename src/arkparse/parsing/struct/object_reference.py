@@ -38,7 +38,7 @@ class ObjectReference:
         object_type = reader.read_int()
         if object_type == -1:
             self.type = ObjectReference.TYPE_UNKNOWN
-            self.value = None
+            raise ValueError("Unknown object type encountered in ObjectReference")
         elif object_type == 0:
             self.type = ObjectReference.TYPE_ID
             self.value = reader.read_int()

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import struct
 from pathlib import Path
 import json
+from uuid import UUID
 
 if TYPE_CHECKING:
     from arkparse.parsing.ark_binary_parser import ArkBinaryParser
@@ -72,7 +73,8 @@ class MapCoords:
             return f"({self.lat}, {self.long})"
         
     def as_actor_transform(self, map) -> "ActorTransform":
-        return ActorTransform(vector=ArkVector(*MapCoordinateParameters(map).transform_from(self.lat, self.long)))
+
+        return ActorTransform(vector=MapCoordinateParameters(map).transform_from(self.lat, self.long))
 
 @dataclass
 class ActorTransform:
@@ -193,3 +195,8 @@ class ActorTransform:
             struct.pack('<d', self.roll) +
             struct.pack('<Q', self.unknown)
         )
+    
+    def store_json(self, folder: Path, name: str = None):
+        loc_path = folder / ("loc_" + str(name) + ".json")
+        with open(loc_path, "w") as f:
+            f.write(json.dumps(self.as_json(), indent=4))
