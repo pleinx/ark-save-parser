@@ -24,10 +24,10 @@ class InventoryItem(ParsedObjectBase):
         owner_in: ObjectReference = self.object.get_property_value("OwnerInventory", default=ObjectReference())
         self.owner_inv_uuid = UUID(owner_in.value)
 
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        super().__init__(uuid, binary)
+    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
+        super().__init__(uuid, binary, save=save)
 
-        if self.binary is None:
+        if self.binary is not None:
             self.__init_props__()
 
     def __str__(self):

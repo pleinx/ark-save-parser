@@ -6,8 +6,6 @@ from arkparse.api.dino_api import DinoApi, TamedDino, MapCoords
 from arkparse.logging import ArkSaveLogger
 from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
-from arkparse.ftp.ark_ftp_client import ArkFtpClient
-from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.struct.actor_transform import ActorTransform
 
 BASE_STORAGE_PATH = Path.cwd() / 'temp' / 'exports'
@@ -26,30 +24,27 @@ dino_api = DinoApi(save)                                # create a DinoApi objec
 dinos: Dict[UUID, TamedDino] = dino_api.get_all_filtered(tamed=True, level_lower_bound=1000)           # only consider tamed dinos
 
 for dino in dinos.values():                  # iterate over all dinos
-    print(f"{dino.owner}, {dino.tamed_name}, {dino.location} ({dino.location.as_map_coords(ArkMap.RAGNAROK)})")  # print owner, name, species, level, and location
+    ArkSaveLogger.info_log(f"{dino.owner}, {dino.tamed_name}, {dino.location} ({dino.location.as_map_coords(ArkMap.RAGNAROK)})")  # print owner, name, species, level, and location
     name = dino.tamed_name if dino.tamed_name else "Unknown"
     create_folder(name)  # create a folder for the tamed dino if it does not exist
     dino.store_binary(BASE_STORAGE_PATH / name)
 
 dino: TamedDino = list(dinos.values())[0]
-print("Binary:")
+ArkSaveLogger.info_log("Binary:")
 dino.binary.structured_print()
-print(f"Props:")
+ArkSaveLogger.info_log(f"Props:")
 dino.object.print_properties()
-print(f"Stats:")
+ArkSaveLogger.info_log(f"Stats:")
 dino.stats.object.print_properties()
 
 at = save.save_context.get_actor_transform(dino.object.uuid)
 if at:
-    print(f"Actor Transform for {dino.tamed_name}: {at}")
+    ArkSaveLogger.info_log(f"Actor Transform for {dino.tamed_name}: {at}")
 else:
-    print(f"No Actor Transform found for {dino.tamed_name}")
+    ArkSaveLogger.info_log(f"No Actor Transform found for {dino.tamed_name}")
 
-ArkSaveLogger.enable_debug = True
-ArkSaveLogger.suppress_warnings = False
 new_loc = MapCoords(77.77, 77.77).as_actor_transform(ArkMap.RAGNAROK)
 dino.set_location(new_loc, save)
 dino.binary.structured_print()
 new_vector = dino.object.get_property_value("SavedBaseWorldLocation")
-print(ActorTransform(vector=new_vector).as_map_coords(ArkMap.RAGNAROK))
-ArkSaveLogger.enable_debug = True
+ArkSaveLogger.info_log(ActorTransform(vector=new_vector).as_map_coords(ArkMap.RAGNAROK))

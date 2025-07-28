@@ -35,9 +35,7 @@ class Equipment(InventoryItem):
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
-                         
-        if binary is not None:
-            self.__init_props__()
+        self.__init_props__()
             
     def get_internal_value(self, stat: ArkEquipmentStat) -> int:
         raise ValueError(f"Stat {stat} is not valid for {self.class_name}")

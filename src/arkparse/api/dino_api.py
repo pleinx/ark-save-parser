@@ -76,6 +76,7 @@ class DinoApi:
 
         dinos = {}
 
+        ArkSaveLogger.api_log(f"Found {len(objects)} dinos, parsing them... (and retrieving inventories)")
         for key, obj in objects.items():
             dino = None
             if "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
@@ -87,13 +88,11 @@ class DinoApi:
                     else:
                         dino = self.parsed_dinos[obj.uuid]
                 else:
-                    parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-                    
                     if is_tamed:
-                        dino = TamedDino(obj.uuid, parser, self.save)
+                        dino = TamedDino(obj.uuid, save=self.save)
                         self.parsed_tamed_dinos[obj.uuid] = dino
                     else:
-                        dino = Dino(obj.uuid, parser, self.save)
+                        dino = Dino(obj.uuid, save=self.save)
                         self.parsed_dinos[obj.uuid] = dino
             elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint:
                 if not obj.get_property_value("bIsEngram", default=False):
@@ -213,46 +212,50 @@ class DinoApi:
             config = GameObjectReaderConfiguration(
                 blueprint_name_filter=lambda name: name is not None and name in class_names
             )
+            ArkSaveLogger.api_log(f"Getting all dinos with specified class names")
             dinos = self.get_all(config)
 
             # get cryopodded dinos
             if include_cryopodded:
+                ArkSaveLogger.api_log(f"Also getting cryopodded dinos with specified class names")
                 cryopod_dinos = self.get_all_in_cryopod()
                 for key, dino in cryopod_dinos.items():
                     if dino.object.blueprint in class_names:
                         dinos[key] = dino
         else:
+            ArkSaveLogger.api_log("No class names provided, getting all dinos.")
             dinos = self.get_all()
 
         filtered_dinos = dinos
 
+        ArkSaveLogger.api_log(f"Filtering {len(filtered_dinos)} dinos with the following criteria:")
         if level_lower_bound is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level >= level_lower_bound}
-            # print(f"LowerLvBound - Filtered to {len(filtered_dinos)} dinos")
+            ArkSaveLogger.api_log(f"LowerLvBound - Filtered to {len(filtered_dinos)} dinos")
         
         if level_upper_bound is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level <= level_upper_bound}
-            # print(f"UpperLvBound - Filtered to {len(filtered_dinos)} dinos")
-        
+            ArkSaveLogger.api_log(f"UpperLvBound - Filtered to {len(filtered_dinos)} dinos")
+
         if class_names is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.object.blueprint in class_names}
-            # print(f"Class - Filtered to {len(filtered_dinos)} dinos")
+            ArkSaveLogger.api_log(f"Class - Filtered to {len(filtered_dinos)} dinos")
 
         if tamed is not None:
             if tamed:
                 filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino)}
-                # print(f"Tamed - Filtered to {len(filtered_dinos)} dinos")
+                ArkSaveLogger.api_log(f"Tamed - Filtered to {len(filtered_dinos)} dinos")
             else:
                 filtered_dinos = {k: v for k, v in filtered_dinos.items() if not isinstance(v, TamedDino)}
-                # print(f"Untamed - Filtered to {len(filtered_dinos)} dinos")
+                ArkSaveLogger.api_log(f"Untamed - Filtered to {len(filtered_dinos)} dinos")
 
         if not include_cryopodded:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if not(isinstance(v, TamedDino) and v.cryopod is not None)}
-            # print(f"IncludeCryopodded - Filtered to {len(filtered_dinos)} dinos")
+            ArkSaveLogger.api_log(f"IncludeCryopodded - Filtered to {len(filtered_dinos)} dinos")
 
         if only_cryopodded:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if isinstance(v, TamedDino) and v.cryopod is not None}
-            # print(f"OnlyCryopodded - Filtered to {len(filtered_dinos)} dinos")
+            ArkSaveLogger.api_log(f"OnlyCryopodded - Filtered to {len(filtered_dinos)} dinos")
 
         if stat_minimum is not None:
             new_filtered_dinos = {}
@@ -261,7 +264,7 @@ class DinoApi:
                 if len(stats_above) and (stats is None or any(s in stats_above for s in stats)):
                     new_filtered_dinos[key] = dinos[key]
             filtered_dinos = new_filtered_dinos
-            # print(f"StatMin - Filtered to {len(filtered_dinos)} dinos")
+            ArkSaveLogger.api_log(f"StatMin - Filtered to {len(filtered_dinos)} dinos")
 
         return filtered_dinos
     
