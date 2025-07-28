@@ -18,6 +18,8 @@ from arkparse.parsing.struct.ark_crafting_resource_requirement import ArkCraftin
 from arkparse.parsing.struct.ark_player_death_reason import ArkPlayerDeathReason
 from arkparse.parsing.struct.ark_primal_saddle_structure import ArkPrimalSaddleStructure
 from arkparse.parsing.struct.ark_gene_trait_struct import ArkGeneTraitStruct
+from arkparse.parsing.struct.ark_gacha_resource_struct import ArkGachaResourceStruct
+from arkparse.parsing.struct.ark_gigantoraptor_bonded_struct import ArkGigantoraptorBondedStruct
 from arkparse.parsing.struct.ark_tracked_actor_id_category_pair_with_bool import (
     ArkTrackedActorIdCategoryPairWithBool,
 )
@@ -82,6 +84,8 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.ArkPlayerDeathReason: lambda bb, ds: ArkPlayerDeathReason(bb),
     ArkStructType.ArkPrimalSaddleStructure: lambda bb, ds: ArkPrimalSaddleStructure(bb),
     ArkStructType.ArkGeneTraitStruct: lambda bb, ds: ArkGeneTraitStruct(bb),
+    ArkStructType.GachaResourceStruct: lambda bb, ds: ArkGachaResourceStruct(bb),
+    ArkStructType.GigantoraptorBondedStruct: lambda bb, ds: ArkGigantoraptorBondedStruct(bb),
 }
 
 # Flags driving how a primitive value is read

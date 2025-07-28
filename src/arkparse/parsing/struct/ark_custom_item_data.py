@@ -48,19 +48,25 @@ class ArkCustomItemData:
 
         self._read_arrays(ark_binary_data)
 
-        # if ark_binary_data.position != data_start + total_size:
-        #     raise ValueError(f"Expected to read {total_size} bytes, but read {ark_binary_data.position - data_start} bytes")
+        self.objects = []
+        self.painting_id_map = []
+        self.painting_revision_map = []
+        self.custom_data_soft_classes = []
 
         self.doubles = self.__read_custom_data_doubles(ark_binary_data)
         self.strings = self.__read_custom_data_strings(ark_binary_data)
         self.floats = self._read_custom_data_floats(ark_binary_data)
-        self.objects = self.__read_custom_data_objects(ark_binary_data)
+        if ark_binary_data.peek_name() == "CustomDataObjects": # check if CustomDataObjects is present
+            self.objects = self.__read_custom_data_objects(ark_binary_data)
         self.classes = self.__read_custom_data_classes(ark_binary_data)
         self.names = self.__read_custom_data_names(ark_binary_data)
-        self.painting_id_map = self.__read_painting_id_map(ark_binary_data)
-        self.painting_revision_map = self.__read_painting_revision_map(ark_binary_data)
+        if ark_binary_data.peek_name() == "UniquePaintingIdMap":  # check if UniquePaintingIdMap is present
+            self.painting_id_map = self.__read_painting_id_map(ark_binary_data)
+        if ark_binary_data.peek_name() == "PaintingRevisionMap":  # check if PaintingRevisionMap is present
+            self.painting_revision_map = self.__read_painting_revision_map(ark_binary_data)
         self.custom_data_name = self.__read_custom_data_name(ark_binary_data)
-        self.custom_data_soft_classes = self.__read_custom_data_soft_classes(ark_binary_data)
+        if ark_binary_data.peek_name() == "CustomDataSoftClasses":  # check if CustomDataSoftClasses is present
+            self.custom_data_soft_classes = self.__read_custom_data_soft_classes(ark_binary_data)
 
         ark_binary_data.validate_name("None")        
 

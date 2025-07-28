@@ -74,3 +74,13 @@ class PropertyParser(BaseValueValidator):
         self.validate_byte(0)
         object_reference = ObjectReference(self)
         return object_reference
+    
+    def parse_soft_object_property(self, property_name: str) -> str:
+        self.validate_name(property_name)
+        self.validate_name("SoftObjectProperty")
+        self.validate_uint32(0)
+        self.read_uint32()
+        self.validate_byte(0)
+        name = self.read_name()
+        self.validate_uint32(0)
+        return name

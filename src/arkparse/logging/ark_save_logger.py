@@ -2,6 +2,7 @@ import logging
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
+from enum import Enum
 
 if TYPE_CHECKING:
     from arkparse.parsing import ArkBinaryParser
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
 from arkparse.utils.temp_files import read_config_file, write_config_file, TEMP_FILES_DIR
 
 class ArkSaveLogger:
-    class LogTypes:
+    class LogTypes(Enum):
         PARSER = "parser"
         INFO = "info"
         API = "api"
@@ -30,7 +31,7 @@ class ArkSaveLogger:
         RESET = "\033[0m"
 
     current_struct_path = []
-    _allow_invalid_objects = False
+    _allow_invalid_objects = None
     _file = ""
     _byte_buffer = None
     _temp_file_path = TEMP_FILES_DIR
@@ -72,13 +73,13 @@ class ArkSaveLogger:
         config = read_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME)
         if config is None:
             ArkSaveLogger._log_level_states = {
-                ArkSaveLogger.LogTypes.PARSER: False,
-                ArkSaveLogger.LogTypes.INFO: False,
-                ArkSaveLogger.LogTypes.API: False,
-                ArkSaveLogger.LogTypes.ERROR: False,
-                ArkSaveLogger.LogTypes.DEBUG: False,
-                ArkSaveLogger.LogTypes.WARNING: False,
-                ArkSaveLogger.LogTypes.SAVE: False,
+                ArkSaveLogger.LogTypes.PARSER.value: False,
+                ArkSaveLogger.LogTypes.INFO.value: False,
+                ArkSaveLogger.LogTypes.API.value: False,
+                ArkSaveLogger.LogTypes.ERROR.value: False,
+                ArkSaveLogger.LogTypes.DEBUG.value: False,
+                ArkSaveLogger.LogTypes.WARNING.value: False,
+                ArkSaveLogger.LogTypes.SAVE.value: False,
                 "all": False
             }
             ArkSaveLogger._file_viewer_enabled = True
@@ -98,13 +99,13 @@ class ArkSaveLogger:
         if ArkSaveLogger._log_level_states is None:
             ArkSaveLogger.__init_config()
 
-        if (not ArkSaveLogger._log_level_states[log_type]) and not ArkSaveLogger._log_level_states["all"]:
+        if (not ArkSaveLogger._log_level_states[log_type.value]) and not ArkSaveLogger._log_level_states["all"]:
             return
         
         if color is None:
             color = ArkSaveLogger.LogColors.WHITE
 
-        message = f"{color}[{log_type}]{ArkSaveLogger.LogColors.RESET} {message}"
+        message = f"{color}[{log_type.value}]{ArkSaveLogger.LogColors.RESET} {message}"
 
         print(message)
 
@@ -112,11 +113,11 @@ class ArkSaveLogger:
     def set_log_level(log_type: "ArkSaveLogger.LogTypes", state: bool, set_globally: bool = False):
         if ArkSaveLogger._log_level_states is None:
             ArkSaveLogger.__init_config()
-        ArkSaveLogger._log_level_states[log_type] = state
+        ArkSaveLogger._log_level_states[log_type.value] = state
 
         if set_globally:
             global_config = read_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME)
-            global_config["levels"][log_type] = state
+            global_config["levels"][log_type.value] = state
             write_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME, global_config)
 
     @staticmethod
@@ -126,7 +127,11 @@ class ArkSaveLogger:
 
     @staticmethod
     def allow_invalid_objects(state: bool = True, set_globally: bool = False):
+        if ArkSaveLogger._allow_invalid_objects is None:
+            ArkSaveLogger.__init_config()
+
         ArkSaveLogger._allow_invalid_objects = state
+
         if set_globally:
             global_config = read_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME)
             global_config["allow_invalid"] = state
