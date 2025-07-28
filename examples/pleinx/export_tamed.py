@@ -1,6 +1,6 @@
 from uuid import UUID
 import json
-
+from time import time
 from arkparse.api.dino_api import DinoApi, TamedDino
 from arkparse.enums import ArkMap, ArkStat
 from arkparse.saves.asa_save import AsaSave
@@ -11,6 +11,8 @@ from pathlib import Path
 import os
 import ast
 from datetime import datetime
+
+start_time = time()
 
 # Args
 parser = argparse.ArgumentParser(description="")
@@ -42,6 +44,20 @@ MAP_NAME_MAPPING = {
     "TheCenter_WP": ArkMap.ABERRATION,
 }
 
+# HELPER FUNCTIONS
+def extract_owner_attr(dino, dino_json_data, attr_name):
+    val = getattr(dino.cryopod.dino.owner, attr_name, None) if dino.is_cryopodded else (
+        getattr(dino.owner, attr_name, None) if dino.owner else None
+    )
+    return val if val else dino_json_data.get(attr_name, None)
+
+def convert_tamed_time(timestamp_str):
+    try:
+        return datetime.strptime(timestamp_str, "%Y.%m.%d-%H.%M.%S").strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
+        return None
+
+
 # Load ASA save
 save_path = Path(f"{args.savegame}")
 if not save_path.exists():
@@ -59,71 +75,38 @@ export_folder.mkdir(parents=True, exist_ok=True)
 json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
 dino_api = DinoApi(save)
-player_api = PlayerApi(save)
-tribe_lookup = {tribe.tribe_id: tribe.name for tribe in player_api.tribes}
 
 tamed_dinos = []
-
 for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     if not isinstance(dino, TamedDino):
         continue
 
     dino_json_data = dino.to_json_obj()
 
-    # public_attrs = [attr for attr in dir(dino.stats) if not attr.startswith('_')]
-    # if(public_attrs is not []):
-        # pprint(public_attrs)
-        # coords = dino.location.as_map_coords(ArkMap.ABERRATION)
-        # pprint(dir(coords))
-
-#     if(dino_id=="26a06cb2-3cc3-e149-aaf5-1e28cdabdc51"):
-#         public_attrs = [attr for attr in dir(dino.owner) if not attr.startswith('_')]
-#         if(public_attrs is not []):
-#             pprint(public_attrs)
-
-    creature_name = dino.get_short_name()
+    #public_attrs = [attr for attr in dir(tribe_lookup) if not attr.startswith('_')]
+    #if(public_attrs is not []):
+        #pprint(dir(public_attrs))
+        #coords = dino.location.as_map_coords(ArkMap.ABERRATION)
+        #pprint(dir(coords))
 
     lat, lon = (0.0, 0.0)
     ccc = ""
     if not dino.is_cryopodded and dino.location:
+        ccc = f"{dino.location.x:.2f} {dino.location.y:.2f} {dino.location.z:.2f}"
         coords = dino.location.as_map_coords(MAP_NAME_MAPPING.get(map_name))
         if(coords):
             lat = coords.lat
             lon = coords.long
 
-        ccc = f"{dino.location.x:.2f} {dino.location.y:.2f} {dino.location.z:.2f}"
-
     tribe_id = dino.cryopod.dino.owner.tamer_tribe_id if dino.is_cryopodded else (
         dino.owner.tamer_tribe_id if dino.owner else None
     )
-
-    tribe_name = tribe_lookup.get(tribe_id, None)
 
     tamer_name = dino.cryopod.dino.owner.tamer_string if dino.is_cryopodded else (
         dino.owner.tamer_string if dino.owner else None
     )
 
-    imprinter_name = dino.cryopod.dino.owner.imprinter if dino.is_cryopodded else (
-        dino.owner.imprinter if dino.owner else None
-    )
-
-    if not tribe_name:
-        tribe_name = dino_json_data.get("TribeName", None)
-
-    if not imprinter_name:
-        imprinter_name = dino_json_data.get("ImprinterName", None)
-
-    tamed_at_str = dino_json_data.get("TamedTimeStamp", None)
-    tamed_at_mysql = None
-
-    if tamed_at_str:
-        try:
-            dt = datetime.strptime(tamed_at_str, "%Y.%m.%d-%H.%M.%S")
-            tamed_at_mysql = dt.strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            tamed_at_mysql = None
-
-    # Extract stats
+    # extract dino stats
     stats_entry = {}
     for prefix, field in STAT_NAME_MAP.items():
         stats_entry[f"{prefix}-w"] = getattr(dino.stats.base_stat_points, field, 0)
@@ -133,11 +116,11 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
     entry = {
         "id": str(dino_id),
         "tribeid": tribe_id,
-        "tribe": tribe_name,  # TODO check why tribe name is often empty
+        "tribe": dino_json_data.get("TribeName", None),
         "tamer": tamer_name,
-        "imprinter": imprinter_name,
+        "imprinter": extract_owner_attr(dino, dino_json_data, "imprinter"),
         "imprint": 0.0,     # TODO
-        "creature": creature_name,
+        "creature": dino.get_short_name() + "_C",
         "name": dino.tamed_name if dino.tamed_name else "",
         "sex": "Female" if dino.is_female else "Male",
         "base": dino.stats.base_level if dino.stats else None,
@@ -181,7 +164,7 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
         "maturation": "100",        # TODO
         "traits": [],               # TODO
         "inventory": [],            # TODO
-        "tamedAtTime": tamed_at_mysql
+        "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
     }
 
     # Adding Dino Colors
@@ -200,7 +183,8 @@ for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
 
     tamed_dinos.append(entry)
 
-# EXPORT
+
+# CONTINUE WITH JSON EXPORT
 json_data = {
     "map": map_folder,
     "data": tamed_dinos
@@ -212,4 +196,9 @@ if os.path.exists(json_output_path):
 with open(json_output_path, "w", encoding="utf-8") as f:
     json.dump(json_data, f, ensure_ascii=False, indent=2)
 
+
+# DONE, OUTPUT
 print(f"Saved {len(tamed_dinos)} tamed dinos to {json_output_path}")
+
+elapsed = time() - start_time
+print(f"Script runtime: {elapsed:.2f} seconds")
