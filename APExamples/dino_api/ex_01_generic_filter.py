@@ -56,6 +56,7 @@ if __name__ == "__main__":
     stats = None                    # replace with the stats you want to apply stat_point_requirement for ex. [ArkStat.HEALTH, ArkStat.MELEE_DAMAGE], None means all stats
 
     save_path = Path.cwd() / "save.ark" # replace with path to your save file
+    save_path = Path("C:\\Users\\Vincent\\Downloads\\ASV\\Extinction_WP\\Extinction_WP.ark")
 
     dinos, level_distribution, class_distribution = ex_01_generic_filter(
         save_path,

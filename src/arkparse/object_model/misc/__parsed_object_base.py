@@ -24,14 +24,12 @@ class ParsedObjectBase:
         if uuid is None or (binary is None and save is None):
             return
         if save is not None:
-            self.__init_props__(save.get_game_object_by_id(uuid))
             self.binary = save.get_parser_for_game_object(uuid)
+            self.__init_props__(save.get_game_object_by_id(uuid))
         else:
-            bp = self.__get_class_name()
             self.binary = binary
+            bp = self.__get_class_name()
             self.__init_props__(ArkGameObject(uuid=uuid, blueprint=bp, binary_reader=binary))
-
-        
 
     @staticmethod
     def _generate(save: "AsaSave", template_path: str):

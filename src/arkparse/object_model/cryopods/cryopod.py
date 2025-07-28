@@ -25,40 +25,48 @@ class EmbeddedCryopodData:
         self.custom_data = custom_item_data
 
     def __unembed__(self, item):
-        if item == self.Item.DINO_AND_STATUS:
-            bts = self.custom_data.byte_arrays[0].data if len(self.custom_data.byte_arrays) > 0 else b""
-            if len(bts) != 0:
-                parser: ArkBinaryParser = ArkBinaryParser.from_deflated_data(bts)
-                
-                objects: List[ArkGameObject] = []
-                parser.skip_bytes(8)  # Skip the first 8 bytes (header)
-                nr_of_obj = parser.read_uint32()
-                parser.save_context.generate_unknown = True
-                for _ in range(nr_of_obj):
-                    objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
-                for obj in objects:
-                    obj.read_props_at_offset(parser)
-                parser.save_context.generate_unknown = False
+        parser = None
+        try:
+            if item == self.Item.DINO_AND_STATUS:
+                bts = self.custom_data.byte_arrays[0].data if len(self.custom_data.byte_arrays) > 0 else b""
+                if len(bts) != 0:
+                    parser: ArkBinaryParser = ArkBinaryParser.from_deflated_data(bts)
+                    parser.in_cryopod = True
                     
-                return objects[0], objects[1]
+                    objects: List[ArkGameObject] = []
+                    parser.skip_bytes(8)  # Skip the first 8 bytes (header)
+                    nr_of_obj = parser.read_uint32()
+                    parser.save_context.generate_unknown = True
+                    for _ in range(nr_of_obj):
+                        objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
+                    for obj in objects:
+                        obj.read_props_at_offset(parser)
+                    parser.save_context.generate_unknown = False
+                        
+                    return objects[0], objects[1]
 
-            return None, None
-
-        elif item == self.Item.SADDLE:
-            bts = self.custom_data.byte_arrays[1].data if len(self.custom_data.byte_arrays) > 1 else b""
-            if len(bts) != 0:
-                parser = ArkBinaryParser(bts)
-                parser.skip_bytes(4)  # Skip the first 8 bytes (header)
-                parser.validate_uint32(7)
-                parser.skip_bytes(8)  # Skip the first 8 bytes (header)
-                parser.save_context.generate_unknown = True
-                obj = ArkGameObject(binary_reader=parser, no_header=True)
-                parser.save_context.generate_unknown = False
-                
-        else:
-            logging.warning(f"Unsupported item type: {item}")
-        
-        return None
+                return None, None
+            elif item == self.Item.SADDLE:
+                bts = self.custom_data.byte_arrays[1].data if len(self.custom_data.byte_arrays) > 1 else b""
+                if len(bts) != 0:
+                    parser = ArkBinaryParser(bts)
+                    parser.skip_bytes(4)  # Skip the first 8 bytes (header)
+                    parser.validate_uint32(7)
+                    parser.skip_bytes(8)  # Skip the first 8 bytes (header)
+                    parser.save_context.generate_unknown = True
+                    obj = ArkGameObject(binary_reader=parser, no_header=True)
+                    parser.save_context.generate_unknown = False
+                    
+            else:
+                logging.warning(f"Unsupported item type: {item}")
+            
+            return None
+    
+        except Exception as e:
+            if "Unsupported embedded data version" not in str(e):
+                logging.error(f"Error unembedding item {item}: {e}")
+                parser.structured_print()
+            raise e
     
     def get_dino_obj(self):
         return self.__unembed__(self.Item.DINO_AND_STATUS)
@@ -73,7 +81,7 @@ class Cryopod(InventoryItem):
     costume: any
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        super().__init__(uuid, binary)
+        super().__init__(uuid, binary=binary)
         self.dino = None
         self.saddle = None
         self.costume = None

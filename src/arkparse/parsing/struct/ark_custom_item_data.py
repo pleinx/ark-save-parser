@@ -45,7 +45,7 @@ class ArkCustomItemData:
         total_size = self.__read_header(ark_binary_data)
         data_start = ark_binary_data.position
         ArkSaveLogger.parser_log(f"Reading CustomItemData at position {data_start}, expected size: {total_size} bytes")
-
+        self.byte_arrays = []
         self._read_arrays(ark_binary_data)
 
         self.objects = []

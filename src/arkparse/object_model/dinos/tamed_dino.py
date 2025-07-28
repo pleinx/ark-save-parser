@@ -38,6 +38,8 @@ class TamedDino(Dino):
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)
+        self.inv_uuid = None
+        self.inventory = None
         if self.binary is not None:
             self.__init_props__()
 

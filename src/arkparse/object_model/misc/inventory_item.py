@@ -25,7 +25,7 @@ class InventoryItem(ParsedObjectBase):
         self.owner_inv_uuid = UUID(owner_in.value)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
-        super().__init__(uuid, binary, save=save)
+        super().__init__(uuid, binary=binary, save=save)
 
         if self.binary is not None:
             self.__init_props__()
