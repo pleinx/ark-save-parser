@@ -33,8 +33,7 @@ class Armor(EquipmentWithArmor):
         super().__init__(uuid, binary)
                          
         self.class_name = "armor"
-        if binary is not None:
-            self.__init_props__()
+        self.__init_props__()
 
     @staticmethod
     def generate_from_template(class_: str, save: AsaSave, is_bp: bool):

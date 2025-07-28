@@ -18,6 +18,7 @@ class ArkSaveLogger:
         DEBUG = "debug"
         WARNING = "warning"
         SAVE = "save"
+        OBJECTS = "objects"
         ALL = "all"
 
     class LogColors:
@@ -28,6 +29,7 @@ class ArkSaveLogger:
         BLUE = "\033[94m"
         MAGENTA = "\033[95m"
         CYAN = "\033[96m"
+        BOLD = "\033[1m"
         RESET = "\033[0m"
 
     current_struct_path = []
@@ -50,7 +52,7 @@ class ArkSaveLogger:
 
     @staticmethod
     def info_log(message: str):
-        ArkSaveLogger.__log(message, ArkSaveLogger.LogTypes.INFO, ArkSaveLogger.LogColors.WHITE)
+        ArkSaveLogger.__log(message, ArkSaveLogger.LogTypes.INFO, ArkSaveLogger.LogColors.BOLD)
 
     @staticmethod
     def api_log(message: str):
@@ -69,6 +71,10 @@ class ArkSaveLogger:
         ArkSaveLogger.__log(message, ArkSaveLogger.LogTypes.WARNING, ArkSaveLogger.LogColors.YELLOW)
 
     @staticmethod
+    def objects_log(message: str):
+        ArkSaveLogger.__log(message, ArkSaveLogger.LogTypes.OBJECTS, ArkSaveLogger.LogColors.CYAN)
+
+    @staticmethod
     def __init_config():
         config = read_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME)
         if config is None:
@@ -79,6 +85,7 @@ class ArkSaveLogger:
                 ArkSaveLogger.LogTypes.ERROR.value: False,
                 ArkSaveLogger.LogTypes.DEBUG.value: False,
                 ArkSaveLogger.LogTypes.WARNING.value: False,
+                ArkSaveLogger.LogTypes.OBJECTS.value: False,
                 ArkSaveLogger.LogTypes.SAVE.value: False,
                 "all": False
             }
@@ -98,8 +105,8 @@ class ArkSaveLogger:
     def __log(message: str, log_type: "ArkSaveLogger.LogTypes", color: "ArkSaveLogger.LogColors" = None):
         if ArkSaveLogger._log_level_states is None:
             ArkSaveLogger.__init_config()
-
-        if (not ArkSaveLogger._log_level_states[log_type.value]) and not ArkSaveLogger._log_level_states["all"]:
+        
+        if (not ArkSaveLogger._log_level_states.get(log_type.value, False)) and not ArkSaveLogger._log_level_states["all"]:
             return
         
         if color is None:

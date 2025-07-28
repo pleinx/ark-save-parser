@@ -69,9 +69,7 @@ class EquipmentWithArmor(EquipmentWithDurability):
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
-         
-        if binary is not None:
-            self.__init_props__()  
+        self.__init_props__()  
 
     def get_implemented_stats(self) -> list:
         return super().get_implemented_stats() + [ArkEquipmentStat.ARMOR]

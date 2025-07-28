@@ -151,7 +151,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.__structured_print_print(f"{value}", to_file)
         self.__structured_print_print(f"{self.position}: ", to_file, end="")
 
-    def structured_print(self, to_file: BytesIO = None, to_default_file: bool = False):
+    def structured_print(self, to_file: BytesIO = None, to_default_file: bool = True):
         if to_default_file:
             file_path = TEMP_FILES_DIR / "structured_print.txt"
             to_file = file_path.open("wb")

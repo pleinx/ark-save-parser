@@ -1,17 +1,18 @@
 from dataclasses import dataclass
 from uuid import UUID
 from typing import TYPE_CHECKING
+from arkparse.logging import ArkSaveLogger
 
 if TYPE_CHECKING:
     from arkparse.parsing import ArkBinaryParser
 
 @dataclass
 class ObjectReference:
-    TYPE_ID = 0
+    TYPE_UUID = 0
     TYPE_PATH = 1
     TYPE_PATH_NO_TYPE = 2
     TYPE_NAME = 3
-    TYPE_UUID = 4
+    TYPE_ID = 4
     TYPE_POS_MOD_REF = 5
     TYPE_UNKNOWN = -1
 
@@ -24,21 +25,30 @@ class ObjectReference:
             return
 
         # If the save context has a name table, handle accordingly
-        if reader.save_context.has_name_table():
-            is_name = reader.read_short() == 1
-            if is_name:
+        if reader.save_context.has_name_table() and not reader.in_cryopod:
+            type = reader.read_short()
+            ArkSaveLogger.parser_log(f"ObjectReference type: {type}, position: {reader.position}")
+
+            if type == ObjectReference.TYPE_PATH:
                 self.type = ObjectReference.TYPE_PATH
                 self.value = reader.read_name()
-            else:
+            elif type == ObjectReference.TYPE_UUID:
                 self.type = ObjectReference.TYPE_UUID
                 self.value = reader.read_uuid_as_string()
+            elif type == ObjectReference.TYPE_ID:
+                self.type = ObjectReference.TYPE_ID
+                self.value = reader.read_int()
+            else:
+                raise ValueError(f"Unknown ObjectReference type: {type}")
             return
 
+        ArkSaveLogger.parser_log(f"Reading ObjectReference without name table at position {reader.position}")
         # Handle object types
         object_type = reader.read_int()
         if object_type == -1:
             self.type = ObjectReference.TYPE_UNKNOWN
-            raise ValueError("Unknown object type encountered in ObjectReference")
+            self.value = None
+            # raise ValueError("Unknown object type encountered in ObjectReference")
         elif object_type == 0:
             self.type = ObjectReference.TYPE_ID
             self.value = reader.read_int()

@@ -370,7 +370,7 @@ class ArkProperty:
                     f"[STRUCT ARRAY: key='none'; nr_of_value={array_items}; type={array_content_type}; bin_length={data_size}]"
                 )
                 struct_array = [
-                    ArkProperty.read_struct_property(bb, data_size, array_content_type, True)
+                    ArkProperty.read_struct_property(bb, data_size, array_content_type, True)[0]
                     for _ in range(array_items)
                 ]
 

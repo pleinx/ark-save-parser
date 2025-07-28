@@ -8,6 +8,7 @@ class BinaryReaderBase:
         self.byte_buffer = data
         self.position = 0
         self.save_context = save_context if save_context else SaveContext()
+        self.in_cryopod = False
 
     def get_position(self) -> int:
         return self.position
