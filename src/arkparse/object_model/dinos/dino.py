@@ -40,15 +40,16 @@ class Dino(ParsedObjectBase):
         self.location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
-        if binary is not None:
-            super().__init__(uuid, binary)
+        super().__init__(uuid, binary=binary, save=save)
+
+        if self.binary is not None:
             self.__init_props__()
 
-            if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
-                stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value
-                bin = save.get_game_obj_binary(UUID(stat_uuid))
-                parser = ArkBinaryParser(bin, save.save_context)
-                self.stats = DinoStats(UUID(stat_uuid), parser)
+        if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
+            stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value
+            bin = save.get_game_obj_binary(UUID(stat_uuid))
+            parser = ArkBinaryParser(bin, save.save_context)
+            self.stats = DinoStats(UUID(stat_uuid), parser, save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)

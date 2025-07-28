@@ -15,14 +15,13 @@ from .inventory_item import InventoryItem
 class Inventory(ParsedObjectBase):
     items: Dict[UUID, InventoryItem]
     def __init__(self, uuid: UUID, binary: ArkBinaryParser, save: AsaSave = None):
-        super().__init__(uuid, binary)
+        super().__init__(uuid, binary, save=save)
         self.items = {}
 
         item_arr = self.object.get_array_property_value("InventoryItems")
         for item in item_arr:
             item_uuid = UUID(item.value)
-            reader = ArkBinaryParser(save.get_game_obj_binary(item_uuid), save.save_context)
-            item = InventoryItem(item_uuid, reader)
+            item = InventoryItem(item_uuid, save=save)
             is_engram = item.object.get_property_value("bIsEngram")
             if is_engram is None or not is_engram:
                 self.items[item_uuid] = item

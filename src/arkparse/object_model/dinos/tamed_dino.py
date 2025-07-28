@@ -37,15 +37,16 @@ class TamedDino(Dino):
             self.inv_uuid = UUID(inv_uuid.value)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
-        super().__init__(uuid, binary, save)
-
-        if binary is not None:
+        super().__init__(uuid, binary=binary, save=save)
+        self.inv_uuid = None
+        self.inventory = None
+        if self.binary is not None:
             self.__init_props__()
 
-            if self.inv_uuid is not None:
-                inv_bin = save.get_game_obj_binary(self.inv_uuid)
-                inv_parser = ArkBinaryParser(inv_bin, save.save_context)
-                self.inventory = Inventory(self.inv_uuid, inv_parser, save=save)
+        if self.inv_uuid is not None:
+            inv_bin = save.get_game_obj_binary(self.inv_uuid)
+            inv_parser = ArkBinaryParser(inv_bin, save.save_context)
+            self.inventory = Inventory(self.inv_uuid, inv_parser, save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner))

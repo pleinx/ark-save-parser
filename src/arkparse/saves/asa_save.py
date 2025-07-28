@@ -203,6 +203,12 @@ class AsaSave:
 
         return row[0]
     
+    def get_parser_for_game_object(self, obj_uuid: uuid.UUID) -> Optional[ArkBinaryParser]:
+        binary = self.get_game_obj_binary(obj_uuid)
+        if binary is None:
+            return None
+        return ArkBinaryParser(binary, self.save_context)
+    
     def find_value_in_game_table_objects(self, value: bytes):
         query = "SELECT key, value FROM game"
         cursor = self.connection.cursor()
@@ -268,17 +274,24 @@ class AsaSave:
             conn.execute(query, (self.uuid_to_byte_array(obj_uuid), obj_data))
             conn.commit()
 
+        self.get_game_object_by_id(obj_uuid, reparse=True)
+
     def modify_game_obj(self, obj_uuid: uuid.UUID, obj_data: bytes):
         query = "UPDATE game SET value = ? WHERE key = ?"
         with self.connection as conn:
             conn.execute(query, (obj_data, self.uuid_to_byte_array(obj_uuid)))
             conn.commit()
 
+        self.get_game_object_by_id(obj_uuid, reparse=True)
+
     def remove_obj_from_db(self, obj_uuid: uuid.UUID):
         query = "DELETE FROM game WHERE key = ?"
         with self.connection as conn:
             conn.execute(query, (self.uuid_to_byte_array(obj_uuid),))
             conn.commit()
+
+        if obj_uuid in self.parsed_objects:
+            self.parsed_objects.pop(obj_uuid)
 
     def add_actor_transform(self, uuid: uuid.UUID, binary_data: bytes, no_store: bool = False):
         actor_transforms = self.get_custom_value("ActorTransforms")
@@ -365,7 +378,6 @@ class AsaSave:
                     continue
 
                 byte_buffer = ArkBinaryParser(row[1], self.save_context)
-                ArkSaveLogger.byte_buffer = byte_buffer
                 ArkSaveLogger.set_file(byte_buffer, "game_object.bin")
                 try:
                     class_name = byte_buffer.read_name()
@@ -415,10 +427,16 @@ class AsaSave:
                     classes.append(class_name)
         return classes
 
-    def get_game_object_by_id(self, obj_uuid: uuid.UUID) -> Optional['ArkGameObject']:
+    def get_game_object_by_id(self, obj_uuid: uuid.UUID, reparse: bool = False) -> Optional['ArkGameObject']:
+        if obj_uuid in self.parsed_objects and not reparse:
+            return self.parsed_objects[obj_uuid]
         bin = self.get_game_obj_binary(obj_uuid)
         reader = ArkBinaryParser(bin, self.save_context)
-        obj = ArkGameObject(obj_uuid, binary_reader=reader)
+        obj = self.parse_as_predefined_object(obj_uuid, reader.read_name(), reader)
+
+        if obj:
+            self.parsed_objects[obj_uuid] = obj
+
         return obj
 
     def get_custom_value(self, key: str) -> Optional['ArkBinaryParser']:

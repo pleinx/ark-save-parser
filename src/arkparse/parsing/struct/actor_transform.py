@@ -132,8 +132,8 @@ class ActorTransform:
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2) ** 0.5
     
     def __str__(self) -> str:
-        return f"({self.x}, {self.y}, {self.z}) ({self.pitch}, {self.yaw}, {self.roll})"
-    
+        return f"({self.x:.2f}, {self.y:.2f}, {self.z:.2f}) ({self.pitch:.2f}, {self.yaw:.2f}, {self.roll:.2f})"
+
     def as_map_coords(self, map) -> MapCoords:
         lat, long = MapCoordinateParameters(map).transform_to(self.x, self.y)
         return MapCoords(lat, long, self.in_cryopod)
