@@ -29,6 +29,31 @@ class MapCoordinateParameters:
             self.longitude_shift = 50
             self.latitude_scale = 8000
             self.longitude_scale = 8000
+        elif map == ArkMap.EXTINCTION:
+            self.latitude_shift = 50
+            self.longitude_shift = 50
+            self.latitude_scale = 6850
+            self.longitude_scale = 6850
+        elif map == ArkMap.THE_ISLAND:
+            self.latitude_shift = 50
+            self.longitude_shift = 50
+            self.latitude_scale = 6850
+            self.longitude_scale = 6850
+        elif map == ArkMap.THE_CENTER:
+            self.latitude_shift = 32.5
+            self.longitude_shift = 50.5
+            self.latitude_scale = 10380.52
+            self.longitude_scale = 10374.29
+        elif map == ArkMap.SCORCHED_EARTH:
+            self.latitude_shift = 50
+            self.longitude_shift = 50
+            self.latitude_scale = 8000
+            self.longitude_scale = 8000
+        elif map == ArkMap.ASTRAEOS:
+            self.latitude_shift = 50
+            self.longitude_shift = 50
+            self.latitude_scale = 16000
+            self.longitude_scale = 16000
         elif map == ArkMap.RAGNAROK:
             self.latitude_shift = 50
             self.longitude_shift = 50
