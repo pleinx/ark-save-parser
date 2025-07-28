@@ -127,6 +127,13 @@ class ArkSaveLogger:
             global_config["levels"][log_type.value] = state
             write_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME, global_config)
 
+    def disable_all_logs(self):
+        if ArkSaveLogger._log_level_states is None:
+            ArkSaveLogger.__init_config()
+        for key in ArkSaveLogger._log_level_states.keys():
+            ArkSaveLogger._log_level_states[key] = False
+        ArkSaveLogger.allow_invalid_objects(False)
+
     @staticmethod
     def enter_struct(struct_name: str):
         # self.debug_log("Entering struct %s", struct_name)
