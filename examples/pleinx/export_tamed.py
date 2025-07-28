@@ -34,14 +34,12 @@ STAT_NAME_MAP = {
 
 MAP_NAME_MAPPING = {
     "Aberration_WP": ArkMap.ABERRATION,
-    "CrystalIsles_WP": ArkMap.CRYSTAL_ISLES,
     "Extinction_WP": ArkMap.EXTINCTION,
-    "Genesis_WP": ArkMap.GENESIS,
-    "TheIsland_WP": ArkMap.ISLAND,
+    "TheIsland_WP": ArkMap.THE_ISLAND,
     "Ragnarok_WP": ArkMap.RAGNAROK,
     "ScorchedEarth_WP": ArkMap.SCORCHED_EARTH,
-    "Valguero_WP": ArkMap.VALGUERO,
-    "TheCenter_WP": ArkMap.ABERRATION,
+    "TheCenter_WP": ArkMap.THE_CENTER,
+    "Astraeos_WP": ArkMap.ASTRAEOS,
 }
 
 # HELPER FUNCTIONS
