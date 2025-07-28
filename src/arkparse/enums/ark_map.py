@@ -11,3 +11,4 @@ class ArkMap(Enum):
     VALGUERO = 7
     THE_CENTER = 8
     THE_ISLAND = 9
+    ASTRAEOS = 10
