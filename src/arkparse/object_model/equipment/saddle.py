@@ -12,7 +12,7 @@ from .__equipment import Equipment
 from .__equipment_with_armor import EquipmentWithArmor
 
 class Saddle(EquipmentWithArmor):
-    def __init_props__(self, obj: ArkGameObject = None):
+    def __init_props__(self):
         super().__init_props__(obj)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):

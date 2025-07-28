@@ -3,6 +3,7 @@ from uuid import UUID
 from typing import List
 import json
 
+from arkparse.logging.ark_save_logger import ArkSaveLogger
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing.struct.actor_transform import ActorTransform
@@ -29,21 +30,18 @@ class Dino(ParsedObjectBase):
 
     #saddle: Saddle
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
         self.is_female = self.object.get_property_value("bIsFemale", False)
         self.id1 = self.object.get_property_value("DinoID1")
         self.id2 = self.object.get_property_value("DinoID2")
         self.gene_traits = self.object.get_array_property_value("GeneTraits")
         self.location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
+        ArkSaveLogger.debug_log(f"Location: {self.location}")
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)
-
-        if self.binary is not None:
-            self.__init_props__()
 
         if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
             stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value

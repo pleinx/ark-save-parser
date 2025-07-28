@@ -3,7 +3,7 @@ from APExamples.basic_parsing.ex_00_parse_all import ex_00_parse_all
 
 from arkparse.logging import ArkSaveLogger
 
-BASE_PATH = Path("C:\\data\\personal\\git\\ark-save-parser\\APExamples\\temp\\ASV")
+BASE_PATH = Path("D:\\ARK servers\\Ascended\\arkparse\\APExamples\\temp\\ASV")
 
 def get_save_path(map_name: str) -> Path:
     """

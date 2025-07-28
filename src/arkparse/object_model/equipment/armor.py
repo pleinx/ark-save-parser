@@ -19,9 +19,8 @@ class Armor(EquipmentWithArmor):
     hypothermal_insulation: float = 0
     hyperthermal_insulation: float = 0
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
             
         hypo = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.HYPOTHERMAL_RESISTANCE.value, default=0)
         hyper = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.HYPERTHERMAL_RESISTANCE.value, default=0)
@@ -33,7 +32,6 @@ class Armor(EquipmentWithArmor):
         super().__init__(uuid, binary)
                          
         self.class_name = "armor"
-        self.__init_props__()
 
     @staticmethod
     def generate_from_template(class_: str, save: AsaSave, is_bp: bool):

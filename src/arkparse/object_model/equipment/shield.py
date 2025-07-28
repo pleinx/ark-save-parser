@@ -10,7 +10,7 @@ from arkparse.utils.json_utils import DefaultJsonEncoder
 from .__equipment_with_durability import EquipmentWithDurability
 
 class Shield(EquipmentWithDurability):
-    def __init_props__(self, obj: ArkGameObject = None):
+    def __init_props__(self):
         super().__init_props__(obj)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):

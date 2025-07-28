@@ -7,6 +7,7 @@ from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing.struct import get_uuid_reference_bytes
 from arkparse.parsing import ArkBinaryParser
+from arkparse.logging import ArkSaveLogger
 
 from .inventory_item import InventoryItem
 # items array InventoryItems -> ArrayProperty -> ObjectProperty
@@ -14,17 +15,20 @@ from .inventory_item import InventoryItem
 @dataclass
 class Inventory(ParsedObjectBase):
     items: Dict[UUID, InventoryItem]
-    def __init__(self, uuid: UUID, binary: ArkBinaryParser, save: AsaSave = None):
-        super().__init__(uuid, binary, save=save)
+    def __init__(self, uuid: UUID, binary: ArkBinaryParser=None, save: AsaSave = None):
+        super().__init__(uuid, binary=binary, save=save)
         self.items = {}
 
         item_arr = self.object.get_array_property_value("InventoryItems")
         for item in item_arr:
             item_uuid = UUID(item.value)
             item = InventoryItem(item_uuid, save=save)
-            is_engram = item.object.get_property_value("bIsEngram")
-            if is_engram is None or not is_engram:
-                self.items[item_uuid] = item
+            if item.object is None:
+                ArkSaveLogger.warning_log(f"Inventory item {item_uuid} could not be loaded from save, not found")
+            else:
+                is_engram = item.object.get_property_value("bIsEngram")
+                if is_engram is None or not is_engram:
+                    self.items[item_uuid] = item
 
     def add_item(self, item: UUID, save: AsaSave = None, store: bool = True):
         if len(self.items) == 0:
