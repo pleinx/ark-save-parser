@@ -28,4 +28,4 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/arkparse"]
+packages = ["src/arkparse", "APExamples"]
