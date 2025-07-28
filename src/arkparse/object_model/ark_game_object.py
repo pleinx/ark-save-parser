@@ -47,13 +47,13 @@ class ArkGameObject(ArkPropertyContainer):
 
                     sContext : SaveContext = binary_reader.save_context
                     self.location = sContext.get_actor_transform(uuid) or None
-                    ArkSaveLogger.debug_log(f"Retrieved actor location: {('Success' if self.location else 'Failed')}")
+                    ArkSaveLogger.parser_log(f"Retrieved actor location: {('Success' if self.location else 'Failed')}")
                     
                 else:
                     self.uuid = binary_reader.read_uuid()
                     self.blueprint = binary_reader.read_string()
 
-                ArkSaveLogger.debug_log(f"Blueprint: {blueprint}")
+                ArkSaveLogger.parser_log(f"Blueprint: {blueprint}")
                 binary_reader.validate_uint32(0)
 
             try:
@@ -70,7 +70,7 @@ class ArkGameObject(ArkPropertyContainer):
                         self.name_metadata.append(_NameMetadata(self.names[i], offset, binary_reader.save_context.is_read_names_as_strings()))
 
                     for name in self.names:
-                        ArkSaveLogger.debug_log(f"Name: {name}")
+                        ArkSaveLogger.parser_log(f"Name: {name}")
 
                     if "AnimSequence" in self.blueprint:
                         return
@@ -78,7 +78,7 @@ class ArkGameObject(ArkPropertyContainer):
                     self.section = binary_reader.read_part()
                     self.unknown = binary_reader.read_short()
 
-                    ArkSaveLogger.debug_log(f"Section: {self.section}, Unknown: {self.unknown}")
+                    ArkSaveLogger.parser_log(f"Section: {self.section}, Unknown: {self.unknown}")
                     
                     if from_custom_bytes:
                         binary_reader.validate_uint16(0)
@@ -88,7 +88,7 @@ class ArkGameObject(ArkPropertyContainer):
                             ArkRotator(binary_reader)  # Placeholder for rotation data
 
                         self.properties_offset = binary_reader.read_uint32()
-                        ArkSaveLogger.debug_log(f"Properties offset: {self.properties_offset}")
+                        ArkSaveLogger.parser_log(f"Properties offset: {self.properties_offset}")
                         binary_reader.validate_uint32(0)
 
                 if not from_custom_bytes: 
@@ -107,7 +107,7 @@ class ArkGameObject(ArkPropertyContainer):
                 if no_header:
                     self.blueprint = self.get_property_value("ItemArchetype").value
             except Exception as e:
-                ArkSaveLogger.debug_log(f"Error while reading object {self.blueprint} ({self.uuid}):", e)
+                ArkSaveLogger.error_log(f"Error while reading object {self.blueprint} ({self.uuid}): {e}")
                 ArkSaveLogger.set_file(binary_reader, "debug.bin")
                 raise e
     
@@ -177,7 +177,7 @@ class ArkGameObject(ArkPropertyContainer):
         # self.uuid2 = reader.read_uuid()
 
     def print_properties(self):
-        print(f"Properties for {self.blueprint}:")
+        print(f"Properties for {self.blueprint} ({self.uuid}):")
         super().print_properties()
 
     def read_double(self, reader: ArkBinaryParser, property_name: str) -> float:

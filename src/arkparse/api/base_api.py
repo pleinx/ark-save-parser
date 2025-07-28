@@ -138,6 +138,8 @@ class BaseApi(StructureApi):
                 item = InventoryItem(uuid=file.uuid, binary=parser)
                 item.reidentify(new_uuid)
                 self.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
+                parser = ArkBinaryParser(self.save.get_game_obj_binary(new_uuid), self.save.save_context)
+                obj = ArkGameObject(uuid=new_uuid, binary_reader=parser)
 
         # Get all inventories and add them to DB
         for file in files:
@@ -167,6 +169,8 @@ class BaseApi(StructureApi):
                     self.save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
                 structures[new_uuid] = structure
                 self.save.add_obj_to_db(new_uuid, structure.binary.byte_buffer)
+                parser = ArkBinaryParser(self.save.get_game_obj_binary(new_uuid), self.save.save_context)
+                obj = ArkGameObject(uuid=new_uuid, binary_reader=parser)
 
         keystone_uuid = uuid_translation_map[UUID(json.loads(Path(base_file).read_text())["keystone"])]
         base = Base(keystone_uuid, structures)

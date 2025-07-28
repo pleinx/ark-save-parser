@@ -9,6 +9,7 @@ from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
 from .ark_value_type import ArkValueType
 from collections import deque
+from arkparse.utils.temp_files import TEMP_FILES_DIR
 
 if TYPE_CHECKING:
     from arkparse import AsaSave
@@ -25,7 +26,7 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         9: "ColorSetNames",
         10: "NameProperty",
         11: "TamingTeamID",
-        12: "UInt64Property",  # ???
+        12: "ObjectProperty",
         13: "RequiredTameAffinity",
         14: "TamingTeamID",
         15: "IntProperty",
@@ -123,13 +124,14 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
         return bytes(output_buffer)
 
+    def __structured_print_print(self, msg: str, to_file: BytesIO, end: str = "\n"):
+        if to_file is not None:
+            to_file.write(msg.encode())
+            to_file.write(end.encode())
+        else:
+            print(msg, end=end)
+
     def __structured_print_known(self, lengths: List[int], to_file: BytesIO = None):
-        def __print(msg: str, end: str = "\n"):
-            if to_file is not None:
-                to_file.write(msg.encode())
-                to_file.write(end.encode())
-            else:
-                print(msg, end=end)
         for length in lengths:
             if self.position >= len(self.byte_buffer):
                 break
@@ -137,17 +139,23 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             for _ in range(length):
                 if self.position >= len(self.byte_buffer):
                     break
-                __print(f"{self.read_byte():02x} ", end="")
-            __print("")
-            __print(f"{self.position}: ", end="")
-    
-    def structured_print(self, to_file: BytesIO = None):
-        def __print(msg: str, end: str = "\n"):
-            if to_file is not None:
-                to_file.write(msg.encode())
-                to_file.write(end.encode())
-            else:
-                print(msg, end=end)
+                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
+            self.__structured_print_print("", to_file)
+            self.__structured_print_print(f"{self.position}: ", to_file, end="")
+
+    def __structured_print_string_property(self, to_file: BytesIO = None):
+        self.validate_uint32(0)
+        self.read_uint32()
+        self.validate_byte(0)
+        value = self.read_string()
+        self.__structured_print_print(f"{value}", to_file)
+        self.__structured_print_print(f"{self.position}: ", to_file, end="")
+
+    def structured_print(self, to_file: BytesIO = None, to_default_file: bool = False):
+        if to_default_file:
+            file_path = TEMP_FILES_DIR / "structured_print.txt"
+            to_file = file_path.open("wb")
+
         current_position = self.position
         known_structures = {
             "UInt32Property": [4,1,4,4],
@@ -172,28 +180,30 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 in_names = int_after == 0
                 if in_names:
                     if printed > 0:
-                        __print("")
-                        __print(f"{self.position}: ", end="")
+                        self.__structured_print_print("", to_file)
+                        self.__structured_print_print(f"{self.position}: ", to_file, end="")
                     name = names[self.position]
-                    __print(f"{name}")
+                    self.__structured_print_print(f"{name}", to_file)
                     self.set_position(self.position + 8)
-                    __print(f"{self.position}: ", end="")
+                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
                     printed = 0
                     if name in known_structures:
                         self.__structured_print_known(known_structures[name], to_file=to_file)
                         continue
-            
+                    elif name == "StrProperty":
+                        self.__structured_print_string_property(to_file=to_file)
+                        continue            
             if not in_names:
-                __print(f"{self.read_byte():02x} ", end="")
+                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
                 printed += 1
 
                 if printed == 4:
-                    __print("")
-                    __print(f"{self.position}: ", end="")
+                    self.__structured_print_print("", to_file)
+                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
                     printed = 0  
 
         self.position = current_position
-        __print(" === End of structured print === ")           
+        self.__structured_print_print(" === End of structured print === ", to_file)
 
     @staticmethod
     def from_deflated_data(byte_arr: List[int]):
@@ -276,7 +286,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 raise ValueError(f"{self.save_context.get_name(self.read_uint32())}: Name {name} not found in save context, ensure it is present before generating object")
             self.replace_bytes(name_id.to_bytes(length=4, byteorder='little'), position=int(position))
 
-            ArkSaveLogger.debug_log(f"Replaced name id at position {position} with {hex(name_id)} for name {name}")
+            ArkSaveLogger.parser_log(f"Replaced name id at position {position} with {hex(name_id)} for name {name}")
 
     def read_part(self) -> str:
         part_index = self.read_int()
@@ -289,7 +299,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         return [self.read_uuid() for _ in range(uuid_count)]
 
     
-    def find_names(self, no_print=False):
+    def find_names(self, no_print=False, type=0):
         if not self.save_context.has_name_table():
             return []
         
@@ -298,7 +308,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         prints = 0
 
         if not no_print:
-            ArkSaveLogger.debug_log("--- Looking for names ---")
+            ArkSaveLogger.parser_log("--- Looking for names ---")
         found = {}
         for i in range(self.size() - 4):
             self.set_position(i)
@@ -310,7 +320,13 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                 self.set_position(i)
                 if prints < max_prints:
                     if not no_print:
-                        ArkSaveLogger.debug_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                        message = f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})"
+                        if type == 0:
+                            ArkSaveLogger.parser_log(message)
+                        elif type == 1:
+                            ArkSaveLogger.warning_log(message)
+                        elif type == 2:
+                            ArkSaveLogger.error_log(message)
                     prints += 1
                 i += 3  # Adjust index to avoid overlapping reads
         self.set_position(original_position)
@@ -322,7 +338,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #     max_prints = 75
     #     prints = 0
 
-    #     ArkSaveLogger.debug_log("--- Looking for byte sequence ---")
+    #     ArkSaveLogger.parser_log("--- Looking for byte sequence ---")
     #     found = []
     #     for i in range(self.size() - len(bytes)):
     #         self.set_position(i)
@@ -330,12 +346,13 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #             found.append(i)
     #             self.set_position(i)
     #             if prints < max_prints:
-    #                 ArkSaveLogger.debug_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
+    #                 ArkSaveLogger.parser_log(f"Found byte sequence at {self.read_bytes_as_hex(len(bytes))} (position {i})")
     #                 prints += 1
     #     self.set_position(original_position)
     #     return found
 
-    def find_byte_sequence(self, pattern: bytes) -> List[int]:
+    def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1) -> List[int]:
+        # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
         original_position = self.get_position()
         max_prints = 20
         prints = 0
@@ -347,10 +364,10 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             pos = buffer.find(pattern)
             if pos == -1:
                 break
-            found.append(pos + cur_offset - 1)
+            found.append(pos + cur_offset + adjust_offset)
             if prints < max_prints:
-                ArkSaveLogger.debug_log(
-                    f"Found byte sequence at {pos + cur_offset - 1}"
+                ArkSaveLogger.parser_log(
+                    f"Found byte sequence at {pos + cur_offset + adjust_offset}"
                 )
                 prints += 1
             buffer = buffer[pos + 1:]

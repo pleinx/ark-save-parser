@@ -25,6 +25,7 @@ class AsaSave:
     name_offset = 0
     name_count = 0
     last_name_end = 0   
+    faulty_objects = 0
 
     def __init__(self, path: Path = None, contents: bytes = None, read_only: bool = False):
 
@@ -67,7 +68,7 @@ class AsaSave:
     def profile_data_in_saves(self) -> bool:
         parser: ArkBinaryParser = self.get_custom_value("GameModeCustomBytes")
         if len(parser.byte_buffer) < 30:
-            ArkSaveLogger.debug_log("GameModeCustomBytes is too short, profile data not in saves")
+            ArkSaveLogger.save_log("GameModeCustomBytes is too short, profile data not in saves")
             return False
         return True
 
@@ -79,19 +80,18 @@ class AsaSave:
             rowCount = 0
             for row in cursor:
                 rowCount += 1
-            ArkSaveLogger.debug_log("Found %d items in game table", rowCount)
+            ArkSaveLogger.save_log(f"Found {rowCount} items in game table")
 
         # get custom values
         query = "SELECT key, value FROM custom"
         with self.connection as conn:
             cursor = conn.execute(query)
             for row in cursor:
-                ArkSaveLogger.debug_log("Custom key: %s", row[0])
-                
+                ArkSaveLogger.save_log(f"Custom key: {row[0]}")
 
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")
-        ArkSaveLogger.debug_log("Actor transforms table retrieved")
+        ArkSaveLogger.save_log("Actor transforms table retrieved")
         if actor_transforms:
             at, atp = actor_transforms.read_actor_transforms()
             self.save_context.actor_transforms = at
@@ -103,22 +103,22 @@ class AsaSave:
         ArkSaveLogger.set_file(header_data, "header.bin")
            
         self.save_context.save_version = header_data.read_short()
-        ArkSaveLogger.debug_log("Save version: %d", self.save_context.save_version)
+        ArkSaveLogger.save_log(f"Save version: {self.save_context.save_version}")
 
         if self.save_context.save_version >= 14:
-            ArkSaveLogger.debug_log("V14 unknown value 1: %d", header_data.read_uint32())
-            ArkSaveLogger.debug_log("V14 unknown value 2: %d", header_data.read_uint32())
-            
+            ArkSaveLogger.save_log(f"V14 unknown value 1: {header_data.read_uint32()}")
+            ArkSaveLogger.save_log(f"V14 unknown value 2: {header_data.read_uint32()}")
+
         name_table_offset = header_data.read_int()
         self.name_offset = name_table_offset
-        ArkSaveLogger.debug_log("Name table offset: %d", name_table_offset)
+        ArkSaveLogger.save_log(f"Name table offset: {name_table_offset}")
         self.save_context.game_time = header_data.read_double()
-        ArkSaveLogger.debug_log("Game time: %f", self.save_context.game_time)
+        ArkSaveLogger.save_log(f"Game time: {self.save_context.game_time}")
 
 
         if self.save_context.save_version >= 12:
             self.save_context.unknown_value = header_data.read_uint32()
-            ArkSaveLogger.debug_log("Unknown value: %d", self.save_context.unknown_value)
+            ArkSaveLogger.save_log(f"Unknown value: {self.save_context.unknown_value}")
 
         self.save_context.sections = self.read_locations(header_data)
         
@@ -131,12 +131,12 @@ class AsaSave:
         if not header_data:
             return None
 
-        positions = header_data.find_byte_sequence(byte_sequence)
+        positions = header_data.find_byte_sequence(byte_sequence, adjust_offset=0)
         if not positions:
             print(f"Byte sequence {byte_sequence} not found in header")
             return None
 
-        ArkSaveLogger.debug_log(f"Found byte sequence in header at position {positions}")
+        ArkSaveLogger.save_log(f"Found byte sequence in header at position {positions}")
         header_data.set_position(positions[0])
         ArkSaveLogger.set_file(header_data, "header.bin")
         ArkSaveLogger.open_hex_view(True)
@@ -155,7 +155,7 @@ class AsaSave:
                 result[key] = header_data.read_string()
             self.last_name_end = header_data.position
         except Exception as e:
-            ArkSaveLogger.debug_log("Error reading name table: %s", e)
+            ArkSaveLogger.error_log("Error reading name table: %s", e)
             ArkSaveLogger.open_hex_view(True)            
             raise e
         return result
@@ -180,7 +180,7 @@ class AsaSave:
         parts = []
 
         num_parts = header_data.read_uint32()
-        ArkSaveLogger.debug_log("Number of header locations: %d", num_parts)
+        ArkSaveLogger.save_log(f"Number of header locations: {num_parts}")
 
         for _ in range(num_parts):
             try:
@@ -209,7 +209,7 @@ class AsaSave:
         cursor.execute(query)
         for row in cursor:
             reader = ArkBinaryParser(row[1], self.save_context)
-            result = reader.find_byte_sequence(value)
+            result = reader.find_byte_sequence(value, adjust_offset=0)
 
             for r in result:
                 print(f"Found at {row[0]}, index: {r}")
@@ -224,7 +224,7 @@ class AsaSave:
         cursor.execute(query)
         for row in cursor:
             reader = ArkBinaryParser(row[1], self.save_context)
-            result = reader.find_byte_sequence(value)
+            result = reader.find_byte_sequence(value, adjust_offset=0)
 
             for r in result:
                 print(f"Found at {row[0]}, index: {r}")
@@ -266,16 +266,19 @@ class AsaSave:
         query = "INSERT INTO game (key, value) VALUES (?, ?)"
         with self.connection as conn:
             conn.execute(query, (self.uuid_to_byte_array(obj_uuid), obj_data))
+            conn.commit()
 
     def modify_game_obj(self, obj_uuid: uuid.UUID, obj_data: bytes):
         query = "UPDATE game SET value = ? WHERE key = ?"
         with self.connection as conn:
             conn.execute(query, (obj_data, self.uuid_to_byte_array(obj_uuid)))
+            conn.commit()
 
     def remove_obj_from_db(self, obj_uuid: uuid.UUID):
         query = "DELETE FROM game WHERE key = ?"
         with self.connection as conn:
             conn.execute(query, (self.uuid_to_byte_array(obj_uuid),))
+            conn.commit()
 
     def add_actor_transform(self, uuid: uuid.UUID, binary_data: bytes, no_store: bool = False):
         actor_transforms = self.get_custom_value("ActorTransforms")
@@ -309,17 +312,17 @@ class AsaSave:
         actor_transforms = self.get_custom_value("ActorTransforms")
 
         if actor_transforms:
-            # if not uuid in self.save_context.actor_transform_positions:
-            #         raise ValueError(f"Actor transform with UUID {uuid} not found in database")
-            #     actor_transforms.set_position(self.save_context.actor_transform_positions[uuid])
             byte_sequence = self.uuid_to_byte_array(uuid)
-            positions = actor_transforms.find_byte_sequence(byte_sequence)
+            positions = actor_transforms.find_byte_sequence(byte_sequence, adjust_offset=0)
             actor_transforms.set_position(positions[0])
             actor_transforms.replace_bytes(byte_sequence + binary_data)
 
             query = "UPDATE custom SET value = ? WHERE key = 'ActorTransforms'"
             with self.connection as conn:
                 conn.execute(query, (actor_transforms.byte_buffer,))
+
+    def reset_caching(self):
+        self.parsed_objects.clear()
 
     def store_db(self, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -328,11 +331,21 @@ class AsaSave:
         
         logger.info(f"Database successfully backed up to {path}")
 
+    def get_save_binary_size(self) -> int:
+        query = "SELECT SUM(LENGTH(value)) FROM game"
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        result = cursor.fetchone()
+        if result and result[0]:
+            return result[0]
+        return 0
+
     def get_game_objects(self, reader_config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()) -> Dict[uuid.UUID, 'ArkGameObject']:
         query = "SELECT key, value FROM game"
         game_objects = {}
         row_index = 0
         objects = []
+        self.faulty_objects = 0
 
         ArkSaveLogger.enter_struct("GameObjects")
 
@@ -347,7 +360,7 @@ class AsaSave:
                 obj_uuid = self.byte_array_to_uuid(row[0])
                 self.save_context.all_uuids.append(obj_uuid)
                 if reader_config.uuid_filter and not reader_config.uuid_filter(obj_uuid):
-                    ArkSaveLogger.debug_log("Skipping object %s", obj_uuid)
+                    ArkSaveLogger.save_log("Skipping object %s", obj_uuid)
                     ArkSaveLogger.exit_struct()
                     continue
 
@@ -357,7 +370,7 @@ class AsaSave:
                 try:
                     class_name = byte_buffer.read_name()
                 except Exception as e:
-                    ArkSaveLogger.debug_log("Error reading class name for object %s: %s", obj_uuid, e)
+                    ArkSaveLogger.error_log("Error reading class name for object %s: %s", obj_uuid, e)
                     class_name = "UnknownClass"
                 ArkSaveLogger.enter_struct(class_name)
 
@@ -382,6 +395,11 @@ class AsaSave:
             sorted_properties = sorted(self.var_objects[o].items(), key=lambda item: item[1], reverse=True)
             for p, count in sorted_properties:
                 print("  - " + p + " " + str(count))
+        
+        if self.faulty_objects > 0:
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
+            ArkSaveLogger.error_log(f"{self.faulty_objects} objects could not be parsed, if possible, please report this to the developers.")
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, False)
         
         return game_objects
     
@@ -431,7 +449,7 @@ class AsaSave:
         self.nr_parsed += 1
 
         if self.nr_parsed % 2500 == 0:
-            ArkSaveLogger.debug_log(f"Nr parsed: {self.nr_parsed}")
+            ArkSaveLogger.save_log(f"Nr parsed: {self.nr_parsed}")
 
         skip_list = [
             "/Game/PrimalEarth/CoreBlueprints/Items/Notes/PrimalItem_StartingNote.PrimalItem_StartingNote_C",
@@ -452,14 +470,24 @@ class AsaSave:
         try:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)
         except Exception as e:
-            if "/Game/" in class_name:
-                if ArkSaveLogger.allow_invalid_objects is False:
-                    ArkSaveLogger.enable_debug = True
-                    byte_buffer.find_names()
+            if "/Game/" in class_name or "/Script/" in class_name:
+                if ArkSaveLogger._allow_invalid_objects is False:
+                    byte_buffer.find_names(type=2)
+                    byte_buffer.structured_print(to_default_file=True)
+                    ArkSaveLogger.error_log(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                    ArkSaveLogger.error_log("Reparsing with logging:")
+                    ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
+                    try:
+                        ArkGameObject(obj_uuid, class_name, byte_buffer)
+                    except Exception as _:
+                        ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
+                        ArkSaveLogger.open_hex_view(True)
+
                     raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
-                print(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
+                self.faulty_objects += 1
+                ArkSaveLogger.warning_log(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
-                print(f"Error parsing non-standard object of type {class_name}")
+                ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
 
         return None
         

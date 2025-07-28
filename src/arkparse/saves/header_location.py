@@ -13,6 +13,13 @@ class HeaderLocation:
             self.x = int(match.group("x"))
             self.y = int(match.group("y"))
             self.dl = int(match.group("dl"), 16) if match.group("dl") else None
+        elif loc_str == "BunkerSPZV":
+            self.map = "BunkerSPZV"
+            self.grid = "BunkerSPZV"
+            self.l = 0
+            self.x = 0
+            self.y = 0
+            self.dl = None
         else:
             raise ValueError("String format does not match expected pattern: " + loc_str)
         

@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from ..ark_binary_parser import ArkBinaryParser
 
 from arkparse.logging import ArkSaveLogger
-from arkparse.enums import ArkEnumValue
+from arkparse.enums.ark_enum import ArkEnumValue
 
 @dataclass
 class ArkTrackedActorIdCategoryPairWithBool:
@@ -39,7 +39,7 @@ class ArkTrackedActorIdCategoryPairWithBool:
 
         byte_buffer.validate_string("None")
 
-        ArkSaveLogger.debug_log(f"Read tracked actor id category pair with bool: {self}")
+        ArkSaveLogger.parser_log(f"Read tracked actor id category pair with bool: {self}")
 
     def __str__(self) -> str:
         return f"id:{self.id_} cat_byte:{self.cat_byte} category:{self.category} bool:{self.bool_}"

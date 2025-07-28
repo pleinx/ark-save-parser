@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import errno
+import json
+from typing import Union
 
 __TEMP_FILE_DIR_CLEARED = False
 
@@ -48,3 +50,55 @@ def __create_temp_files_folder():
     return temp_files_dir
 
 TEMP_FILES_DIR = __create_temp_files_folder()
+
+def __create_config_directory():
+    """
+    Creates a directory for configuration files under the temp files directory.
+    
+    Returns:
+        Path: The Path object of the created directory.
+    """
+    if os.name == 'nt':  # Windows
+        base_dir = Path(os.getenv('LOCALAPPDATA', Path.home() / 'AppData' / 'Local'))
+    else:  # Linux/macOS
+        base_dir = Path(os.getenv('XDG_CACHE_HOME', Path.home() / '.cache'))
+    
+    config_dir = base_dir / 'asp' / 'config'
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir
+
+CONFIG_FILE_DIR = __create_config_directory()
+
+
+
+def write_config_file(filename: str, content: Union[dict, list]):
+    """
+    Writes content to a configuration file in the config directory.
+    
+    Args:
+        filename (str): The name of the configuration file.
+        content (json): The content to write to the file.
+    """
+    config_file_path = CONFIG_FILE_DIR / (filename + '.json')
+    config_file_path.parent.mkdir(parents=True, exist_ok=True)
+    if not isinstance(content, (dict, list)):
+        raise ValueError("Content must be a dictionary or a list.")
+    with open(config_file_path, 'w', encoding='utf-8') as f:
+        json.dump(content, f, indent=4)
+
+def read_config_file(filename: str) -> Union[dict, list]:
+    """
+    Reads content from a configuration file in the config directory.
+    
+    Args:
+        filename (str): The name of the configuration file.
+    
+    Returns:
+        Union[dict, list]: The content of the configuration file.
+    """
+    config_file_path = CONFIG_FILE_DIR / (filename + '.json')
+    if not config_file_path.exists():
+        return None
+    
+    with open(config_file_path, 'r', encoding='utf-8') as f:
+        return json.load(f)

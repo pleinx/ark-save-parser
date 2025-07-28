@@ -110,7 +110,7 @@ class JsonApi:
         self.save = None
 
     def export_armors(self, equipment_api: EquipmentApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
-        ArkSaveLogger.debug_log("Exporting armors...")
+        ArkSaveLogger.api_log("Exporting armors...")
 
         # Get equipment API if not provided.
         if equipment_api is None:
@@ -133,10 +133,10 @@ class JsonApi:
         with open(path_obj / "armors.json", "w") as text_file:
             text_file.write(json.dumps(all_armors, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Armors successfully exported.")
+        ArkSaveLogger.api_log("Armors successfully exported.")
 
     def export_weapons(self, equipment_api: EquipmentApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
-        ArkSaveLogger.debug_log("Exporting weapons...")
+        ArkSaveLogger.api_log("Exporting weapons...")
 
         # Get equipment API if not provided.
         if equipment_api is None:
@@ -159,10 +159,10 @@ class JsonApi:
         with open(path_obj / "weapons.json", "w") as text_file:
             text_file.write(json.dumps(all_weapons, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Weapons successfully exported.")
+        ArkSaveLogger.api_log("Weapons successfully exported.")
 
     def export_shields(self, equipment_api: EquipmentApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
-        ArkSaveLogger.debug_log("Exporting shields...")
+        ArkSaveLogger.api_log("Exporting shields...")
 
         # Get equipment API if not provided.
         if equipment_api is None:
@@ -185,10 +185,10 @@ class JsonApi:
         with open(path_obj / "shields.json", "w") as text_file:
             text_file.write(json.dumps(all_shields, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Shields successfully exported.")
+        ArkSaveLogger.api_log("Shields successfully exported.")
 
     def export_saddles(self, equipment_api: EquipmentApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
-        ArkSaveLogger.debug_log("Exporting saddles...")
+        ArkSaveLogger.api_log("Exporting saddles...")
 
         # Get equipment API if not provided.
         if equipment_api is None:
@@ -211,10 +211,10 @@ class JsonApi:
         with open(path_obj / "saddles.json", "w") as text_file:
             text_file.write(json.dumps(all_saddles, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Saddles successfully exported.")
+        ArkSaveLogger.api_log("Saddles successfully exported.")
 
     def export_player_pawns(self, player_api: PlayerApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
-        ArkSaveLogger.debug_log("Exporting player pawns...")
+        ArkSaveLogger.api_log("Exporting player pawns...")
 
         # Get player API if not provided.
         if player_api is None:
@@ -266,10 +266,10 @@ class JsonApi:
         with open(path_obj / "player_pawns.json", "w") as text_file:
             text_file.write(json.dumps(all_pawns, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Player pawns successfully exported.")
+        ArkSaveLogger.api_log("Player pawns successfully exported.")
 
     def export_dinos(self, export_folder_path: str = Path.cwd() / "json_exports", include_wilds: bool = True, include_tames: bool = True, include_cryopodded: bool = True):
-        ArkSaveLogger.debug_log("Exporting dinos...")
+        ArkSaveLogger.api_log("Exporting dinos...")
 
         # Parse and format dinos as JSON.
         all_dinos = []
@@ -311,10 +311,10 @@ class JsonApi:
         with open(path_obj / "dinos.json", "w") as text_file:
             text_file.write(json.dumps(all_dinos, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Dinos successfully exported.")
+        ArkSaveLogger.api_log("Dinos successfully exported.")
 
     def export_structures(self, export_folder_path: str = Path.cwd() / "json_exports", only_structures_with_inventory: bool = False):
-        ArkSaveLogger.debug_log("Exporting structures...")
+        ArkSaveLogger.api_log("Exporting structures...")
 
         # Parse and format structures as JSON.
         all_structures = []
@@ -351,10 +351,10 @@ class JsonApi:
         with open(path_obj / "structures.json", "w") as text_file:
             text_file.write(json.dumps(all_structures, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Structures successfully exported.")
+        ArkSaveLogger.api_log("Structures successfully exported.")
 
     def export_items(self, export_folder_path: str = Path.cwd() / "json_exports", include_engrams: bool = False):
-        ArkSaveLogger.debug_log("Exporting items...")
+        ArkSaveLogger.api_log("Exporting items...")
 
         # Parse and format items as JSON.
         all_items = []
@@ -390,7 +390,7 @@ class JsonApi:
         with open(path_obj / "items.json", "w") as text_file:
             text_file.write(json.dumps(all_items, indent=4, cls=DefaultJsonEncoder))
 
-        ArkSaveLogger.debug_log("Items successfully exported.")
+        ArkSaveLogger.api_log("Items successfully exported.")
 
     def export_all(self,
                    equipment_api: EquipmentApi = None,

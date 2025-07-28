@@ -14,6 +14,7 @@ from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.parsing.struct.actor_transform import MapCoords
 from arkparse.enums import ArkMap, ArkStat
 from arkparse.utils import TEMP_FILES_DIR
+from arkparse.logging import ArkSaveLogger
 
 class DinoApi:
     def __init__(self, save: AsaSave):
@@ -91,12 +92,6 @@ class DinoApi:
                     if is_tamed:
                         dino = TamedDino(obj.uuid, parser, self.save)
                         self.parsed_tamed_dinos[obj.uuid] = dino
-                        # with open("dino_str.bin", "wb") as f:
-                        #     parser.structured_print(to_file=f)
-                            
-                        # with open("dino_stats.bin", "wb") as f:
-                        #     dino.stats.binary.structured_print(to_file=f)
-                        # input("Press Enter to continue...")
                     else:
                         dino = Dino(obj.uuid, parser, self.save)
                         self.parsed_dinos[obj.uuid] = dino
@@ -112,7 +107,7 @@ class DinoApi:
                                 dino = cryopod.dino
                         except Exception as e:
                             if "Unsupported embedded data version" in str(e):
-                                print(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
+                                ArkSaveLogger.warning_log(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
                                 continue
             
             if dino is not None:
