@@ -276,7 +276,7 @@ class ArkProperty:
         map_items = bb.read_uint32()
 
         if key_type == ArkValueType.Struct:
-            ArkSaveLogger.warning_log( f"Map with struct key type {key_type} is currently not supported, skipping")
+            ArkSaveLogger.warning_log( f"Map with key type {key_type} is currently not supported, skipping map prop")
             bb.set_position(start_of_data + data_size)
             return None
         
