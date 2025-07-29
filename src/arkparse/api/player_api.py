@@ -305,16 +305,10 @@ class PlayerApi:
 
         return self.__calc_stat(deaths, stat_type) if not as_dict else dict
     
-    def get_level(self, player: str = None, stat_type: int = StatType.TOTAL, as_dict: bool = False):
-        level = []
-        dict = {}
-
+    def get_level(self, player: str = None):
         for p in self.players:
             if p.name == player or player is None:
-                level.append(p.stats.level)
-                dict[p.id_] = p.stats.level
-
-        return self.__calc_stat(level, stat_type) if not as_dict else dict
+                return p.stats.level
     
     def get_xp(self, player: str = None, stat_type: int = StatType.TOTAL, as_dict: bool = False):
         xp = []

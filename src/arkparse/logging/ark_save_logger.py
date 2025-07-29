@@ -127,7 +127,8 @@ class ArkSaveLogger:
             global_config["levels"][log_type.value] = state
             write_config_file(ArkSaveLogger.__LOG_CONFIG_FILE_NAME, global_config)
 
-    def disable_all_logs(self):
+    @staticmethod
+    def disable_all_logs():
         if ArkSaveLogger._log_level_states is None:
             ArkSaveLogger.__init_config()
         for key in ArkSaveLogger._log_level_states.keys():

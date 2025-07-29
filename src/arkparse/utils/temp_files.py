@@ -3,6 +3,7 @@ from pathlib import Path
 import errno
 import json
 from typing import Union
+from uuid import uuid4
 
 __TEMP_FILE_DIR_CLEARED = False
 
@@ -102,3 +103,18 @@ def read_config_file(filename: str) -> Union[dict, list]:
     
     with open(config_file_path, 'r', encoding='utf-8') as f:
         return json.load(f)
+    
+def get_temp_file_handle(filename: str = None) -> Path:
+    """
+    Returns a temporary file handle in the temp files directory.
+    """
+
+    if filename is None:
+        filename = uuid4().hex + '.bin'
+
+    temp_file_path = TEMP_FILES_DIR / filename
+    temp_file_path.parent.mkdir(parents=True, exist_ok=True)
+    if not temp_file_path.exists():
+        temp_file_path.touch()
+
+    return temp_file_path

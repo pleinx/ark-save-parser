@@ -12,3 +12,10 @@ class ArkMap(Enum):
     THE_CENTER = 8
     THE_ISLAND = 9
     ASTRAEOS = 10
+
+    def to_file_name(self) -> str:
+        """
+        Converts the enum value to a file name.
+        :return: The file name of the map.
+        """
+        return self.name.replace('_', ' ').title().replace(' ', '')

@@ -27,5 +27,10 @@ include = [
     "src/arkparse/assets/**",  # Include all assets
 ]
 
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+addopts = "--strict-markers --tb=short --maxfail=2"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/arkparse", "APExamples"]

@@ -11,7 +11,7 @@ from arkparse.object_model.stackables import Ammo, Resource
 from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.object_model.misc.object_owner import ObjectOwner
-from arkparse.parsing import ArkBinaryParser
+from arkparse.logging import ArkSaveLogger
 
 class Base:
     structures: Dict[UUID, Structure]
@@ -122,25 +122,30 @@ class Base:
                 if inventory is None:
                     raise Exception(f"Structure {structure.object.uuid} has no inventory")
 
+                ArkSaveLogger.objects_log(f"Generating ARB bullet object template")
                 bullet = Ammo.generate_from_template(Classes.equipment.ammo.advanced_rifle_bullet, save, inv_key)   
                 structure.binary.find_names()             
                 structure.binary.replace_u32(structure.object.find_property("NumBullets"), nr_of_stacks * 100)
             
                 uuids = []
+                ArkSaveLogger.objects_log(f"Padding turret {structure.object.uuid} to {nr_of_stacks} stacks of ARB ammo")
                 for key, _ in inventory.items.items():
                     uuids.append(key)
                 
                 self.__add_turret_stacks(bullet, structure, save, pad_to=nr_of_stacks)
 
+                ArkSaveLogger.objects_log(f"Removing {len(uuids)} existing ammo stacks from turret {structure.object.uuid}")
                 for key in uuids:
                     inventory.remove_item(key, save)
 
+                ArkSaveLogger.objects_log(f"Padding to {nr_of_stacks} stacks of ARB ammo to turret {structure.object.uuid}")
                 self.__add_turret_stacks(bullet, structure, save, pad_to=nr_of_stacks)
 
+                ArkSaveLogger.objects_log(f"Updating turret and inventory {structure.object.uuid} in database")
                 save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
                 save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
     
-    def set_nr_of_fuel_in_generators(self, nr_of_element: int, save: AsaSave):
+    def set_nr_of_fuel_in_generators(self, nr_of_fuel: int, save: AsaSave, gasoline_multiplier: int = 10, stacksize:int = 1) -> int:
         nr_of_gens_handed = 0
         is_regular = False
 
@@ -149,6 +154,8 @@ class Base:
                 structure: StructureWithInventory
                 if not structure.inventory:
                     raise Exception(f"Generators must have inventory!")
+                
+                ArkSaveLogger.objects_log(f"Adding {nr_of_fuel} fuel to generator {structure.object.uuid} (type={structure.get_short_name()})")
 
                 # Reset the generators last checked fuel time to the current game time to prevent them from running out of fuel instantly
                 structure.binary.replace_double(structure.object.find_property("LastCheckedFuelTime"), save.save_context.game_time)
@@ -159,19 +166,23 @@ class Base:
                     fuel = Resource.generate_from_template(Classes.resources.Crafted.gasoline, save, structure.object.uuid)
                     is_regular = True
                 nr_of_gens_handed += 1
+                quantity = ((gasoline_multiplier * stacksize) if is_regular else stacksize)
 
                 for key, item in structure.inventory.items.items():
                     item: Resource
-                    if structure.inventory.items[key].object.blueprint == Classes.resources.Basic.element:
-                        item.set_quantity(1)
+                    if structure.inventory.items[key].object.blueprint in [Classes.resources.Basic.element, Classes.resources.Crafted.gasoline]:
+                        ArkSaveLogger.objects_log(f"Modifying existing fuel object {item.object.uuid} in generator {structure.object.uuid}")
+                        item.set_quantity(quantity)
                         save.modify_game_obj(key, item.binary.byte_buffer)
                 
-                while len(structure.inventory.items) < nr_of_element :
+                while len(structure.inventory.items) < nr_of_fuel :
+                    ArkSaveLogger.objects_log(f"Generating fuel object {fuel.object.uuid} for generator {structure.object.uuid} and adding to database")
                     fuel.reidentify()
-                    fuel.set_quantity((10 if is_regular else 1))
+                    fuel.set_quantity(quantity)
                     save.add_obj_to_db(fuel.object.uuid, fuel.binary.byte_buffer)
                     structure.add_item(fuel.object.uuid)
 
+                ArkSaveLogger.objects_log(f"Updating generator and inventory {structure.object.uuid} in database")
                 save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
                 save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
 
