@@ -2,12 +2,11 @@ import pytest
 from arkparse.api import PlayerApi
 from arkparse.player.ark_player import ArkPlayer
 from arkparse.ark_tribe import ArkTribe
-from arkparse.enums import ArkStat
 from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.misc.dino_owner import DinoOwner
 from arkparse.parsing.struct import ActorTransform
 
-def get_test_player(player_api: PlayerApi | None) -> ArkPlayer | None:
+def get_test_player(player_api: PlayerApi | None) -> ArkPlayer:
     """
     Helper function to retrieve a specific player by name.
     """
@@ -16,21 +15,22 @@ def get_test_player(player_api: PlayerApi | None) -> ArkPlayer | None:
         return None
     return player_api.get_player_by_platform_name(TEST_PLAYER_NAME)
 
-def get_test_tribe(player_api: PlayerApi | None) -> ArkTribe | None:
+def get_test_tribe(player_api: PlayerApi | None) -> ArkTribe:
     TEST_TRIBE_NAME = "Imperium"
     for tribe in player_api.tribes:
         if tribe.name == TEST_TRIBE_NAME:
             return tribe
     return None
+
 @pytest.fixture(scope="module")
-def test_player(player_api: PlayerApi | None) -> ArkPlayer | None:
+def test_player(player_api: PlayerApi | None) -> ArkPlayer:
     """
     Fixture to retrieve a specific test player.
     """
     return get_test_player(player_api)
 
 @pytest.fixture(scope="module")
-def player_api(ragnarok_save) -> PlayerApi | None:
+def player_api(ragnarok_save) -> PlayerApi:
     """
     Helper function to retrieve the PlayerApi instance for a specific map.
     """
@@ -41,7 +41,7 @@ def test_player_api_initialization(player_api: PlayerApi | None):
     Test the initialization of the PlayerApi.
     """
     assert player_api is not None, "PlayerApi should be initialized"
-    assert isinstance(player_api: PlayerApi, PlayerApi), f"Expected PlayerApi, got {type(player_api)}"
+    assert isinstance(player_api, PlayerApi), f"Expected PlayerApi, got {type(player_api)}"
     assert player_api.save is not None, "PlayerApi save should not be None"
     
     assert len(player_api.players) == 100, f"Expected 100 players, got {len(player_api.players)}"
@@ -130,10 +130,11 @@ def test_get_tribe_of_player(player_api: PlayerApi, test_player):
 
 
 def test_get_player_level(player_api: PlayerApi, test_player):
-    lv = player_api.get_level(test_player)
+    lv = player_api.get_level(test_player.name)
+    print(f"Player {test_player.name} level: {lv}")
     assert lv is not None, "Expected a level value, got None"
-    assert lv != 0, (
-        f"Expected non-zero level, got {lv}"
+    assert lv == 156, (
+        f"Expected level 156, got {lv}"
     )
 
 
@@ -147,8 +148,9 @@ def test_get_player_location_distance(player_api: PlayerApi, test_player):
 
 
 def test_get_player_xp(player_api: PlayerApi, test_player):
-    xp = player_api.get_xp(test_player)
-    assert xp is not None, (
-        f"Expected XP for player {test_player.name}, got None"
+    xp = player_api.get_xp(test_player.name)
+    print(f"Player {test_player.name} XP: {xp}")
+    assert int(xp) == 383305408, (
+        f"Expected 383305408 XP for player {test_player.name}, got {xp}"
     )
 

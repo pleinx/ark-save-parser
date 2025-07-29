@@ -38,7 +38,6 @@ class Dino(ParsedObjectBase):
         self.id2 = self.object.get_property_value("DinoID2")
         self.gene_traits = self.object.get_array_property_value("GeneTraits")
         self.location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
-        ArkSaveLogger.debug_log(f"Location: {self.location}")
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)

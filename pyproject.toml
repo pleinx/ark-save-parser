@@ -6,7 +6,10 @@ build-backend = "hatchling.build"
 name = "arkparse"
 version = "0.1.5"
 dependencies = [
-    # List your dependencies here
+    "pytz>=2025.2",
+    "rcon>=2.4.9",
+    "numpy>=2.3.2",
+    "matplotlib>=3.10.3"
 ]
 authors = [
   { name = "Vincent Henau", email = "vincent.henau.github@gmail.com" },

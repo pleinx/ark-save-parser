@@ -176,3 +176,4 @@ out/*
 test_saves/*
 temp
 **/test_data/**
+**/temp_files/**

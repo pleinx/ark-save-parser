@@ -1,14 +1,10 @@
 from typing import List, Dict, Set, Optional
 from pathlib import Path
 from uuid import UUID
-import time
-import threading
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.player.ark_player import ArkPlayer
 from arkparse.ark_tribe import ArkTribe
 from arkparse.saves.asa_save import AsaSave
-from arkparse.object_model.misc.inventory import Inventory
 from arkparse.parsing import ArkBinaryParser
 from arkparse.classes.player import Player
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
@@ -305,17 +301,23 @@ class PlayerApi:
 
         return self.__calc_stat(deaths, stat_type) if not as_dict else dict
     
-    def get_level(self, player: str = None):
+    def get_level(self, player: str = None, stat_type: int = StatType.TOTAL, as_dict: bool = False):
+        levels = []
+        dict = {}
+
         for p in self.players:
             if p.name == player or player is None:
-                return p.stats.level
-    
+                levels.append(p.stats.level)
+                dict[p.id_] = p.stats.level
+
+        return self.__calc_stat(levels, stat_type) if not as_dict else dict
+
     def get_xp(self, player: str = None, stat_type: int = StatType.TOTAL, as_dict: bool = False):
         xp = []
         dict = {}
 
         for p in self.players:
-            if p.name == player or player is None:
+            if p.name == player:
                 xp.append(p.stats.experience)
                 dict[p.id_] = p.stats.experience
 

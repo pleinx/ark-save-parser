@@ -44,8 +44,6 @@ class TamedDino(Dino):
         if self.inv_uuid is not None:
             self.inventory = Inventory(self.inv_uuid, save=save)
 
-        ArkSaveLogger.debug_log(self.location)
-
     def __str__(self) -> str:
         return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner))
 

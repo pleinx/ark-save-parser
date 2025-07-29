@@ -137,7 +137,6 @@ class ArkSaveLogger:
 
     @staticmethod
     def enter_struct(struct_name: str):
-        # self.debug_log("Entering struct %s", struct_name)
         ArkSaveLogger.current_struct_path.append(struct_name)
 
     @staticmethod
@@ -154,7 +153,6 @@ class ArkSaveLogger:
 
     @staticmethod
     def exit_struct():
-        # self.debug_log("Exiting struct %s", self.current_struct_path)
         if len(ArkSaveLogger.current_struct_path) > 0:
             ArkSaveLogger.current_struct_path.pop()
 

@@ -83,10 +83,10 @@ class Base:
                 save.modify_actor_transform(structure.object.uuid, structure.location.to_bytes())
 
     def set_owner(self, new_owner: ObjectOwner, save: AsaSave):
-        for _, structure in self.structures.items():
+        for uuid, structure in self.structures.items():
             # print(f"Setting owner {new_owner} for structure {structure.object.uuid}")
             structure.owner.replace_self_with(new_owner, structure.binary)
-            save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
+            save.modify_game_obj(uuid, structure.binary.byte_buffer)
 
     def store_binary(self, path: Path):
         path.mkdir(parents=True, exist_ok=True)
@@ -187,6 +187,3 @@ class Base:
                 save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
 
         return nr_of_gens_handed
-
-    def import_from_binaries(self, path: Path):
-        pass
