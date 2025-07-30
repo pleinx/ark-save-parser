@@ -3,7 +3,7 @@ from pathlib import Path
 from arkparse.api import BaseApi
 from arkparse.enums import ArkMap
 from arkparse import AsaSave
-from arkparse.player.ark_player import ArkPlayer
+from arkparse.object_model.bases.base import Base
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.parsing.struct import ActorTransform, ArkVector
 
@@ -107,8 +107,6 @@ def test_base_replace_owner(resource_path, temp_file_folder, rag_limited: AsaSav
 
     base.set_owner(o, base_api.save)
 
-    new_base_api = BaseApi(base_api.save, ArkMap.RAGNAROK)
-
     b = base_api.get_base_at(base.location.as_map_coords(ArkMap.RAGNAROK), radius=1)
     print(b.owner)
 
@@ -140,3 +138,41 @@ def test_base_replace_owner(resource_path, temp_file_folder, rag_limited: AsaSav
         f"Expected {nr_of_structures_old} structures, got {nr_of_structures_new}"
     )
 
+def test_retrieving_nr_of_generators(rag_limited: AsaSave, temp_file_folder: Path, resource_path: Path):
+    """
+    Test retrieving the number of generators in a base.
+    """
+    base_api = get_base_api(rag_limited, temp_file_folder)
+    base_path = resource_path / "bases" / "mixed_6"
+    base = base_api.import_base(base_path)
+    assert base is not None, "Imported base should not be None"
+
+    elec_gens = base.get_generators(Base.GeneratorType.ELECTRIC)
+    print(f"Found {len(elec_gens)} electric generators in the base")
+    assert len(elec_gens) == 2, "Expected 2 electric generators in the base"
+
+    tek_gens = base.get_generators(Base.GeneratorType.TEK)
+    print(f"Found {len(tek_gens)} tek generators in the base")
+    assert len(tek_gens) == 1, "Expected 1 tek generator in the base"
+
+def test_retrieving_nr_of_turrets(rag_limited: AsaSave, temp_file_folder: Path, resource_path: Path):
+    """
+    Test retrieving the number of turrets in a base.
+    """
+    base_api = get_base_api(rag_limited, temp_file_folder)
+    base_path = resource_path / "bases" / "mixed_6"
+    base = base_api.import_base(base_path)
+    assert base is not None, "Imported base should not be None"
+
+    turrets = base.get_turrets(Base.TurretType.AUTO)
+    print(f"Found {len(turrets)} auto turrets in the base")
+    assert len(turrets) == 0, "Expected 0 auto turrets in the base"
+
+    heavy_turrets = base.get_turrets(Base.TurretType.HEAVY)
+    print(f"Found {len(heavy_turrets)} heavy turrets in the base")
+    assert len(heavy_turrets) == 27, "Expected 27 heavy turrets in the base"
+
+    tek_turrets = base.get_turrets(Base.TurretType.TEK)
+    print(f"Found {len(tek_turrets)} tek turrets in the base")
+    assert len(tek_turrets) == 12, "Expected 12 tek turrets in the base"
+    

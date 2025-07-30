@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from uuid import UUID, uuid4
 from pathlib import Path
 import json
@@ -8,6 +8,7 @@ from arkparse import Classes
 from arkparse import AsaSave
 import arkparse.parsing.struct as structs
 from arkparse.object_model.stackables import Ammo, Resource
+from arkparse.object_model.stackables._stackable import Stackable
 from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.object_model.misc.object_owner import ObjectOwner
@@ -19,6 +20,24 @@ class Base:
     keystone: Structure
     owner: ObjectOwner
     nr_of_turrets: int
+
+    class TurretType:
+        AUTO = Classes.structures.placed.turrets.auto
+        HEAVY = Classes.structures.placed.turrets.heavy
+        TEK = Classes.structures.placed.turrets.tek
+        ALL = [AUTO, HEAVY, TEK]
+
+    class GeneratorType:
+        TEK = Classes.structures.placed.tek.generator
+        ELECTRIC = Classes.structures.placed.metal.generator
+        ALL = [TEK, ELECTRIC]
+
+    stack_sizes = {
+        Classes.resources.Crafted.gasoline: 10,
+        Classes.resources.Basic.element: 1,
+        Classes.equipment.ammo.advanced_rifle_bullet: 100,
+        Classes.resources.Basic.element_shard: 1000
+    }
 
     def __determine_location(self):
         average_x = 0
@@ -95,95 +114,132 @@ class Base:
         for _, structure in self.structures.items():
             structure.store_binary(path)
 
-    def __add_turret_stacks(self, bullet: Ammo, structure: StructureWithInventory, save: AsaSave, pad_to: int):
-        inventory = structure.inventory
+    def set_turret_ammo(self, save: AsaSave, bullets_in_heavy: int = 1, bullets_in_auto: int = 1, shards_in_tek: int = 1):
+        amount = 0
+        bullet = ""
+        turrets = self.get_turrets()
+    
+        for turret in turrets:
+            inventory = turret.inventory
+            
+            if inventory is None:
+                raise Exception(f"{turret.get_short_name()} {turret.object.uuid} has no inventory")
+            
+            if turret.object.blueprint == Classes.structures.placed.turrets.heavy:
+                bullet = Classes.equipment.ammo.advanced_rifle_bullet
+                amount = bullets_in_heavy
+            elif turret.object.blueprint == Classes.structures.placed.turrets.auto:
+                bullet = Classes.equipment.ammo.advanced_rifle_bullet
+                amount = bullets_in_auto
+            elif turret.object.blueprint == Classes.structures.placed.turrets.tek:
+                bullet = Classes.resources.Basic.element_shard
+                amount = shards_in_tek
 
-        while len(inventory.items) < pad_to:
-            from arkparse.logging import ArkSaveLogger
-            # ArkSaveLogger.enable_debug = True
-            new_uuid = uuid4()
-            bullet.reidentify(new_uuid)
-            bullet.set_quantity(100)
-            save.add_obj_to_db(bullet.object.uuid, bullet.binary.byte_buffer)
-            space_available = structure.add_item(bullet.object.uuid)
-            # ArkSaveLogger.enable_debug = False  
+           
+            ArkSaveLogger.objects_log(f"Padding {turret.get_short_name()} ({turret.object.uuid}) to {amount} bullets")
+            self.__set_new_inventory(save, turret, bullet, amount)
+
+            ArkSaveLogger.objects_log(f"Updating {turret.get_short_name()} and inventory in database")
+            save.modify_game_obj(turret.object.uuid, turret.binary.byte_buffer)
+            save.modify_game_obj(turret.inventory.object.uuid, turret.inventory.binary.byte_buffer)
+
+        return len(turrets)
+    
+    def set_fuel_in_generators(self, save: AsaSave, nr_of_element: int = 1, nr_of_gasoline: int = 1) -> int:
+        amount = 0
+        generators: List[StructureWithInventory] = self.get_generators()
+
+        for generator in generators:
+            if not generator.inventory:
+                raise Exception(f"Generators must have inventory!")
+            
+            # Reset the generators last checked fuel time to the current game time to prevent them from running out of fuel instantly
+            generator.binary.replace_double(generator.object.find_property("LastCheckedFuelTime"), save.save_context.game_time)
+            item_class = None
+            if generator.object.blueprint == Classes.structures.placed.metal.generator:
+                item_class = Classes.resources.Crafted.gasoline
+                amount = nr_of_gasoline
+            elif generator.object.blueprint == Classes.structures.placed.tek.generator:
+                item_class = Classes.resources.Crafted.gasoline
+                amount = nr_of_element
+
+            ArkSaveLogger.objects_log(f"Adding fuel to generator {generator.object.uuid} (type={generator.get_short_name()})")
+            self.__set_new_inventory(save, generator, item_class, amount)
+
+            ArkSaveLogger.objects_log(f"Updating generator and inventory {generator.object.uuid} in database")
+            save.modify_game_obj(generator.object.uuid, generator.binary.byte_buffer)
+            save.modify_game_obj(generator.inventory.object.uuid, generator.inventory.binary.byte_buffer)
+
+        return len(generators)
+    
+    def get_turrets(self, types: TurretType = TurretType.ALL) -> list[StructureWithInventory]:
+        turrets = []
+        for _, structure in self.structures.items():
+            if structure.object.blueprint in types:
+                turrets.append(structure)
+        return turrets
+
+    def get_generators(self, types: GeneratorType = GeneratorType.ALL) -> list[StructureWithInventory]:
+        generators = []
+        for _, structure in self.structures.items():
+            if structure.object.blueprint in types:
+                generators.append(structure)
+        return generators
+    
+    def set_stack_sizes(self, advanced_rifle_bullet: int = 100, element: int = 100, element_shard: int = 1000, gasoline: int = 10):
+        self.stack_sizes[Classes.resources.Crafted.gasoline] = gasoline
+        self.stack_sizes[Classes.resources.Basic.element] = element
+        self.stack_sizes[Classes.equipment.ammo.advanced_rifle_bullet] = advanced_rifle_bullet
+        self.stack_sizes[Classes.resources.Basic.element_shard] = element_shard
+
+    def __create_stack_item(self, save: AsaSave, item_class: str, quantity: int, parent_uuid: UUID) -> Stackable:
+        """
+        Creates a fuel item of the specified class and quantity.
+        """
+        stack: Stackable = None
+        if item_class == Classes.resources.Crafted.gasoline:
+            stack = Resource.generate_from_template(Classes.resources.Crafted.gasoline, save, parent_uuid)
+        elif item_class == Classes.resources.Basic.element:
+            stack = Resource.generate_from_template(Classes.resources.Basic.element, save, parent_uuid)
+        elif item_class == Classes.equipment.ammo.advanced_rifle_bullet:
+            stack = Ammo.generate_from_template(Classes.equipment.ammo.advanced_rifle_bullet, save, parent_uuid)
+        elif item_class == Classes.resources.Basic.element_shard:
+            stack = Resource.generate_from_template(Classes.resources.Basic.element_shard, save, parent_uuid)
+        else:
+            raise ValueError(f"Unknown fuel item class: {item_class}")
+
+        stack.reidentify()
+        stack.set_quantity(quantity)
+        save.add_obj_to_db(stack.object.uuid, stack.binary.byte_buffer)
+
+        return stack
+    
+    def __set_new_inventory(self, save: AsaSave, structure: StructureWithInventory, item_class: str, quantity: int):
+        stack_size = self.stack_sizes.get(item_class)
+        space_available = True
+
+        if not stack_size:
+            raise ValueError(f"Unknown item class: {item_class}")
+        
+        previous_items = structure.inventory.items.copy()
+
+        for key, _ in previous_items.items():
+            structure.inventory.remove_item(key, save)
+            save.remove_obj_from_db(key)
+
+        num_full_stacks = quantity // stack_size
+        remainder = quantity % stack_size
+
+        for _ in range(num_full_stacks):
+            stack = self.__create_stack_item(save, item_class, stack_size, structure.object.uuid)
+            space_available = structure.add_item(stack.object.uuid)
 
             if not space_available:
-                # print(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
                 break
 
-    def pad_turret_ammo(self, nr_of_stacks: int, save: AsaSave):
-        
-        for inv_key, structure in self.structures.items():
-            if structure.object.blueprint in Classes.structures.placed.turrets.all_bps:
-                structure: StructureWithInventory
-                inventory = structure.inventory
-                
-                if inventory is None:
-                    raise Exception(f"Structure {structure.object.uuid} has no inventory")
+        if remainder > 0 and space_available:
+            stack = self.__create_stack_item(save, item_class, remainder, structure.object.uuid)
+            space_available =structure.add_item(stack.object.uuid)
 
-                ArkSaveLogger.objects_log(f"Generating ARB bullet object template")
-                bullet = Ammo.generate_from_template(Classes.equipment.ammo.advanced_rifle_bullet, save, inv_key)   
-                structure.binary.find_names()             
-                structure.binary.replace_u32(structure.object.find_property("NumBullets"), nr_of_stacks * 100)
-            
-                uuids = []
-                ArkSaveLogger.objects_log(f"Padding turret {structure.object.uuid} to {nr_of_stacks} stacks of ARB ammo")
-                for key, _ in inventory.items.items():
-                    uuids.append(key)
-                
-                self.__add_turret_stacks(bullet, structure, save, pad_to=nr_of_stacks)
-
-                ArkSaveLogger.objects_log(f"Removing {len(uuids)} existing ammo stacks from turret {structure.object.uuid}")
-                for key in uuids:
-                    inventory.remove_item(key, save)
-
-                ArkSaveLogger.objects_log(f"Padding to {nr_of_stacks} stacks of ARB ammo to turret {structure.object.uuid}")
-                self.__add_turret_stacks(bullet, structure, save, pad_to=nr_of_stacks)
-
-                ArkSaveLogger.objects_log(f"Updating turret and inventory {structure.object.uuid} in database")
-                save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
-                save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
-    
-    def set_nr_of_fuel_in_generators(self, nr_of_fuel: int, save: AsaSave, gasoline_multiplier: int = 10, stacksize:int = 1) -> int:
-        nr_of_gens_handed = 0
-        is_regular = False
-
-        for _, structure in self.structures.items():
-            if structure.object.blueprint in Classes.structures.placed.tek.generator or structure.object.blueprint in Classes.structures.placed.metal.generator:
-                structure: StructureWithInventory
-                if not structure.inventory:
-                    raise Exception(f"Generators must have inventory!")
-                
-                ArkSaveLogger.objects_log(f"Adding {nr_of_fuel} fuel to generator {structure.object.uuid} (type={structure.get_short_name()})")
-
-                # Reset the generators last checked fuel time to the current game time to prevent them from running out of fuel instantly
-                structure.binary.replace_double(structure.object.find_property("LastCheckedFuelTime"), save.save_context.game_time)
-                if structure.object.blueprint in Classes.structures.placed.tek.generator:
-                    fuel = Resource.generate_from_template(Classes.resources.Basic.element, save, structure.object.uuid)
-                    is_regular = False
-                else:
-                    fuel = Resource.generate_from_template(Classes.resources.Crafted.gasoline, save, structure.object.uuid)
-                    is_regular = True
-                nr_of_gens_handed += 1
-                quantity = ((gasoline_multiplier * stacksize) if is_regular else stacksize)
-
-                for key, item in structure.inventory.items.items():
-                    item: Resource
-                    if structure.inventory.items[key].object.blueprint in [Classes.resources.Basic.element, Classes.resources.Crafted.gasoline]:
-                        ArkSaveLogger.objects_log(f"Modifying existing fuel object {item.object.uuid} in generator {structure.object.uuid}")
-                        item.set_quantity(quantity)
-                        save.modify_game_obj(key, item.binary.byte_buffer)
-                
-                while len(structure.inventory.items) < nr_of_fuel :
-                    ArkSaveLogger.objects_log(f"Generating fuel object {fuel.object.uuid} for generator {structure.object.uuid} and adding to database")
-                    fuel.reidentify()
-                    fuel.set_quantity(quantity)
-                    save.add_obj_to_db(fuel.object.uuid, fuel.binary.byte_buffer)
-                    structure.add_item(fuel.object.uuid)
-
-                ArkSaveLogger.objects_log(f"Updating generator and inventory {structure.object.uuid} in database")
-                save.modify_game_obj(structure.object.uuid, structure.binary.byte_buffer)
-                save.modify_game_obj(structure.inventory.object.uuid, structure.inventory.binary.byte_buffer)
-
-        return nr_of_gens_handed
+        if not space_available:
+            ArkSaveLogger.objects_log(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
