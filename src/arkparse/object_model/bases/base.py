@@ -13,6 +13,7 @@ from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.logging import ArkSaveLogger
+import random
 
 class Base:
     structures: Dict[UUID, Structure]
@@ -33,8 +34,8 @@ class Base:
         ALL = [TEK, ELECTRIC]
 
     stack_sizes = {
-        Classes.resources.Crafted.gasoline: 10,
-        Classes.resources.Basic.element: 1,
+        Classes.resources.Crafted.gasoline: 100,
+        Classes.resources.Basic.element: 100,
         Classes.equipment.ammo.advanced_rifle_bullet: 100,
         Classes.resources.Basic.element_shard: 1000
     }
@@ -160,7 +161,7 @@ class Base:
                 item_class = Classes.resources.Crafted.gasoline
                 amount = nr_of_gasoline
             elif generator.object.blueprint == Classes.structures.placed.tek.generator:
-                item_class = Classes.resources.Crafted.gasoline
+                item_class = Classes.resources.Basic.element
                 amount = nr_of_element
 
             ArkSaveLogger.objects_log(f"Adding fuel to generator {generator.object.uuid} (type={generator.get_short_name()})")
@@ -169,6 +170,8 @@ class Base:
             ArkSaveLogger.objects_log(f"Updating generator and inventory {generator.object.uuid} in database")
             save.modify_game_obj(generator.object.uuid, generator.binary.byte_buffer)
             save.modify_game_obj(generator.inventory.object.uuid, generator.inventory.binary.byte_buffer)
+
+            ArkSaveLogger.objects_log(f"\n")
 
         return len(generators)
     
@@ -209,6 +212,7 @@ class Base:
             raise ValueError(f"Unknown fuel item class: {item_class}")
 
         stack.reidentify()
+        ArkSaveLogger.objects_log(f"Created stack item {stack.get_short_name()} with quantity {quantity} for parent {parent_uuid}")
         stack.set_quantity(quantity)
         save.add_obj_to_db(stack.object.uuid, stack.binary.byte_buffer)
 
@@ -222,24 +226,38 @@ class Base:
             raise ValueError(f"Unknown item class: {item_class}")
         
         previous_items = structure.inventory.items.copy()
+        keep = list(previous_items.keys())[0]
+        ArkSaveLogger.objects_log(f"Keeping item {keep} in inventory {structure.object.uuid} while adding new items, total original items: {len(previous_items)}")
 
-        for key, _ in previous_items.items():
-            structure.inventory.remove_item(key, save)
-            save.remove_obj_from_db(key)
+        try:
+            for key, _ in previous_items.items():
+                if key != keep:
+                    ArkSaveLogger.objects_log(f"Removing item {key} from inventory {structure.object.uuid} to make space for new items")
+                    structure.inventory.remove_item(key, save)
+                    save.remove_obj_from_db(key)
 
-        num_full_stacks = quantity // stack_size
-        remainder = quantity % stack_size
+            num_full_stacks = quantity // stack_size
+            remainder = quantity % stack_size
 
-        for _ in range(num_full_stacks):
-            stack = self.__create_stack_item(save, item_class, stack_size, structure.object.uuid)
-            space_available = structure.add_item(stack.object.uuid)
+            if remainder > 0:
+                stack = self.__create_stack_item(save, item_class, remainder, structure.object.uuid)
+                structure.add_item(stack.object.uuid, save)
+
+            if keep is not None:
+                ArkSaveLogger.objects_log(f"Removing last original item {keep} in inventory {structure.object.uuid}")
+                structure.inventory.remove_item(keep, save)
+                save.remove_obj_from_db(keep)
+
+            for _ in range(num_full_stacks):
+                stack = self.__create_stack_item(save, item_class, stack_size, structure.object.uuid)
+                space_available = structure.add_item(stack.object.uuid, save)
+                ArkSaveLogger.objects_log(f"Adding stack item {stack.get_short_name()} to inventory {structure.object.uuid}")
+
+                if not space_available:
+                    break
 
             if not space_available:
-                break
-
-        if remainder > 0 and space_available:
-            stack = self.__create_stack_item(save, item_class, remainder, structure.object.uuid)
-            space_available =structure.add_item(stack.object.uuid)
-
-        if not space_available:
-            ArkSaveLogger.objects_log(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
+                ArkSaveLogger.objects_log(f"Inventory of {structure.object.uuid} is full at {structure.max_item_count} items, cannot add more ammo")
+        except Exception as e:
+            ArkSaveLogger.error_log(f"Error while setting new inventory for {structure.get_short_name()} ({structure.object.uuid}): {e}")
+            raise e

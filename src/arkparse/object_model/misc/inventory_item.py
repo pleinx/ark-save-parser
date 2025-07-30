@@ -52,12 +52,10 @@ class InventoryItem(ParsedObjectBase):
     def set_quantity(self, quantity: int, save: AsaSave = None):
         self.quantity = quantity
         prop = self.object.find_property("ItemQuantity")
-        # self.binary.structured_print()
         self.binary.replace_u32(prop, quantity)
-        # self.binary.structured_print()
 
         if save is not None:
-            save.modify_game_obj(self.object.uuid, self.binary)
+            save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
     def get_inventory(self, save: AsaSave):
         from .inventory import Inventory # placed here to avoid circular import

@@ -15,6 +15,7 @@ from .inventory_item import InventoryItem
 @dataclass
 class Inventory(ParsedObjectBase):
     items: Dict[UUID, InventoryItem]
+    started_empty: bool = False
     def __init__(self, uuid: UUID, binary: ArkBinaryParser=None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)
         self.items = {}
@@ -46,7 +47,7 @@ class Inventory(ParsedObjectBase):
             object_references.append(get_uuid_reference_bytes(item))
         
         if len(self.items) == 0:
-            raise ValueError("Currently, adding stuff to empty inventories is not supported!")
+            raise ValueError("Inventory cannot be empty when adding items (at this point in time)")
             # self.binary.insert_array("InventoryItems", "ObjectProperty", object_references)
         else:
             self.binary.set_property_position("InventoryItems")
@@ -54,13 +55,6 @@ class Inventory(ParsedObjectBase):
 
         if save is not None and store:
             save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
-
-        # from arkparse.logging import ArkSaveLogger
-        # from arkparse.object_model import ArkGameObject
-        # ArkSaveLogger.enable_debug = True
-        # ArkSaveLogger.set_file(self.binary, "debug.bin")
-        # obj = ArkGameObject(uuid='', blueprint='', binary_reader=self.binary)
-        # ArkSaveLogger.open_hex_view(True)
 
     def remove_item(self, item: UUID, save: AsaSave = None):
         if len(self.items) == 0:

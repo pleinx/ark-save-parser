@@ -59,6 +59,7 @@ class _TribeAndPlayerData:
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             uuid_pos = self.data.find_byte_sequence(uuid_bytes)
+            # TODO: already only take latest of UUID here
             ArkSaveLogger.api_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
@@ -79,6 +80,9 @@ class _TribeAndPlayerData:
             end_pos = last_none + 4
             size = end_pos - offset
             ArkSaveLogger.api_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
+
+            # TODO: already only take latest of UUID here
+
             self.player_data_pointers.append([uuid_bytes, offset, size+1])
 
     def get_last_none_before(self, nones: List[int], pos: int = None):

@@ -13,7 +13,7 @@ from .__equipment_with_armor import EquipmentWithArmor
 
 class Saddle(EquipmentWithArmor):
     def __init_props__(self):
-        super().__init_props__(obj)
+        super().__init_props__()
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)

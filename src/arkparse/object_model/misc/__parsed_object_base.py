@@ -26,12 +26,10 @@ class ParsedObjectBase:
         if (uuid is None) or ((binary is None) and (save is None)):
             return
         if save is not None:
-            self.binary = save.get_parser_for_game_object(uuid)
-            if self.binary is None:
+            if not save.is_in_db(uuid):
                 ArkSaveLogger.error_log(f"Could not find binary for game object {uuid} in save")
+            self.binary = save.get_parser_for_game_object(uuid)
             self.object = save.get_game_object_by_id(uuid)
-            if self.object is None:
-                ArkSaveLogger.error_log(f"Could not find game object {uuid} in save")
         else:
             self.binary = binary
             bp = self.__get_class_name()

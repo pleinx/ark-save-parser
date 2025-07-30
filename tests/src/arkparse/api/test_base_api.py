@@ -3,9 +3,11 @@ from pathlib import Path
 from arkparse.api import BaseApi
 from arkparse.enums import ArkMap
 from arkparse import AsaSave
+from arkparse.classes import Classes
 from arkparse.object_model.bases.base import Base
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.parsing.struct import ActorTransform, ArkVector
+from arkparse.object_model.misc.inventory import Inventory
 
 def count_files_in_folder(folder: Path) -> int:
     """
@@ -175,4 +177,104 @@ def test_retrieving_nr_of_turrets(rag_limited: AsaSave, temp_file_folder: Path, 
     tek_turrets = base.get_turrets(Base.TurretType.TEK)
     print(f"Found {len(tek_turrets)} tek turrets in the base")
     assert len(tek_turrets) == 12, "Expected 12 tek turrets in the base"
+
+def count_stacks(inventory: Inventory, item_type: str) -> int:
+    """
+    Count the number of stacks of a specific item type in the inventory.
+    """
+    total = 0
+    for item in inventory.items.values():
+        if item.object.blueprint == item_type:
+            print(f"Found item {item.get_short_name()} with quantity {item.quantity}")
+            total += item.quantity
+    return total
+
+def test_generator_fuel(rag_limited: AsaSave, temp_file_folder: Path, resource_path: Path):
+    """
+    Test the fuel consumption of tek generators in a base.
+    """
+    base_api = get_base_api(rag_limited, temp_file_folder)
+    base_path = resource_path / "bases" / "mixed_6"
+    base = base_api.import_base(base_path)
+    assert base is not None, "Imported base should not be None"
+
+    base.set_fuel_in_generators(base_api.save, 37, 117)
+    print(f"Set fuel in generators, now checking inventory")
+
+    tek_gens = base.get_generators(Base.GeneratorType.TEK)
+    for gen in tek_gens:
+        nr_of_element = count_stacks(gen.inventory, Classes.resources.Basic.element)
+        print(f"Generator {gen.object.uuid} has {nr_of_element} Element in inventory")
+        assert nr_of_element == 37, f"Expected 37 Element in generator inventory, got {nr_of_element}"
+
+    for elec_gen in base.get_generators(Base.GeneratorType.ELECTRIC):
+        nr_of_fuel = count_stacks(elec_gen.inventory, Classes.resources.Crafted.gasoline)
+        print(f"Generator {elec_gen.object.uuid} has {nr_of_fuel} Fuel in inventory")
+        assert nr_of_fuel == 117, f"Expected 117 Fuel in electric generator inventory, got {nr_of_fuel}"
+
+    base_api.save.store_db(temp_file_folder / "test_generator_fuel.db")
+    assert (temp_file_folder / "test_generator_fuel.db").exists(), "Database file should be created"
+    print(f"Database stored at {temp_file_folder / 'test_generator_fuel.db'}")
+
+    reimport_save = AsaSave(path=temp_file_folder / "test_generator_fuel.db")
+    reimport_api = BaseApi(reimport_save, ArkMap.RAGNAROK)
+    reimport_base = reimport_api.get_base_at(base.location.as_map_coords(ArkMap.RAGNAROK), radius=1)
+    assert reimport_base is not None, "Re-imported base should not be None"
+
+    print(f"Re-imported base has {len(reimport_base.structures)} structures, nr of files: {count_files_in_folder(temp_file_folder / 'test_generator_fuel')}")
+
+    tek_gens = base.get_generators(Base.GeneratorType.TEK)
+    for gen in tek_gens:
+        nr_of_element = count_stacks(gen.inventory, Classes.resources.Basic.element)
+        print(f"Generator {gen.object.uuid} has {nr_of_element} Element in inventory")
+        assert nr_of_element == 37, f"Expected 37 Element in generator inventory, got {nr_of_element}"
+
+    for elec_gen in base.get_generators(Base.GeneratorType.ELECTRIC):
+        nr_of_fuel = count_stacks(elec_gen.inventory, Classes.resources.Crafted.gasoline)
+        print(f"Generator {elec_gen.object.uuid} has {nr_of_fuel} Fuel in inventory")
+        assert nr_of_fuel == 117, f"Expected 117 Fuel in electric generator inventory, got {nr_of_fuel}"
+
+def test_turret_ammo(rag_limited: AsaSave, temp_file_folder: Path, resource_path: Path):
+    """
+    Test the ammo consumption of turrets in a base.
+    """
+    base_api = get_base_api(rag_limited, temp_file_folder)
+    base_path = resource_path / "bases" / "mixed_6"
+    base = base_api.import_base(base_path)
+    assert base is not None, "Imported base should not be None"
+
+    base.set_turret_ammo(base_api.save, bullets_in_heavy=2345, shards_in_tek=1717)
+    print(f"Set ammo in turrets, now checking inventory")
+
+    for heavy_turret in base.get_turrets(Base.TurretType.HEAVY):
+        nr_of_ammo = count_stacks(heavy_turret.inventory, Classes.equipment.ammo.advanced_rifle_bullet)
+        print(f"Heavy Turret {heavy_turret.object.uuid} has {nr_of_ammo} Advanced Rifle Bullets in inventory")
+        assert nr_of_ammo == 2345, f"Expected 2345 Advanced Rifle Bullets in heavy turret inventory, got {nr_of_ammo}"
+
+    for tek_turret in base.get_turrets(Base.TurretType.TEK):
+        nr_of_ammo = count_stacks(tek_turret.inventory, Classes.resources.Basic.element_shard)
+        print(f"Tek Turret {tek_turret.object.uuid} has {nr_of_ammo} Element Shards in inventory")
+        assert nr_of_ammo == 1717, f"Expected 1717 Element Shards in tek turret inventory, got {nr_of_ammo}"
+
+    base_api.save.store_db(temp_file_folder / "test_turret_ammo.db")
+    assert (temp_file_folder / "test_turret_ammo.db").exists(), "Database file should be created"
+    print(f"Database stored at {temp_file_folder / 'test_turret_ammo.db'}")
+
+    reimport_save = AsaSave(path=temp_file_folder / "test_turret_ammo.db")
+    reimport_api = BaseApi(reimport_save, ArkMap.RAGNAROK)
+    reimport_base = reimport_api.get_base_at(base.location.as_map_coords(ArkMap.RAGNAROK), radius=1)
+    assert reimport_base is not None, "Re-imported base should not be None"
+
+    print(f"Re-imported base has {len(reimport_base.structures)} structures, nr of files: {count_files_in_folder(temp_file_folder / 'test_turret_ammo')}")
+    for heavy_turret in reimport_base.get_turrets(Base.TurretType.HEAVY):
+        nr_of_ammo = count_stacks(heavy_turret.inventory, Classes.equipment.ammo.advanced_rifle_bullet)
+        print(f"Heavy Turret {heavy_turret.object.uuid} has {nr_of_ammo} Advanced Rifle Bullets in inventory")
+        assert nr_of_ammo == 2345, f"Expected 2345 Advanced Rifle Bullets in heavy turret inventory, got {nr_of_ammo}"
+
+    for tek_turret in reimport_base.get_turrets(Base.TurretType.TEK):
+        nr_of_ammo = count_stacks(tek_turret.inventory, Classes.resources.Basic.element_shard)
+        print(f"Tek Turret {tek_turret.object.uuid} has {nr_of_ammo} Element Shards in inventory")
+        assert nr_of_ammo == 1717, f"Expected 1717 Element Shards in tek turret inventory, got {nr_of_ammo}"
+
     
+
