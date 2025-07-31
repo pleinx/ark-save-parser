@@ -74,8 +74,12 @@ json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
 dino_api = DinoApi(save)
 
+# 53,5 / 79,5
+# DMG59_EXT
+
+
 tamed_dinos = []
-for dino_id, dino in dino_api.get_all_filtered(tamed=True).items():
+for dino_id, dino in dino_api.get_all_tamed().items():
     if not isinstance(dino, TamedDino):
         continue
 
