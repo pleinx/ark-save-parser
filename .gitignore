@@ -168,6 +168,7 @@ cython_debug/
 test.py
 out/*
 *.json
+!*_n.json
 *.bin
 *.arkprofile
 *.ark
