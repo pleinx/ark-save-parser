@@ -34,12 +34,12 @@ STAT_NAME_MAP = {
 
 MAP_NAME_MAPPING = {
     "Aberration_WP": ArkMap.ABERRATION,
-    "Extinction_WP": ArkMap.ABERRATION,
+    "Extinction_WP": ArkMap.EXTINCTION,
     "TheIsland_WP": ArkMap.ABERRATION,
-    "Ragnarok_WP": ArkMap.ABERRATION,
-    "ScorchedEarth_WP": ArkMap.ABERRATION,
+    "Ragnarok_WP": ArkMap.RAGNAROK,
+    "ScorchedEarth_WP": ArkMap.SCORCHED_EARTH,
     "TheCenter_WP": ArkMap.ABERRATION,
-    "Astraeos_WP": ArkMap.ABERRATION,
+    "Astraeos_WP": ArkMap.ASTRAEOS,
 }
 
 # HELPER FUNCTIONS
@@ -76,7 +76,6 @@ dino_api = DinoApi(save)
 
 # 53,5 / 79,5
 # DMG59_EXT
-
 
 tamed_dinos = []
 for dino_id, dino in dino_api.get_all_tamed().items():
@@ -185,7 +184,6 @@ for dino_id, dino in dino_api.get_all_tamed().items():
 
     tamed_dinos.append(entry)
 
-
 # CONTINUE WITH JSON EXPORT
 json_data = {
     "map": map_folder,
@@ -197,7 +195,6 @@ if os.path.exists(json_output_path):
 
 with open(json_output_path, "w", encoding="utf-8") as f:
     json.dump(json_data, f, ensure_ascii=False, indent=2)
-
 
 # DONE, OUTPUT
 print(f"Saved {len(tamed_dinos)} tamed dinos to {json_output_path}")
