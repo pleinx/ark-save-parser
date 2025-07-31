@@ -73,7 +73,7 @@ class InventoryItem(ParsedObjectBase):
     #     inv: Inventory = self.get_inventory(save)
     #     return inv.
 
-    def to_json_obj(self):
+    def to_json_obj(self, include_owner_inv_uuid=True):
         return { "id": self.id_.to_json_obj(), "owner_inv_uuid": self.owner_inv_uuid.__str__(), "quantity": self.quantity }
 
     def to_json_str(self):
