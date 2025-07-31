@@ -56,13 +56,13 @@ def enabled_maps():
     Returns a list of enabled ArkMaps.
     """
     return [
-        # ArkMap.ABERRATION,
-        # ArkMap.EXTINCTION,
+        ArkMap.ABERRATION,
+        ArkMap.EXTINCTION,
         ArkMap.RAGNAROK,
-        # ArkMap.SCORCHED_EARTH,
-        # ArkMap.THE_CENTER,
-        # ArkMap.THE_ISLAND,
-        # ArkMap.ASTRAEOS
+        ArkMap.SCORCHED_EARTH,
+        ArkMap.THE_CENTER,
+        ArkMap.THE_ISLAND,
+        ArkMap.ASTRAEOS
     ]
 
 @pytest.fixture(scope="session")
