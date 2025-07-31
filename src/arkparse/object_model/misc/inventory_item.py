@@ -74,9 +74,29 @@ class InventoryItem(ParsedObjectBase):
     #     return inv.
 
     def to_json_obj(self, include_owner_inv_uuid=True):
-        json_obj = { "UUID": self.object.uuid.__str__(), "ItemID": self.id_.to_json_obj(), "ItemQuantity": self.quantity }
-        if include_owner_inv_uuid:
+        # Grab already set properties
+        json_obj = { "UUID": self.object.uuid.__str__(), "ItemQuantity": self.quantity }
+        if self.id_ is not None:
+            json_obj["ItemID"] = self.id_.to_json_obj()
+        if include_owner_inv_uuid and self.owner_inv_uuid is not None:
             json_obj["OwnerInventoryUUID"] = self.owner_inv_uuid.__str__()
+
+        # Grab custom item data if it's not a cryopod
+        if "PrimalItem_WeaponEmptyCryopod_C" not in self.object.blueprint:
+            json_obj["CustomItemDatas"] = self.object.get_property_value("CustomItemDatas")
+
+        # Grab remaining properties if any
+        if self.object.properties is not None and len(self.object.properties) > 0:
+            for prop in self.object.properties:
+                if prop is not None and \
+                        prop.name is not None and \
+                        len(prop.name) > 0 and \
+                        "ItemQuantity" not in prop.name and \
+                        "ItemID" not in prop.name and \
+                        "OwnerInventory" not in prop.name and \
+                        "CustomItemDatas" not in prop.name:
+                    json_obj[prop.name] = self.object.get_property_value(prop.name)
+
         return json_obj
 
     def to_json_str(self):

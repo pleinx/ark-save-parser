@@ -5,12 +5,11 @@ from typing import Dict, Any
 from uuid import UUID
 
 from arkparse.logging import ArkSaveLogger
-from arkparse.object_model.dinos.tamed_dino import TamedDino
+from arkparse.object_model.dinos import Dino
 from arkparse.object_model.equipment import Weapon, Shield, Armor, Saddle
 from arkparse.object_model.equipment.__equipment_with_armor import EquipmentWithArmor
 from arkparse.object_model.equipment.__equipment_with_durability import EquipmentWithDurability
-from arkparse.object_model.misc.inventory import Inventory
-from arkparse.object_model.structures import Structure, StructureWithInventory
+from arkparse.object_model.structures import Structure
 from arkparse.object_model import ArkGameObject
 from arkparse.api import EquipmentApi, PlayerApi, StructureApi, DinoApi
 from arkparse.parsing import ArkBinaryParser
@@ -289,16 +288,12 @@ class JsonApi:
             dino_api = DinoApi(self.save)
 
         # Get dinos.
-        dinos: Dict[UUID, Any] = dino_api.get_all()
+        dinos: Dict[UUID, Dino] = dino_api.get_all()
 
         # Format dinos into JSON.
         all_dinos = []
         for dino in dinos.values():
-            if isinstance(dino, TamedDino):
-                tamed_dino: TamedDino = dino
-                all_dinos.append(tamed_dino.to_json_obj())
-            else:
-                all_dinos.append(dino.to_json_obj())
+            all_dinos.append(dino.to_json_obj())
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)
@@ -319,16 +314,12 @@ class JsonApi:
             structure_api = StructureApi(self.save)
 
         # Get structures.
-        structures: Dict[UUID, Structure | StructureWithInventory] = structure_api.get_all()
+        structures: list[Structure] = structure_api.get_all_fast()
 
         # Format dinos into JSON.
         all_structures = []
-        for structure in structures.values():
-            if isinstance(structure, StructureWithInventory):
-                structure_with_inv: StructureWithInventory = structure
-                all_structures.append(structure_with_inv.to_json_obj())
-            else:
-                all_structures.append(structure.to_json_obj())
+        for structure in structures:
+            all_structures.append(structure.to_json_obj())
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)

@@ -140,18 +140,15 @@ class Structure(ParsedObjectBase):
         return "\n".join(parts)
 
     def get_linked_structures_str(self):
-        result = ""
-        if self.linked_structures is not None:
+        result = []
+        if self.linked_structure_uuids is not None and len(self.linked_structure_uuids) > 0:
             for linked_structure in self.linked_structure_uuids:
-                if len(result) > 0:
-                    result = result + ","
-                result = result + linked_structure.__str__()
+                result.append(linked_structure.__str__())
         return result
 
     def to_json_obj(self):
         # Grab already set properties
         json_obj = { "UUID": self.object.uuid.__str__(),
-                     "LinkedStructureUUIDS": self.get_linked_structures_str(),
                      "ItemArchetype": self.object.blueprint,
                      "StructureID": self.id_,
                      "MaxHealth": self.max_health,
@@ -162,6 +159,11 @@ class Structure(ParsedObjectBase):
                      "LastInAllyRangeTimeSerialized": self.last_in_ally_range_time_serialized,
                      "LastEnterStasisTime": self.last_enter_stasis_time,
                      "OriginalCreationTime": self.original_creation_time }
+
+        # Grab linked structure IDs if there are some
+        linked_structures = self.get_linked_structures_str()
+        if linked_structures is not None and len(linked_structures) > 0:
+            json_obj["LinkedStructureUUIDs"] = linked_structures
 
         # Grab inventory UUID if it exists
         if self.object.has_property("MyInventoryComponent"):
