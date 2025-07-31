@@ -107,7 +107,6 @@ for dino_id, dino in dino_api.get_all_tamed().items():
 
     dino_json_data = dino.to_json_obj()
 
-    # pprint(dino_json_data.get("StatValues", None))
 
     #public_attrs = [attr for attr in dir(tribe_lookup) if not attr.startswith('_')]
     #if(public_attrs is not []):
@@ -139,8 +138,13 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         stats_entry[f"{prefix}-t"] = getattr(dino.stats.added_stat_points, field, 0)
         stats_entry[f"{prefix}-m"] = getattr(dino.stats.mutated_stat_points, field, 0)
 
+    # if baby but claimed
+    if(tribe_id==2000000000 and dino_json_data.get("TargetingTeam", None)):
+         tribe_id=dino_json_data.get("TargetingTeam", None)
+
     entry = {
         "id": str(dino_id),
+        # "_test_id": dino_json_data.get("DinoID1", None),
         "tribeid": tribe_id,
         "tribe": dino_json_data.get("TribeName", None),
         "tamer": tamer_name,
@@ -187,7 +191,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "isClone": False,           # TODO
         "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": dino_json_data.get("bIsBaby", None) if dino_json_data.get("bIsBaby", None) else "100",
+        "maturation": dino_json_data.get("bIsBaby", None) if "1" else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
         "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
