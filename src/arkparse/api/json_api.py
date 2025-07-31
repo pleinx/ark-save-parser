@@ -56,7 +56,7 @@ class JsonApi:
             d = _get_default_hyperT(obj.blueprint)
             return round(d * (0.0002 * internal_value + 1), 1)
         else:
-            raise ValueError(f"Stat {stat} is not valid for {obj.blueprint}")
+            return 0
 
     @staticmethod
     def primal_item_to_json_obj(obj: ArkGameObject):
@@ -73,10 +73,9 @@ class JsonApi:
 
         # Grab item owner inventory if it exists
         if obj.has_property("OwnerInventory"):
-            owner_inv: ObjectReference = obj.get_property_value("OwnerInventory", None)
+            owner_inv: ObjectReference = obj.get_property_value("OwnerInventory")
             if owner_inv is not None and owner_inv.value is not None:
-                owner_inv_uuid = UUID(owner_inv.value)
-                json_obj["OwnerInventoryUUID"] = owner_inv_uuid.__str__()
+                json_obj["OwnerInventoryUUID"] = owner_inv.value
 
         # Grab specific item stats
         if obj.has_property("ItemStatValues"):
@@ -100,10 +99,10 @@ class JsonApi:
                 if prop is not None and \
                         prop.name is not None and \
                         len(prop.name) > 0 and \
-                        "CustomItemDatas" not in prop.name and \
                         "ItemID" not in prop.name and \
-                        "OwnerInventory" not in prop.name:
-                    prop_value = obj.get_property_value(prop.name, None)
+                        "OwnerInventory" not in prop.name and \
+                        "ItemStatValues" not in prop.name:
+                    prop_value = obj.get_property_value(prop.name)
                     if "NextSpoilingTime" in prop.name or "SavedDurability" in prop.name:
                         if math.isnan(prop.value):
                             prop_value = None
@@ -245,15 +244,17 @@ class JsonApi:
                     pawn_data["ActorTransformY"] = pawn_location.y
                     pawn_data["ActorTransformZ"] = pawn_location.z
 
-            # Grab pawn inventory if it exists
+            # Grab pawn inventory UUID if it exists
             if pawn_obj.has_property("MyInventoryComponent"):
                 inv_comp = pawn_obj.get_property_value("MyInventoryComponent")
                 if inv_comp is not None and inv_comp.value is not None:
-                    inv_uuid = UUID(inv_comp.value)
-                    reader = ArkBinaryParser(self.save.get_game_obj_binary(inv_uuid), self.save.save_context)
-                    inventory = Inventory(inv_uuid, reader, save=self.save)
-                    if inventory is not None:
-                        pawn_data["Inventory"] = inventory.to_json_obj()
+                    pawn_data["InventoryUUID"] = inv_comp.value
+
+            # Grab pawn owner inventory UUID if it exists
+            if pawn_obj.has_property("OwnerInventory"):
+                owner_inv: ObjectReference = pawn_obj.get_property_value("OwnerInventory")
+                if owner_inv is not None and owner_inv.value is not None:
+                    pawn_data["OwnerInventoryUUID"] = owner_inv.value
 
             # Grab remaining properties if any
             if pawn_obj.properties is not None and len(pawn_obj.properties) > 0:
@@ -262,11 +263,10 @@ class JsonApi:
                             prop.name is not None and \
                             len(prop.name) > 0 and \
                             "SavedBaseWorldLocation" not in prop.name and \
-                            "MyInventoryComponent" not in prop.name:
-                        prop_value = pawn_obj.get_property_value(prop.name, None)
+                            "MyInventoryComponent" not in prop.name and \
+                            "OwnerInventory" not in prop.name:
+                        prop_value = pawn_obj.get_property_value(prop.name)
                         pawn_data[prop.name] = prop_value
-                        # print("Prop: " + prop.name, flush=True)
-                        # teststr = json.dumps(prop_value)
 
             all_pawns.append(pawn_data)
 
@@ -368,7 +368,7 @@ class JsonApi:
                     is_engram = False
                     if obj.has_property("bIsEngram"):
                         is_engram = obj.get_property_value("bIsEngram", False)
-                    if (not include_engrams) and is_engram:
+                    if is_engram and not include_engrams:
                         continue
                     all_items.append(JsonApi.primal_item_to_json_obj(obj))
 

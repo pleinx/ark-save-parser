@@ -74,9 +74,9 @@ class InventoryItem(ParsedObjectBase):
     #     return inv.
 
     def to_json_obj(self, include_owner_inv_uuid=True):
-        json_obj = { "UUID": self.object.uuid.__str__(), "id": self.id_.to_json_obj(), "quantity": self.quantity }
+        json_obj = { "UUID": self.object.uuid.__str__(), "ItemID": self.id_.to_json_obj(), "ItemQuantity": self.quantity }
         if include_owner_inv_uuid:
-            json_obj["owner_inv_uuid"] = self.owner_inv_uuid.__str__()
+            json_obj["OwnerInventoryUUID"] = self.owner_inv_uuid.__str__()
         return json_obj
 
     def to_json_str(self):
