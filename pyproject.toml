@@ -36,4 +36,4 @@ testpaths = ["tests"]
 addopts = "--strict-markers --tb=short --maxfail=2"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/arkparse", "APExamples"]
+packages = ["src/arkparse"]
