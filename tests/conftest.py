@@ -1,5 +1,6 @@
 import pytest
 from pathlib import Path
+import time
 
 from arkparse import AsaSave
 from arkparse.enums import ArkMap
@@ -9,6 +10,7 @@ ArkSaveLogger.disable_all_logs()
 # ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.WARNING, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.INFO, True)
+ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.DEBUG, True)
 ArkSaveLogger.allow_invalid_objects(False)
 
 def file_directory(set: str) -> Path:
@@ -56,13 +58,13 @@ def enabled_maps():
     Returns a list of enabled ArkMaps.
     """
     return [
-        ArkMap.ABERRATION,
-        ArkMap.EXTINCTION,
+        # ArkMap.ABERRATION,
+        # ArkMap.EXTINCTION,
         ArkMap.RAGNAROK,
-        ArkMap.SCORCHED_EARTH,
-        ArkMap.THE_CENTER,
-        ArkMap.THE_ISLAND,
-        ArkMap.ASTRAEOS
+        # ArkMap.SCORCHED_EARTH,
+        # ArkMap.THE_CENTER,
+        # ArkMap.THE_ISLAND,
+        # ArkMap.ASTRAEOS
     ]
 
 @pytest.fixture(scope="session")

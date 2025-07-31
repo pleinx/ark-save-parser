@@ -21,9 +21,6 @@ dinos: Dict[UUID, TamedDino] = dino_api.get_all_tamed()
 # Get a random dino
 dino = list(dinos.values())[0]
 
-ArkSaveLogger.enable_debug = True # Enable debug logging
-ArkSaveLogger.set_file(dino.binary, "dino_with.bin") # Create a file for the binary
-
 # Print the positions of all names in the dino binary
 dino.binary.find_names()
 
