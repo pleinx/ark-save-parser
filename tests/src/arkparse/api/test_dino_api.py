@@ -10,6 +10,18 @@ NR_TAMED = 2242
 NR_WILD = 31525
 NR_IN_CRYO = 1517
 
+def dinos_per_map():
+    """ Fixture to provide the expected number of dinos for each map. """
+    return {
+        ArkMap.RAGNAROK: NR_DINOS,
+        ArkMap.ABERRATION: 21399,
+        ArkMap.EXTINCTION: 17376,
+        ArkMap.ASTRAEOS: 48959,
+        ArkMap.SCORCHED_EARTH: 16096,
+        ArkMap.THE_ISLAND: 26716,
+        ArkMap.THE_CENTER: 36007
+    }
+
 @pytest.fixture(scope="module")
 def dino_api(ragnarok_save):
     """
@@ -37,6 +49,7 @@ def test_parse_ragnarok(ragnarok_save: AsaSave, enabled_maps: list):
         pytest.skip("Ragnarok map is not enabled in the test configuration.")
     dinos = DinoApi(ragnarok_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in Ragnarok: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.RAGNAROK], "Unexpected number of dinos found"
 
 def test_parse_aberration(aberration_save: AsaSave, enabled_maps: list):
     """
@@ -46,6 +59,7 @@ def test_parse_aberration(aberration_save: AsaSave, enabled_maps: list):
         pytest.skip("Aberration map is not enabled in the test configuration.")
     dinos = DinoApi(aberration_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in Aberration: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.ABERRATION], "Unexpected number of dinos found"
 
 def test_parse_extinction(extinction_save: AsaSave, enabled_maps: list):
     """
@@ -55,6 +69,7 @@ def test_parse_extinction(extinction_save: AsaSave, enabled_maps: list):
         pytest.skip("Extinction map is not enabled in the test configuration.")
     dinos = DinoApi(extinction_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in Extinction: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.EXTINCTION], "Unexpected number of dinos found"
 
 def test_parse_astraeos(astraeos_save: AsaSave, enabled_maps: list):
     """
@@ -64,6 +79,7 @@ def test_parse_astraeos(astraeos_save: AsaSave, enabled_maps: list):
         pytest.skip("Astraeos map is not enabled in the test configuration.")
     dinos = DinoApi(astraeos_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in Astraeos: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.ASTRAEOS], "Unexpected number of dinos found"
 
 def test_parse_scorched_earth(scorched_earth_save: AsaSave, enabled_maps: list):
     """
@@ -73,6 +89,7 @@ def test_parse_scorched_earth(scorched_earth_save: AsaSave, enabled_maps: list):
         pytest.skip("Scorched Earth map is not enabled in the test configuration.")
     dinos = DinoApi(scorched_earth_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in Scorched Earth: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.SCORCHED_EARTH], "Unexpected number of dinos found"
 
 def test_parse_the_island(the_island_save: AsaSave, enabled_maps: list):
     """
@@ -82,6 +99,7 @@ def test_parse_the_island(the_island_save: AsaSave, enabled_maps: list):
         pytest.skip("The Island map is not enabled in the test configuration.")
     dinos = DinoApi(the_island_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in The Island: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.THE_ISLAND], "Unexpected number of dinos found"
 
 def test_parse_the_center(the_center_save: AsaSave, enabled_maps: list):
     """
@@ -91,6 +109,7 @@ def test_parse_the_center(the_center_save: AsaSave, enabled_maps: list):
         pytest.skip("The Center map is not enabled in the test configuration.")
     dinos = DinoApi(the_center_save).get_all()  # This will trigger the parsing of dinos
     print(f"Total dinos found in The Center: {len(dinos)}")
+    assert len(dinos) == dinos_per_map()[ArkMap.THE_CENTER], "Unexpected number of dinos found"
 
 def test_get_all_dinos(dino_api: DinoApi):
     """
