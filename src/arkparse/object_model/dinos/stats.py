@@ -146,9 +146,8 @@ class DinoStats(ParsedObjectBase):
     mutated_stat_points: StatPoints = StatPoints(type="NumberOfMutationsAppliedTamed")
     stat_values: StatValues = StatValues()
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
         base_lv = self.object.get_property_value("BaseCharacterLevel")
         self.base_level = 0 if base_lv is None else base_lv
@@ -160,8 +159,6 @@ class DinoStats(ParsedObjectBase):
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)
-        if self.binary is not None:
-            self.__init_props__()
 
     @staticmethod
     def from_object(obj: ArkGameObject):

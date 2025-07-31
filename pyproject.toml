@@ -4,9 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arkparse"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
-    # List your dependencies here
+    "pytz>=2025.2",
+    "rcon>=2.4.9",
+    "numpy>=2.3.2",
+    "matplotlib>=3.10.3"
 ]
 authors = [
   { name = "Vincent Henau", email = "vincent.henau.github@gmail.com" },
@@ -26,6 +29,11 @@ Homepage = "https://github.com/VincentHenauGithub/ark-save-parser"
 include = [
     "src/arkparse/assets/**",  # Include all assets
 ]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["tests"]
+addopts = "--strict-markers --tb=short --maxfail=2"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/arkparse", "APExamples"]

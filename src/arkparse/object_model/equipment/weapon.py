@@ -16,9 +16,8 @@ from .__equipment_with_durability import EquipmentWithDurability
 class Weapon(EquipmentWithDurability):
     damage: float = 0
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
         damage = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DAMAGE.value, default=0)
         self.damage = self.get_actual_value(ArkEquipmentStat.DAMAGE, damage)
@@ -27,7 +26,6 @@ class Weapon(EquipmentWithDurability):
         super().__init__(uuid, binary)
 
         self.class_name = "weapon"             
-        self.__init_props__()
 
     @staticmethod
     def generate_from_template(class_: str, save: AsaSave, is_bp: bool):

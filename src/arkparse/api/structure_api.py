@@ -28,6 +28,9 @@ class StructureApi:
 
         objects = self.save.get_game_objects(reader_config)
 
+        # for key, obj in objects.items():
+        #     print(obj.blueprint)
+
         return objects
     
     def _parse_single_structure(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure, StructureWithInventory]:

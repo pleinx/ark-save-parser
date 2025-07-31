@@ -97,6 +97,12 @@ class MapCoords:
         else:
             return f"({self.lat}, {self.long})"
         
+    def str_short(self) -> str:
+        if self.in_cryopod:
+            return f"(in cryopod)"
+        else:
+            return f"({int(self.lat)}, {int(self.long)})"
+
     def as_actor_transform(self, map) -> "ActorTransform":
 
         return ActorTransform(vector=MapCoordinateParameters(map).transform_from(self.lat, self.long))

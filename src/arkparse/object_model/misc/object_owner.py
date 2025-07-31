@@ -25,6 +25,17 @@ class ObjectOwner:
         self.id_ = properties.get_property_value("OwningPlayerID")
         self.tribe_id = properties.get_property_value("TargetingTeam")
 
+    def __eq__(self, other: "ObjectOwner"):
+        if not isinstance(other, ObjectOwner):
+            return False
+        if self.tribe_id is not None and other.tribe_id is not None:
+            if self.tribe_id != other.tribe_id:
+                return False
+        if self.id_ is not None and other.id_ is not None:
+            if self.id_ != other.id_:
+                return False
+        return True
+
     def set_in_binary(self, binary: ArkBinaryParser):
         ArkSaveLogger.set_file(binary, "debug.bin")
         
@@ -40,13 +51,8 @@ class ObjectOwner:
             if self.id_ is not None:
                 binary.replace_u32(self.properties.find_property("OwningPlayerID"), self.id_)
             if self.tribe_id is not None:
-                # print("Setting TargetingTeam to", self.tribe_id)
-                # prop = self.properties.find_property("TargetingTeam")
-                # print("Found property:", prop, " at offset ", prop.value_position)
-                # binary.structured_print()
                 binary.replace_u32(self.properties.find_property("TargetingTeam"), self.tribe_id)
-                # binary.structured_print()
-                # input("Press Enter to continue...")
+
         return binary
 
     def __str__(self) -> str:
