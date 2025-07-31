@@ -1,3 +1,5 @@
+import json
+
 from ..ark_game_object import ArkGameObject
 from uuid import UUID
 from arkparse.parsing import ArkBinaryParser
@@ -7,6 +9,8 @@ from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
 from arkparse.logging import ArkSaveLogger
+from ...utils.json_utils import DefaultJsonEncoder
+
 
 class InventoryItem(ParsedObjectBase):
     binary: ArkBinaryParser
@@ -32,7 +36,7 @@ class InventoryItem(ParsedObjectBase):
 
     def __str__(self):
         return f"InventoryItem(item={self.object.blueprint.split('/')[-1].split('.')[0]}, quantity={self.quantity})"
-    
+
     def reidentify(self, new_uuid: UUID = None, new_class: str = None):
         self.id_.replace(self.binary)
         super().reidentify(new_uuid)
@@ -61,10 +65,16 @@ class InventoryItem(ParsedObjectBase):
         from .inventory import Inventory # placed here to avoid circular import
         bin = save.get_game_obj_binary(self.owner_inv_uuid)
         parser = ArkBinaryParser(bin, save.save_context)
-        
+
         return Inventory(self.owner_inv_uuid, parser, save=save)
-    
+
     # def get_owner(self, save: AsaSave):
     #     from .inventory import Inventory # placed here to avoid circular import
     #     inv: Inventory = self.get_inventory(save)
     #     return inv.
+
+    def to_json_obj(self):
+        return { "id": self.id_.to_json_obj(), "owner_inv_uuid": self.owner_inv_uuid.__str__(), "quantity": self.quantity }
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

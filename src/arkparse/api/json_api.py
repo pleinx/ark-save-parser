@@ -11,12 +11,13 @@ from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.object_model.equipment import Weapon, Shield, Armor, Saddle
 from arkparse.object_model.equipment.__equipment_with_armor import EquipmentWithArmor
 from arkparse.object_model.equipment.__equipment_with_durability import EquipmentWithDurability
+from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.object_model import ArkGameObject
 from arkparse.api import EquipmentApi, PlayerApi, StructureApi, DinoApi
 from arkparse.parsing import ArkBinaryParser
 from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
-from arkparse.parsing.struct import ArkUniqueNetIdRepl
+from arkparse.parsing.struct import ArkUniqueNetIdRepl, ActorTransform
 from arkparse.parsing.struct import ObjectReference
 from arkparse.saves.asa_save import AsaSave
 from arkparse.utils.json_utils import DefaultJsonEncoder
@@ -25,16 +26,9 @@ from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.equipment.__armor_defaults import _get_default_hypoT, _get_default_hyperT
 
 def get_player_short_name(obj: ArkGameObject):
-    to_strip_end = [
-        "_C",
-    ]
-
     short = obj.blueprint.split('/')[-1].split('.')[0]
-
-    for strip in to_strip_end:
-        if short.endswith(strip):
-            short = short[:-len(strip)]
-
+    if short.endswith("_C"):
+        short = short[:-len("_C")]
     return short
 
 def get_actual_value(obj: ArkGameObject, stat: ArkEquipmentStat, internal_value: int) -> float:
@@ -213,7 +207,7 @@ class JsonApi:
 
         ArkSaveLogger.api_log("Saddles successfully exported.")
 
-    def export_player_pawns(self, player_api: PlayerApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
+    def export_player_pawns(self, save: AsaSave, player_api: PlayerApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
         ArkSaveLogger.api_log("Exporting player pawns...")
 
         # Get player API if not provided.
@@ -226,36 +220,44 @@ class JsonApi:
         # Format player pawns into JSON.
         all_pawns = []
         for pawn_obj in player_pawns.values():
-            pawn_obj_binary = self.save.get_game_obj_binary(pawn_obj.uuid)
-            pawn: StructureWithInventory = StructureWithInventory(pawn_obj.uuid, ArkBinaryParser(pawn_obj_binary, save_context=self.save.save_context), self.save)
-            if pawn.inventory is not None and pawn.inventory.object is not None:
-                platform_profile_id: ArkUniqueNetIdRepl = pawn_obj.get_property_value("PlatformProfileID", None)
-                pawn_data = { "UUID": pawn_obj.uuid.__str__() if pawn_obj.uuid is not None else None,
-                              "InventoryUUID": pawn.inventory.object.uuid.__str__() if pawn.inventory.object.uuid is not None else None,
-                              "ShortName": get_player_short_name(pawn_obj),
-                              "ClassName": "player",
-                              "ItemArchetype": pawn_obj.blueprint,
-                              "PlayerUniqueNetID": platform_profile_id.value if platform_profile_id is not None else None,
-                              "PlayerName": pawn_obj.get_property_value("PlayerName", None),
-                              "PlatformProfileName": pawn_obj.get_property_value("PlatformProfileName", None),
-                              "LinkedPlayerDataID": pawn_obj.get_property_value("LinkedPlayerDataID", None),
-                              "TribeID": pawn_obj.get_property_value("TargetingTeam", None),
-                              "TribeName": pawn_obj.get_property_value("TribeName", None),
-                              "SavedSleepAnim": pawn_obj.get_property_value("SavedSleepAnim", None), # Last sleep time (Game Time in seconds)
-                              "SavedLastTimeHadController": pawn_obj.get_property_value("SavedLastTimeHadController", None), # Last controlled time (Game Time in seconds)
-                              "LastTimeUpdatedCharacterStatusComponent": pawn_obj.get_property_value("LastTimeUpdatedCharacterStatusComponent", None), # Last StatusComponent update time (Game Time in seconds)
-                              "LastEnterStasisTime": pawn_obj.get_property_value("LastEnterStasisTime", None), # Last enter statis time (Game Time in seconds)
-                              "OriginalCreationTime": pawn_obj.get_property_value("OriginalCreationTime", None), # Original creation time (Game Time in seconds)
-                              "FacialHairIndex": pawn_obj.get_property_value("FacialHairIndex", None),
-                              "HeadHairIndex": pawn_obj.get_property_value("HeadHairIndex", None),
-                              "PercentOfFullHeadHairGrowth": pawn_obj.get_property_value("PercentOfFullHeadHairGrowth", None),
-                              "bGaveInitialItems": pawn_obj.get_property_value("bGaveInitialItems", None),
-                              "bIsSleeping": pawn_obj.get_property_value("bIsSleeping", None),
-                              "bSavedWhenStasised": pawn_obj.get_property_value("bSavedWhenStasised", None),
-                              "ActorTransformX": pawn_obj.location.x if pawn_obj.location is not None else None,
-                              "ActorTransformY": pawn_obj.location.y if pawn_obj.location is not None else None,
-                              "ActorTransformZ": pawn_obj.location.z if pawn_obj.location is not None else None }
-                all_pawns.append(pawn_data)
+            # Grab already set properties
+            pawn_data: Dict[str, Any] = { "UUID": pawn_obj.uuid.__str__(),
+                                          "ShortName": get_player_short_name(pawn_obj),
+                                          "ClassName": "player",
+                                          "ItemArchetype": pawn_obj.blueprint }
+
+            # Grab pawn location if it exists
+            if pawn_obj.has_property("SavedBaseWorldLocation"):
+                pawn_location = ActorTransform(vector = pawn_obj.get_property_value("SavedBaseWorldLocation"))
+                if pawn_location is not None:
+                    pawn_data["ActorTransformX"] = pawn_location.x
+                    pawn_data["ActorTransformY"] = pawn_location.y
+                    pawn_data["ActorTransformZ"] = pawn_location.z
+
+            # Grab pawn inventory if it exists
+            if pawn_obj.has_property("MyInventoryComponent"):
+                inv_comp = pawn_obj.get_property_value("MyInventoryComponent")
+                if inv_comp is not None and inv_comp.value is not None:
+                    inv_uuid = UUID(inv_comp.value)
+                    reader = ArkBinaryParser(save.get_game_obj_binary(inv_uuid), save.save_context)
+                    inventory = Inventory(inv_uuid, reader, save=save)
+                    if inventory is not None:
+                        pawn_data["Inventory"] = inventory.to_json_obj()
+
+            # Grab remaining properties if any
+            if pawn_obj.properties is not None and len(pawn_obj.properties) > 0:
+                for prop in pawn_obj.properties:
+                    if prop is not None and \
+                            prop.name is not None and \
+                            len(prop.name) > 0 and \
+                            "SavedBaseWorldLocation" not in prop.name and \
+                            "MyInventoryComponent" not in prop.name:
+                        prop_value = pawn_obj.get_property_value(prop.name, None)
+                        pawn_data[prop.name] = prop_value
+                        # print("Prop: " + prop.name, flush=True)
+                        # teststr = json.dumps(prop_value)
+
+            all_pawns.append(pawn_data)
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)
