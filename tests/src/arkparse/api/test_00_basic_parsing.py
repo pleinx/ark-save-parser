@@ -64,14 +64,6 @@ def test_retrieving_all_astraeos_objects(astraeos_save: AsaSave, objects_per_map
         pytest.skip("Astraeos map is not enabled in the test configuration.")
     retrieve_for_map(astraeos_save, ArkMap.ASTRAEOS, objects_per_map)
 
-def test_retrieving_all_astraeos_objects(astraeos_save: AsaSave, objects_per_map: dict, enabled_maps: list):
-    """
-    Test to retrieve all objects from an Astraeos save file.
-    """
-    if not ArkMap.ASTRAEOS in enabled_maps:
-        pytest.skip("Astraeos map is not enabled in the test configuration.")
-    retrieve_for_map(astraeos_save, ArkMap.ASTRAEOS, objects_per_map)
-
 def test_retrieving_all_scorched_earth_objects(scorched_earth_save: AsaSave, objects_per_map: dict, enabled_maps: list):
     """
     Test to retrieve all objects from a Scorched Earth save file.

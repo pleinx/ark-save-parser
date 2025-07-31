@@ -81,6 +81,7 @@ class PropertyParser(BaseValueValidator):
         self.validate_uint32(0)
         self.read_uint32()
         self.validate_byte(0)
-        name = self.read_name()
+        while(self.peek_int() != 0):
+            name = self.read_name()
         self.validate_uint32(0)
         return name
