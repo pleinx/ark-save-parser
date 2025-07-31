@@ -27,6 +27,9 @@ class ArkByteArray:
 
         ark_binary_data.validate_name("None")
 
+    def to_json_obj(self):
+        return { "size": self.size, "data": self.data.__str__() }
+
 @dataclass
 class ArkCustomItemData:
     byte_arrays: list[ArkByteArray] = None
@@ -81,6 +84,20 @@ class ArkCustomItemData:
             ArkSaveLogger.parser_log(f"Float: {float_value}")
         for name in self.names:
             ArkSaveLogger.parser_log(f"Name: {name}")
+
+    def to_json_obj(self):
+        return {
+            "byte_arrays": self.byte_arrays,
+            "doubles": self.doubles,
+            "floats": self.floats,
+            "strings": self.strings,
+            "classes": self.classes,
+            "objects": self.objects,
+            "painting_id_map": self.painting_id_map,
+            "painting_revision_map": self.painting_revision_map,
+            "custom_data_name": self.custom_data_name,
+            "custom_data_soft_classes": self.custom_data_soft_classes
+        }
 
     def __read_header(self, ark_binary_data: "ArkBinaryParser"):
         total_size = self.__read_struct_start(ark_binary_data, "CustomDataBytes", "CustomItemByteArrays")

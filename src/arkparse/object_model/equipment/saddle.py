@@ -12,8 +12,8 @@ from .__equipment import Equipment
 from .__equipment_with_armor import EquipmentWithArmor
 
 class Saddle(EquipmentWithArmor):
-    def __init_props__(self, obj: ArkGameObject = None):
-        super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
@@ -50,4 +50,4 @@ class Saddle(EquipmentWithArmor):
         return super().to_json_obj()
 
     def to_json_str(self):
-        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

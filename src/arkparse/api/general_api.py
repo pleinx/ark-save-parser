@@ -7,7 +7,7 @@ from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 
 class GeneralApi:
-    def __init__(self, save: AsaSave, config: GameObjectReaderConfiguration):
+    def __init__(self, save: AsaSave, config: GameObjectReaderConfiguration= GameObjectReaderConfiguration()):
         self.save = save
         self.config = config
         self.all_objects = None

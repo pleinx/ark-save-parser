@@ -49,13 +49,14 @@ class Metal:
     ramp = "/Game/PrimalEarth/StructuresPlus/Structures/Ramps/Metal/BP_Ramp_Metal.BP_Ramp_Metal_C"
     generator = "/Game/PrimalEarth/Structures/Electric/ElectricGenerator.ElectricGenerator_C"
     sign = "/Game/PrimalEarth/Structures/Sign_Small_Metal.Sign_Small_Metal_C"
+    wall_sign = "/Game/PrimalEarth/Structures/Sign_Wall_Metal.Sign_Wall_Metal_C"    
 
     all_bps = [floor, wall, triangle_foundation, cliff_platform, double_doorframe, tri_roof, large_wall, 
                greenhouse_ceiling, greenhouse_wall, beam, ceiling, doorframe, fence_foundation, 
                gateframe_large, gateframe, gate_large, ladder, pillar, window_wall, 
                waterpipe_intake, behemoth_gate, sign_large, door_short, doorframe_short, 
                wall_half, hatchframe_xl, railing_sloped_right, door_secret, metalwall_sloped_right_sm,
-               generator]
+               generator, ceiling_doorway, gate, railing, window, ramp, sign, wall_sign]
 
 class Thatch:
     floor = "/Game/PrimalEarth/Structures/Thatch/Thatch_Floor.Thatch_Floor_C"
@@ -79,8 +80,9 @@ class Wood:
     crop_plot_large = "/Game/PrimalEarth/Structures/Wooden/CropPlotLarge_SM.CropPlotLarge_SM_C"
     floor = "/Game/PrimalEarth/Structures/Wooden/Floor_Wood_SM_New.Floor_Wood_SM_New_C"
     sign = "/Game/PrimalEarth/Structures/Sign_Small_Wood.Sign_Small_Wood_C"
+    wall_sign = "/Game/PrimalEarth/Structures/Sign_Wall_Wood.Sign_Wall_Wood_C"
 
-    all_bps = [spike_wall, crop_plot_large, floor, sign]
+    all_bps = [spike_wall, crop_plot_large, floor, sign, wall_sign]
 
 class Crafting:
     forge = "/Game/PrimalEarth/Structures/Forge.Forge_C"

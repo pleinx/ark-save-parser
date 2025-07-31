@@ -147,6 +147,9 @@ class ArkProperty:
         self.value_position = 0
         self.bytes = None
 
+    def to_json_obj(self):
+        return { "name": self.name, "type": self.type, "value": self.value.__str__() }
+
     # ---------------------------------------------------------------------------------------------
     # Public API
     # ---------------------------------------------------------------------------------------------

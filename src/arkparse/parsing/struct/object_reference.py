@@ -60,6 +60,24 @@ class ObjectReference:
             self.type = ObjectReference.TYPE_PATH_NO_TYPE
             self.value = reader.read_string()
 
+    def to_json_obj(self):
+        obj_ref_type = self.type.__str__()
+        if self.type == ObjectReference.TYPE_UUID:
+            obj_ref_type = "UUID"
+        if self.type == ObjectReference.TYPE_PATH:
+            obj_ref_type = "PATH"
+        if self.type == ObjectReference.TYPE_PATH_NO_TYPE:
+            obj_ref_type = "PATH_NO_TYPE"
+        if self.type == ObjectReference.TYPE_NAME:
+            obj_ref_type = "NAME"
+        if self.type == ObjectReference.TYPE_ID:
+            obj_ref_type = "ID"
+        if self.type == ObjectReference.TYPE_POS_MOD_REF:
+            obj_ref_type = "POS_MOD_REF"
+        if self.type == ObjectReference.TYPE_UNKNOWN:
+            obj_ref_type = "UNKNOWN"
+        return { "type": obj_ref_type, "value": self.value }
+
 def get_uuid_reference_bytes(uuid: UUID) -> bytes:
     bytes_ = bytearray()
     bytes_.extend(0x0000.to_bytes(2, byteorder="little"))

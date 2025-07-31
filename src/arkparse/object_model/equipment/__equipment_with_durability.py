@@ -103,16 +103,14 @@ class EquipmentWithDurability(Equipment):
             print(f"WARNING: No durability found for {bp}")
             return 1
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
             
         dura = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
         self.durability = self.get_actual_value(ArkEquipmentStat.DURABILITY, dura)
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
-        self.__init_props__()
 
     def get_average_stat(self, __stats = []) -> float:
         return super().get_average_stat(__stats + [self.get_internal_value(ArkEquipmentStat.DURABILITY)])
@@ -157,4 +155,4 @@ class EquipmentWithDurability(Equipment):
         return json_obj
 
     def to_json_str(self):
-        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

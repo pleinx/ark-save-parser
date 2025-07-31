@@ -1,3 +1,4 @@
+
 /Game/Aberration/Structures/CliffPlatforms/Metal_CliffPlatform/Metal_Platform_BP.Metal_Platform_BP_C
 /Game/Aberration/Structures/CliffPlatforms/Stone_CliffPlatform/Stone_Platform_BP_Medium.Stone_Platform_BP_Medium_C
 /Game/Aberration/Structures/CliffPlatforms/Stone_CliffPlatform/Stone_Platform_BP_Small.Stone_Platform_BP_Small_C
@@ -27,14 +28,13 @@
 /Game/PrimalEarth/Structures/BuildingBases/Cage_Wood.Cage_Wood_C
 /Game/PrimalEarth/Structures/BuildingBases/TreeSapTap_SM.TreeSapTap_SM_C
 /Game/PrimalEarth/Structures/BuildingBases/WaterTankBaseBP.WaterTankBaseBP_C
-/Game/PrimalEarth/Structures/DeathItemCache.DeathItemCache_C
 /Game/PrimalEarth/Structures/IndustrialCookingPot.IndustrialCookingPot_C
 /Game/PrimalEarth/Structures/Metal/Ceiling_Doorway_Metal.Ceiling_Doorway_Metal_C
 /Game/PrimalEarth/Structures/Metal/Gate_Metal.Gate_Metal_C
 /Game/PrimalEarth/Structures/Metal/Railing_Metal.Railing_Metal_C
 /Game/PrimalEarth/Structures/Metal/Window_Metal_BP.Window_Metal_BP_C
 /Game/PrimalEarth/Structures/PoisonTrap.PoisonTrap_C
-
+/Game/PrimalEarth/Structures/Sign_Small_Metal.Sign_Small_Metal_C
 /Game/PrimalEarth/Structures/Sign_Wall_Metal.Sign_Wall_Metal_C
 /Game/PrimalEarth/Structures/Sign_Wall_Wood.Sign_Wall_Wood_C
 /Game/PrimalEarth/Structures/Stone/Stone_CeilingDoorway/Ceiling_Doorway_Stone.Ceiling_Doorway_Stone_C

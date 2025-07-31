@@ -75,13 +75,13 @@ class ArkCharacterStats:
     def __init__(self, properties: ArkPropertyContainer):
 
         # Find the main struct property, assumed to be "MyPersistentCharacterStats"
-        main_stats_prop = properties.find_property("MyPersistentCharacterStats")
-        if not main_stats_prop:
-            raise ValueError("Missing 'MyPersistentCharacterStats' property.")
-        if main_stats_prop.type != "Struct":
-            raise ValueError("'MyPersistentCharacterStats' is not of type 'Struct'.")
+        # main_stats_prop = properties.find_property("MyPersistentCharacterStats")
+        # if not main_stats_prop:
+        #     raise ValueError("Missing 'MyPersistentCharacterStats' property.")
+        # if main_stats_prop.type != "Struct":
+        #     raise ValueError("'MyPersistentCharacterStats' is not of type 'Struct'.")
 
-        main_properties: ArkPropertyContainer = main_stats_prop.value
+        main_properties: ArkPropertyContainer = properties
 
         self.level = 1 + main_properties.get_property_value("CharacterStatusComponent_ExtraCharacterLevel", 0)
         self.experience = main_properties.get_property_value("CharacterStatusComponent_ExperiencePoints", 0.0)
@@ -89,6 +89,8 @@ class ArkCharacterStats:
         self.explorer_notes = main_properties.get_array_property_value("PerMapExplorerNoteUnlocks", [])
         self.emotes = main_properties.get_array_property_value("EmoteUnlocks", [])
         self.engrams = main_properties.get_array_property_value("PlayerState_EngramBlueprints", [])
+
+        # print(f"ArkCharacterStats: Level={self.level}, Experience={self.experience}, Engram Points={self.engram_points}")
 
         # Parse stats
         stat_points_props = main_properties.find_all_properties_of_name("CharacterStatusComponent_NumberOfLevelUpPointsApplied")

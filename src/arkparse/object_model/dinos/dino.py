@@ -3,6 +3,7 @@ from uuid import UUID
 from typing import List
 import json
 
+from arkparse.logging.ark_save_logger import ArkSaveLogger
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing.struct.actor_transform import ActorTransform
@@ -29,9 +30,8 @@ class Dino(ParsedObjectBase):
 
     #saddle: Saddle
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
         self.is_female = self.object.get_property_value("bIsFemale", False)
         self.id1 = self.object.get_property_value("DinoID1")
@@ -41,9 +41,6 @@ class Dino(ParsedObjectBase):
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)
-
-        if self.binary is not None:
-            self.__init_props__()
 
         if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
             stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value
@@ -211,7 +208,7 @@ class Dino(ParsedObjectBase):
                  "ActorTransformZ": self.location.z if self.location is not None else None }
 
     def to_json_str(self):
-        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False):
         loc_name = name if name is not None else str(self.object.uuid)

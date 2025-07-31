@@ -70,8 +70,8 @@ class DinoApi:
                     self.parsed_dinos[uuid] = dino
 
         return dino
-    
-    def get_all(self, config = None) -> Dict[UUID, Dino]:
+
+    def get_all(self, config = None, include_cryos: bool = True, include_wild: bool = True, include_tamed: bool = True) -> Dict[UUID, Dino]:
         objects = self.get_all_objects(config)
 
         dinos = {}
@@ -88,13 +88,13 @@ class DinoApi:
                     else:
                         dino = self.parsed_dinos[obj.uuid]
                 else:
-                    if is_tamed:
+                    if is_tamed and include_tamed:
                         dino = TamedDino(obj.uuid, save=self.save)
                         self.parsed_tamed_dinos[obj.uuid] = dino
-                    else:
+                    elif include_wild:
                         dino = Dino(obj.uuid, save=self.save)
                         self.parsed_dinos[obj.uuid] = dino
-            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint:
+            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos:
                 if not obj.get_property_value("bIsEngram", default=False):
                     if obj.uuid in self.parsed_cryopods:
                         dino = self.parsed_cryopods[obj.uuid].dino
@@ -105,6 +105,7 @@ class DinoApi:
                             self.parsed_cryopods[obj.uuid] = cryopod
                             if cryopod.dino is not None:
                                 dino = cryopod.dino
+                                dino.is_cryopodded = True
                         except Exception as e:
                             if "Unsupported embedded data version" in str(e):
                                 ArkSaveLogger.warning_log(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
@@ -140,25 +141,13 @@ class DinoApi:
         return filtered_dinos
     
     def get_all_wild(self) -> Dict[UUID, Dino]:
-        dinos = self.get_all()
-        wild_dinos = {k: v for k, v in dinos.items() if not isinstance(v, TamedDino)}
-
-        return wild_dinos
+        return self.get_all(include_cryos= False, include_tamed=False)
     
     def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
-        dinos = self.get_all()
-        tamed_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino)}
-
-        if not include_cryopodded:
-            tamed_dinos = {k: v for k, v in tamed_dinos.items() if v.cryopod is None}
-
-        return tamed_dinos
+        return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
     
     def get_all_in_cryopod(self) -> Dict[UUID, TamedDino]:
-        dinos = self.get_all()
-        cryopod_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino) and v.cryopod is not None}
-
-        return cryopod_dinos
+        return self.get_all(include_cryos=True, include_wild=False, include_tamed=False)
     
     def get_all_by_class(self, class_names: List[str]) -> Dict[UUID, Dino]:
         config = GameObjectReaderConfiguration(
@@ -362,8 +351,6 @@ class DinoApi:
 
             y = math.floor(coords.long)
             x = math.floor(coords.lat)
-
-            print(f"Adding dino {dino.tamed_name} ({dino.get_short_name()}) at ({x}, {y})")
 
             if x < 0 or x >= resolution or y < 0 or y >= resolution:
                 continue

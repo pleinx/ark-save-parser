@@ -1,4 +1,5 @@
 #TamedTimeStamp
+import json
 from uuid import UUID
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,9 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.dinos.dino import Dino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.struct.object_reference import ObjectReference
+from arkparse.logging import ArkSaveLogger
+
+from arkparse.utils.json_utils import DefaultJsonEncoder
 
 if TYPE_CHECKING:
     from arkparse.object_model.cryopods.cryopod import Cryopod
@@ -21,9 +25,8 @@ class TamedDino(Dino):
     cryopod: "Cryopod"
     
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
         self.cryopod = None
         self.tamed_name = self.object.get_property_value("TamedName")
@@ -40,13 +43,9 @@ class TamedDino(Dino):
         super().__init__(uuid, binary=binary, save=save)
         self.inv_uuid = None
         self.inventory = None
-        if self.binary is not None:
-            self.__init_props__()
 
         if self.inv_uuid is not None:
-            inv_bin = save.get_game_obj_binary(self.inv_uuid)
-            inv_parser = ArkBinaryParser(inv_bin, save.save_context)
-            self.inventory = Inventory(self.inv_uuid, inv_parser, save=save)
+            self.inventory = Inventory(self.inv_uuid, save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner))
@@ -69,3 +68,12 @@ class TamedDino(Dino):
             raise ValueError("Cannot store TamedDino without inventory.")
         self.inventory.store_binary(path, name, no_suffix=no_suffix)
         return super().store_binary(path, name, prefix, no_suffix)
+
+    def to_json_obj(self):
+        json_obj = super().to_json_obj()
+        if self.cryopod is not None:
+            json_obj["CryopodUUID"] = self.cryopod.object.uuid.__str__() if self.cryopod is not None and self.cryopod.object is not None and self.cryopod.object.uuid is not None else None
+        return json_obj
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

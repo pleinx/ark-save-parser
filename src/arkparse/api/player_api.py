@@ -1,14 +1,10 @@
 from typing import List, Dict, Set, Optional
 from pathlib import Path
 from uuid import UUID
-import time
-import threading
 
-from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.player.ark_player import ArkPlayer
 from arkparse.ark_tribe import ArkTribe
 from arkparse.saves.asa_save import AsaSave
-from arkparse.object_model.misc.inventory import Inventory
 from arkparse.parsing import ArkBinaryParser
 from arkparse.classes.player import Player
 from arkparse.parsing.game_object_reader_configuration import GameObjectReaderConfiguration
@@ -63,6 +59,7 @@ class _TribeAndPlayerData:
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             uuid_pos = self.data.find_byte_sequence(uuid_bytes)
+            # TODO: already only take latest of UUID here
             ArkSaveLogger.api_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
@@ -83,6 +80,9 @@ class _TribeAndPlayerData:
             end_pos = last_none + 4
             size = end_pos - offset
             ArkSaveLogger.api_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
+
+            # TODO: already only take latest of UUID here
+
             self.player_data_pointers.append([uuid_bytes, offset, size+1])
 
     def get_last_none_before(self, nones: List[int], pos: int = None):
@@ -306,22 +306,22 @@ class PlayerApi:
         return self.__calc_stat(deaths, stat_type) if not as_dict else dict
     
     def get_level(self, player: str = None, stat_type: int = StatType.TOTAL, as_dict: bool = False):
-        level = []
+        levels = []
         dict = {}
 
         for p in self.players:
             if p.name == player or player is None:
-                level.append(p.stats.level)
+                levels.append(p.stats.level)
                 dict[p.id_] = p.stats.level
 
-        return self.__calc_stat(level, stat_type) if not as_dict else dict
-    
+        return self.__calc_stat(levels, stat_type) if not as_dict else dict
+
     def get_xp(self, player: str = None, stat_type: int = StatType.TOTAL, as_dict: bool = False):
         xp = []
         dict = {}
 
         for p in self.players:
-            if p.name == player or player is None:
+            if p.name == player:
                 xp.append(p.stats.experience)
                 dict[p.id_] = p.stats.experience
 

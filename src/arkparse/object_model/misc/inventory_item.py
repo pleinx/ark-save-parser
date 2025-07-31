@@ -6,6 +6,7 @@ from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
+from arkparse.logging import ArkSaveLogger
 
 class InventoryItem(ParsedObjectBase):
     binary: ArkBinaryParser
@@ -15,20 +16,19 @@ class InventoryItem(ParsedObjectBase):
     owner_inv_uuid: UUID
     quantity: int
 
-    def __init_props__(self, obj: ArkGameObject = None):
-        if obj is not None:
-            super().__init_props__(obj)
+    def __init_props__(self):
+        super().__init_props__()
 
-        self.id_ = self.object.get_property_value("ItemID")
-        self.quantity = self.object.get_property_value("ItemQuantity", default=1)
-        owner_in: ObjectReference = self.object.get_property_value("OwnerInventory", default=ObjectReference())
-        self.owner_inv_uuid = UUID(owner_in.value)
+        if self.object is not None:
+            self.id_ = self.object.get_property_value("ItemID")
+            self.quantity = self.object.get_property_value("ItemQuantity", default=1)
+            owner_in: ObjectReference = self.object.get_property_value("OwnerInventory", default=ObjectReference())
+            self.owner_inv_uuid = UUID(owner_in.value)
+        else:
+            ArkSaveLogger.warning_log("InventoryItem object is None, cannot initialize properties")
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)
-
-        if self.binary is not None:
-            self.__init_props__()
 
     def __str__(self):
         return f"InventoryItem(item={self.object.blueprint.split('/')[-1].split('.')[0]}, quantity={self.quantity})"
@@ -52,12 +52,10 @@ class InventoryItem(ParsedObjectBase):
     def set_quantity(self, quantity: int, save: AsaSave = None):
         self.quantity = quantity
         prop = self.object.find_property("ItemQuantity")
-        # self.binary.structured_print()
         self.binary.replace_u32(prop, quantity)
-        # self.binary.structured_print()
 
         if save is not None:
-            save.modify_game_obj(self.object.uuid, self.binary)
+            save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
 
     def get_inventory(self, save: AsaSave):
         from .inventory import Inventory # placed here to avoid circular import
