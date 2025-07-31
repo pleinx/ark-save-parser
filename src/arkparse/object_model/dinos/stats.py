@@ -163,7 +163,8 @@ class DinoStats(ParsedObjectBase):
     @staticmethod
     def from_object(obj: ArkGameObject):
         s: DinoStats = DinoStats()
-        s.__init_props__(obj)
+        s.object = obj
+        s.__init_props__()
 
         return s
 

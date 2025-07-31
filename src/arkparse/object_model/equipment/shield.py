@@ -11,7 +11,7 @@ from .__equipment_with_durability import EquipmentWithDurability
 
 class Shield(EquipmentWithDurability):
     def __init_props__(self):
-        super().__init_props__(obj)
+        super().__init_props__()
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
         super().__init__(uuid, binary)
@@ -27,7 +27,8 @@ class Shield(EquipmentWithDurability):
     @staticmethod
     def from_object(obj: ArkGameObject):
         shield = Shield()
-        shield.__init_props__(obj)
+        shield.object = obj
+        shield.__init_props__()
         
         return shield
 

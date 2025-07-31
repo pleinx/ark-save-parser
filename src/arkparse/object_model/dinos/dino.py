@@ -57,7 +57,8 @@ class Dino(ParsedObjectBase):
             d = dino
         else:
             d: Dino = Dino()
-            d.__init_props__(dino_obj)
+            d.object = dino_obj
+            d.__init_props__()
 
         d.stats = DinoStats.from_object(status_obj)
 
