@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from arkparse.api.dino_api import DinoApi
 from arkparse import AsaSave
-from arkparse.object_model.dinos import TamedDino
+from arkparse.object_model.dinos import TamedDino, TamedBaby, BabyStage
 from arkparse.enums import ArkMap
 
 NR_DINOS = 33767
@@ -27,7 +27,8 @@ def dino_api(ragnarok_save):
     """
     Fixture to provide a DinoApi instance for the Ragnarok save.
     """
-    return DinoApi(ragnarok_save)
+    resource = DinoApi(ragnarok_save)
+    yield resource
 
 @pytest.fixture(scope="module")
 def dino_mod_api(rag_limited: AsaSave, temp_file_folder: Path):
@@ -179,4 +180,56 @@ def test_retrieve_cryopodded_dinos(dino_api: DinoApi):
     assert isinstance(cryopodded_dinos, dict), "Expected a dictionary of cryopodded dinos"
     print(f"Total cryopodded dinos found: {len(cryopodded_dinos)}")
     assert len(cryopodded_dinos) == NR_IN_CRYO, f"Expected {NR_IN_CRYO} cryopodded dinos, got {len(cryopodded_dinos)}"
+
+def test_retrieve_babies(dino_api: DinoApi):
+    """ Test to retrieve all baby dinos from the Ragnarok save.
+    """
+    babies = dino_api.get_all_babies(include_tamed=True, include_cryopodded=True, include_wild=False)
+    assert isinstance(babies, dict), "Expected a dictionary of baby dinos"
+    print(f"Total baby dinos found: {len(babies)}")
+    # assert len(babies) == 100, f"Expected 100 baby dinos, got {len(babies)}"
+
+def test_retrieve_wild_babies(dino_api: DinoApi):
+    """ Test to retrieve all wild baby dinos from the Ragnarok save.
+    """
+    wild_babies = dino_api.get_all_babies(include_tamed=False, include_cryopodded=True, include_wild=True)
+    assert isinstance(wild_babies, dict), "Expected a dictionary of wild baby dinos"
+    print(f"Total wild baby dinos found: {len(wild_babies)}")
+    # assert len(wild_babies) == 50, f"Expected 50 wild baby dinos, got {len(wild_babies)}"
+
+def test_retrieve_tamed_babies(dino_api: DinoApi):
+    """ Test to retrieve all tamed baby dinos from the Ragnarok save.
+    """
+    tamed_babies = dino_api.get_all_babies(include_tamed=True, include_cryopodded=True, include_wild=False)
+    assert isinstance(tamed_babies, dict), "Expected a dictionary of tamed baby dinos"
+    print(f"Total tamed baby dinos found: {len(tamed_babies)}")
+    # assert len(tamed_babies) == 50, f"Expected 50 tamed baby dinos, got {len(tamed_babies)}"
+
+def test_retrieve_babies_in_cryopods(dino_api: DinoApi):
+    """ Test to retrieve all baby dinos in cryopods from the Ragnarok save.
+    """
+    cryopodded_babies = dino_api.get_all_babies(include_tamed=True, include_cryopodded=True, include_wild=False)
+    assert isinstance(cryopodded_babies, dict), "Expected a dictionary of cryopodded baby dinos"
+    print(f"Total cryopodded baby dinos found: {len(cryopodded_babies)}")
+    # assert len(cryopodded_babies) == 20, f"Expected 20 cryopodded baby dinos, got {len(cryopodded_babies)}"
+
+def test_tamed_baby_stage(dino_api: DinoApi):
+    """ Test to check the stage of a tamed baby dino.
+    """
+    babies = dino_api.get_all_babies(include_tamed=True, include_cryopodded=True, include_wild=False)
+    assert isinstance(babies, dict), "Expected a dictionary of tamed baby dinos"
+    
+    for baby in babies.values():
+        stage: BabyStage = baby.stage
+        maturation: float = baby.percentage_matured
+        imprinted: float = baby.percentage_imprinted
+        print(f"Baby {baby.get_short_name()} is at stage {stage} with maturation {maturation:.2f}% and imprinted {imprinted:.2f}%")
+        if stage == BabyStage.BABY:
+            assert maturation < 10.0, "Baby stage should have maturation less than 10%"
+        elif stage == BabyStage.JUVENILE:
+            assert 10.0 <= maturation < 50.0, "Juvenile stage should have maturation between 10% and 50%"
+        elif stage == BabyStage.ADOLESCENT:
+            assert maturation >= 50.0, "Adolescent stage should have maturation greater than or equal to 50%"
+        else:
+            raise ValueError(f"Unexpected baby stage: {stage}")
     
