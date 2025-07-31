@@ -11,6 +11,7 @@ from pathlib import Path
 import os
 import ast
 from datetime import datetime
+import re
 
 start_time = time()
 
@@ -55,6 +56,28 @@ def convert_tamed_time(timestamp_str):
     except (ValueError, TypeError):
         return None
 
+def extract_added_stat_values(stat_string):
+    if not stat_string:
+        return {}
+
+    key_map = {
+        "health": "hp-a",
+        "stamina": "stam-a",
+        "melee_damage": "melee-a",
+        "weight": "weight-a",
+        "movement_speed": "speed-a",
+        "food": "food-a",
+        "oxygen": "oxy-a"
+    }
+
+    matches = re.findall(r'(\w+)=([\d.]+)', stat_string)
+
+    return {
+        key_map[k]: float(v)
+        for k, v in matches
+        if k in key_map
+    }
+
 
 # Load ASA save
 save_path = Path(f"{args.savegame}")
@@ -83,6 +106,8 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         continue
 
     dino_json_data = dino.to_json_obj()
+
+    # pprint(dino_json_data.get("StatValues", None))
 
     #public_attrs = [attr for attr in dir(tribe_lookup) if not attr.startswith('_')]
     #if(public_attrs is not []):
@@ -162,7 +187,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "isClone": False,           # TODO
         "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": "100",        # TODO
+        "maturation": dino_json_data.get("bIsBaby", None) if dino_json_data.get("bIsBaby", None) else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
         "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
@@ -181,6 +206,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
     entry["c3"] = color_indices[3] if len(color_indices) > 3 else None
     entry["c4"] = color_indices[4] if len(color_indices) > 4 else None
     entry["c5"] = color_indices[5] if len(color_indices) > 5 else None
+    entry.update(extract_added_stat_values(dino_json_data.get("StatValues", "")))
 
     tamed_dinos.append(entry)
 
