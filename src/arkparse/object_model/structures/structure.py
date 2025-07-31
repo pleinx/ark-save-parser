@@ -149,55 +149,76 @@ class Structure(ParsedObjectBase):
         return result
 
     def to_json_obj(self):
-        inv_uuid = None
-        inv_comp: ObjectReference = self.object.get_property_value("MyInventoryComponent")
-        if inv_comp is not None:
-            inv_uuid = UUID(inv_comp.value)
-        return { "UUID": self.object.uuid.__str__(),
-                 "InventoryUUID": inv_uuid.__str__() if inv_uuid is not None else None,
+        # Grab already set properties
+        retj = { "UUID": self.object.uuid.__str__(),
                  "LinkedStructureUUIDS": self.get_linked_structures_str(),
+                 "ItemArchetype": self.object.blueprint,
                  "StructureID": self.id_,
                  "MaxHealth": self.max_health,
                  "Health": self.current_health,
-                 "OwningPlayerID": self.owner.id_ if self.owner is not None else None,
-                 "OwningPlayerName": self.owner.player_name if self.owner is not None else None,
-                 "TargetingTeam": self.owner.tribe_id if self.owner is not None else None,
-                 "OwnerName": self.owner.tribe_name if self.owner is not None else None,
-                 "TribeGroupInventoryRank": self.object.get_property_value("TribeGroupInventoryRank", None),
-                 "TribeGroupStructureRank": self.object.get_property_value("TribeGroupStructureRank", None),
-                 "AttachedToDinoID1": self.object.get_property_value("AttachedToDinoID1", None),
-                 "BoxName": self.object.get_property_value("BoxName", None),
-                 "CurrentItemCount": self.object.get_property_value("CurrentItemCount", None),
-                 "CurrentPinCode": self.object.get_property_value("CurrentPinCode", None),
-                 "MyCustomCosmeticStructureSkinID": self.object.get_property_value("MyCustomCosmeticStructureSkinID", None),
-                 "MyCustomCosmeticStructureSkinVariantID": self.object.get_property_value("MyCustomCosmeticStructureSkinVariantID", None),
-                 "StructureSkinClass": self.object.get_property_value("StructureSkinClass", None),
-                 "NumBullets": self.object.get_property_value("NumBullets", None),
                  "bSavedWhenStasised": self.saved_when_stasised,
                  "bWasPlacementSnapped": self.was_placement_snapped,
-                 "bAutoCraftActivated": self.object.get_property_value("bAutoCraftActivated", None),
-                 "bContainerActivated": self.object.get_property_value("bContainerActivated", None),
-                 "bGeneratedCrateItems": self.object.get_property_value("bGeneratedCrateItems", None),
-                 "bHasFruitItems": self.object.get_property_value("bHasFruitItems", None),
-                 "bHasFuel": self.object.get_property_value("bHasFuel", None),
-                 "bHasItems": self.object.get_property_value("bHasItems", None),
                  "bHasResetDecayTime": self.has_reset_decay_time,
-                 "bIsLocked": self.object.get_property_value("bIsLocked", None),
-                 "bIsPinLocked": self.object.get_property_value("bIsPinLocked", None),
-                 "bIsPowered": self.object.get_property_value("bIsPowered", None),
-                 "bIsUnderwater": self.object.get_property_value("bIsUnderwater", None),
-                 "bIsWatered": self.object.get_property_value("bIsWatered", None),
-                 "bLastToggleActivated": self.object.get_property_value("bLastToggleActivated", None),
-                 "OriginalPlacerPlayerID": self.owner.original_placer_id if self.owner is not None else None,
-                 "OriginalPlacedTimeStamp": self.object.get_property_value("OriginalPlacedTimeStamp", None),
                  "LastInAllyRangeTimeSerialized": self.last_in_ally_range_time_serialized,
                  "LastEnterStasisTime": self.last_enter_stasis_time,
-                 "OriginalCreationTime": self.original_creation_time,
-                 "LastFireTime": self.object.get_property_value("LastFireTime", None),
-                 "NetDestructionTime": self.object.get_property_value("NetDestructionTime", None),
-                 "ActorTransformX": self.location.x if self.location is not None else None,
-                 "ActorTransformY": self.location.y if self.location is not None else None,
-                 "ActorTransformZ": self.location.z if self.location is not None else None }
+                 "OriginalCreationTime": self.original_creation_time }
+
+        # Grab inventory UUID if it exists
+        inv_uuid = None
+        if self.object.has_property("MyInventoryComponent"):
+            inv_comp: ObjectReference = self.object.get_property_value("MyInventoryComponent", default=None)
+            if inv_comp is not None:
+                inv_uuid = UUID(inv_comp.value)
+        if inv_uuid is not None:
+            retj["InventoryUUID"] = inv_uuid.__str__()
+
+        # Grab owner inventory UUID if it exists
+        owner_inv_uuid = None
+        if self.object.has_property("OwnerInventory"):
+            owner_in: ObjectReference = self.object.get_property_value("OwnerInventory", default=None)
+            if owner_in is not None:
+                owner_inv_uuid = UUID(owner_in.value)
+        if owner_inv_uuid is not None:
+            retj["OwnerInventoryUUID"] = owner_inv_uuid.__str__()
+
+        # Grab location if it exists
+        if self.location is not None:
+            retj["ActorTransformX"] = self.location.x
+            retj["ActorTransformY"] = self.location.y
+            retj["ActorTransformZ"] = self.location.z
+
+        # Grab owner if it exists
+        if self.owner is not None:
+            retj["OwningPlayerID"] = self.owner.id_
+            retj["OwningPlayerName"] = self.owner.player_name
+            retj["TargetingTeam"] = self.owner.tribe_id
+            retj["OwnerName"] = self.owner.tribe_name
+            retj["OriginalPlacerPlayerID"] = self.owner.original_placer_id
+
+        # Grab remaining properties if any
+        if self.object.properties is not None and len(self.object.properties) > 0:
+            for prop in self.object.properties:
+                if prop is not None:
+                    if prop.name is not None and \
+                            len(prop.name) > 0 and \
+                            "LinkedStructures" not in prop.name and \
+                            "StructureID" not in prop.name and \
+                            "MaxHealth" not in prop.name and \
+                            "Health" not in prop.name and \
+                            "bSavedWhenStasised" not in prop.name and \
+                            "bWasPlacementSnapped" not in prop.name and \
+                            "bHasResetDecayTime" not in prop.name and \
+                            "LastInAllyRangeTimeSerialized" not in prop.name and \
+                            "LastEnterStasisTime" not in prop.name and \
+                            "OriginalCreationTime" not in prop.name and \
+                            "MyInventoryComponent" not in prop.name and \
+                            "OwnerInventory" not in prop.name:
+                        prop_value = self.object.get_property_value(prop.name, None)
+                        retj[prop.name] = prop_value
+                        #print("Prop: " + prop.name, flush=True)
+                        #teststr = json.dumps(prop_value)
+
+        return retj
 
     def to_json_str(self):
-        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

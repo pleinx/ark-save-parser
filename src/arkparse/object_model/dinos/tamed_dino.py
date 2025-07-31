@@ -1,4 +1,5 @@
 #TamedTimeStamp
+import json
 from uuid import UUID
 from typing import TYPE_CHECKING
 
@@ -9,6 +10,8 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.dinos.dino import Dino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.struct.object_reference import ObjectReference
+
+from arkparse.utils.json_utils import DefaultJsonEncoder
 
 if TYPE_CHECKING:
     from arkparse.object_model.cryopods.cryopod import Cryopod
@@ -69,3 +72,12 @@ class TamedDino(Dino):
             raise ValueError("Cannot store TamedDino without inventory.")
         self.inventory.store_binary(path, name, no_suffix=no_suffix)
         return super().store_binary(path, name, prefix, no_suffix)
+
+    def to_json_obj(self):
+        json_obj = super().to_json_obj()
+        if self.cryopod is not None:
+            json_obj["CryopodUUID"] = self.cryopod.object.uuid.__str__() if self.cryopod is not None and self.cryopod.object is not None and self.cryopod.object.uuid is not None else None
+        return json_obj
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

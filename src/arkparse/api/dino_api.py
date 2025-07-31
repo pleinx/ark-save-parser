@@ -105,6 +105,7 @@ class DinoApi:
                             self.parsed_cryopods[obj.uuid] = cryopod
                             if cryopod.dino is not None:
                                 dino = cryopod.dino
+                                dino.is_cryopodded = True
                         except Exception as e:
                             if "Unsupported embedded data version" in str(e):
                                 ArkSaveLogger.warning_log(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")

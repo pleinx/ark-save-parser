@@ -211,7 +211,7 @@ class Dino(ParsedObjectBase):
                  "ActorTransformZ": self.location.z if self.location is not None else None }
 
     def to_json_str(self):
-        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False):
         loc_name = name if name is not None else str(self.object.uuid)

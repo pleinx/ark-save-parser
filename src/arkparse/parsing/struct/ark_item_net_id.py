@@ -44,3 +44,6 @@ class ArkItemNetId:
 
     def __str__(self):
         return f"ArkItemNetId: {self.id1}, {self.id2}"
+
+    def to_json_obj(self):
+        return { "ItemID1": self.id1, "ItemID2": self.id2 }
