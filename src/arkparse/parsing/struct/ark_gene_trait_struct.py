@@ -25,3 +25,6 @@ class ArkGeneTraitStruct:
         ark_binary_data.validate_name("None")
 
         ArkSaveLogger.parser_log(f"ArkGeneTraitStruct: {self.unique_id}, {self.class_name}, {self.name}")
+
+    def to_json_obj(self):
+        return { "unique_id": self.unique_id, "class_name": self.class_name, "name": self.name }

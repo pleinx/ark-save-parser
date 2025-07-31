@@ -38,3 +38,5 @@ class ArkServerCustomFolder:
         for _ in range(array_length):
             self.custom_folder_ids.append(ArkItemNetId(ark_binary_data))
 
+    def to_json_obj(self):
+        return { "inventory_comp_type": self.inventory_comp_type, "name": self.name, "custom_folder_ids": self.custom_folder_ids }

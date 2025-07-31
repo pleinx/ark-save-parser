@@ -1,7 +1,7 @@
 import json
 import math
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Any
 from uuid import UUID
 
 from arkparse.logging import ArkSaveLogger
@@ -13,7 +13,7 @@ from arkparse.object_model.equipment.__equipment_with_armor import EquipmentWith
 from arkparse.object_model.equipment.__equipment_with_durability import EquipmentWithDurability
 from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.object_model import ArkGameObject
-from arkparse.api import EquipmentApi, PlayerApi
+from arkparse.api import EquipmentApi, PlayerApi, StructureApi, DinoApi
 from arkparse.parsing import ArkBinaryParser
 from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
 from arkparse.parsing.struct import ArkUniqueNetIdRepl
@@ -131,7 +131,7 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "armors.json", "w") as text_file:
-            text_file.write(json.dumps(all_armors, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_armors, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Armors successfully exported.")
 
@@ -157,7 +157,7 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "weapons.json", "w") as text_file:
-            text_file.write(json.dumps(all_weapons, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_weapons, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Weapons successfully exported.")
 
@@ -183,7 +183,7 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "shields.json", "w") as text_file:
-            text_file.write(json.dumps(all_shields, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_shields, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Shields successfully exported.")
 
@@ -209,7 +209,7 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "saddles.json", "w") as text_file:
-            text_file.write(json.dumps(all_saddles, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_saddles, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Saddles successfully exported.")
 
@@ -264,43 +264,28 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "player_pawns.json", "w") as text_file:
-            text_file.write(json.dumps(all_pawns, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_pawns, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Player pawns successfully exported.")
 
-    def export_dinos(self, export_folder_path: str = Path.cwd() / "json_exports", include_wilds: bool = True, include_tames: bool = True, include_cryopodded: bool = True):
+    def export_dinos(self, dino_api: DinoApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
         ArkSaveLogger.api_log("Exporting dinos...")
 
-        # Parse and format dinos as JSON.
+        # Get dino API if not provided.
+        if dino_api is None:
+            dino_api = DinoApi(self.save)
+
+        # Get dinos.
+        dinos: Dict[UUID, Any] = dino_api.get_all()
+
+        # Format dinos into JSON.
         all_dinos = []
-        query = "SELECT key, value FROM game"
-        with self.save.connection as conn:
-            cursor = conn.execute(query)
-            for row in cursor:
-                obj_uuid = self.save.byte_array_to_uuid(row[0])
-                byte_buffer = ArkBinaryParser(row[1], self.save.save_context)
-                class_name = byte_buffer.read_name()
-                if class_name is None or ("PrimalItem_WeaponEmptyCryopod_C" not in class_name and not ("Dinos/" in class_name and "_Character_" in class_name)):
-                    continue
-                obj = self.save.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
-                if obj:
-                    dino = None
-                    if (include_tames or include_wilds) and "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
-                        is_tamed = obj.get_property_value("TamedTimeStamp") is not None
-                        parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-                        if is_tamed:
-                            if include_tames:
-                                dino = TamedDino(obj.uuid, parser, self.save)
-                        else:
-                            if include_wilds:
-                                dino = Dino(obj.uuid, parser, self.save)
-                    elif include_cryopodded and "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint:
-                        if not obj.get_property_value("bIsEngram", default=False):
-                            cryopod = Cryopod(obj.uuid, ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context))
-                            if cryopod.dino is not None:
-                                dino = cryopod.dino
-                    if dino is not None:
-                        all_dinos.append(dino.to_json_obj())
+        for dino in dinos.values():
+            if isinstance(dino, TamedDino):
+                tamed_dino: TamedDino = dino
+                all_dinos.append(tamed_dino.to_json_obj())
+            else:
+                all_dinos.append(dino.to_json_obj())
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)
@@ -309,38 +294,28 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "dinos.json", "w") as text_file:
-            text_file.write(json.dumps(all_dinos, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_dinos, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Dinos successfully exported.")
 
-    def export_structures(self, export_folder_path: str = Path.cwd() / "json_exports", only_structures_with_inventory: bool = False):
+    def export_structures(self, structure_api: StructureApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
         ArkSaveLogger.api_log("Exporting structures...")
 
-        # Parse and format structures as JSON.
+        # Get structure API if not provided.
+        if structure_api is None:
+            structure_api = StructureApi(self.save)
+
+        # Get structures.
+        structures: Dict[UUID, Structure | StructureWithInventory] = structure_api.get_all()
+
+        # Format dinos into JSON.
         all_structures = []
-        query = "SELECT key, value FROM game"
-        with self.save.connection as conn:
-            cursor = conn.execute(query)
-            for row in cursor:
-                obj_uuid = self.save.byte_array_to_uuid(row[0])
-                byte_buffer = ArkBinaryParser(row[1], self.save.save_context)
-                class_name = byte_buffer.read_name()
-                if class_name is None or "/Structures" not in class_name or "PrimalItemStructure_" in class_name:
-                    continue
-                obj = self.save.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
-                if obj:
-                    obj: ArkGameObject = obj
-                    if obj is not None:
-                        parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-                        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-                            structure = StructureWithInventory(obj.uuid, parser, self.save)
-                        else:
-                            if only_structures_with_inventory:
-                                continue
-                            structure = Structure(obj.uuid, parser)
-                        if obj.uuid in self.save.save_context.actor_transforms:
-                            structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
-                        all_structures.append(structure.to_json_obj())
+        for structure in structures.values():
+            if isinstance(structure, StructureWithInventory):
+                structure_with_inv: StructureWithInventory = structure
+                all_structures.append(structure_with_inv.to_json_obj())
+            else:
+                all_structures.append(structure.to_json_obj())
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)
@@ -349,7 +324,7 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "structures.json", "w") as text_file:
-            text_file.write(json.dumps(all_structures, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_structures, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Structures successfully exported.")
 
@@ -388,7 +363,7 @@ class JsonApi:
 
         # Write JSON.
         with open(path_obj / "items.json", "w") as text_file:
-            text_file.write(json.dumps(all_items, indent=4, cls=DefaultJsonEncoder))
+            text_file.write(json.dumps(all_items, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
 
         ArkSaveLogger.api_log("Items successfully exported.")
 

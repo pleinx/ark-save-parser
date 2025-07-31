@@ -37,3 +37,5 @@ class ArkVector:
     def __str__(self):
         return f"Vector({self.x:.2f}, {self.y:.2f}, {self.z:.2f})"
 
+    def to_json_obj(self):
+        return { "x": self.x, "y": self.y, "z": self.z }

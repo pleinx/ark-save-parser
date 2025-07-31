@@ -121,4 +121,4 @@ class Armor(EquipmentWithArmor):
         return json_obj
 
     def to_json_str(self):
-        return json.dumps(self.to_json_obj(), indent=4, cls=DefaultJsonEncoder)
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

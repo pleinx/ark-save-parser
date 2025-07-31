@@ -114,3 +114,9 @@ class ArkPropertyContainer:
 
     def get_properties_by_position(self, name: str, clazz: Type[T]) -> Dict[int, T]:
         return {property.position: property.value for property in self.get_properties(name, clazz)}
+
+    def to_json_obj(self):
+        all_properties = []
+        for ark_property in self.properties:
+            all_properties.append(ark_property.to_json_obj())
+        return { "properties": all_properties }
