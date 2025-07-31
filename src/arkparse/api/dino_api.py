@@ -83,18 +83,18 @@ class DinoApi:
                 is_tamed = obj.get_property_value("TamedTimeStamp") is not None
 
                 if obj.uuid in self.parsed_dinos:
-                    if is_tamed:
+                    if is_tamed and include_tamed:
                         dino = self.parsed_tamed_dinos[obj.uuid]
-                    else:
+                    elif include_wild and not is_tamed:
                         dino = self.parsed_dinos[obj.uuid]
                 else:
                     if is_tamed and include_tamed:
                         dino = TamedDino(obj.uuid, save=self.save)
                         self.parsed_tamed_dinos[obj.uuid] = dino
-                    elif include_wild:
+                    elif include_wild and not is_tamed:
                         dino = Dino(obj.uuid, save=self.save)
                         self.parsed_dinos[obj.uuid] = dino
-            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos:
+            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos and include_tamed:
                 if not obj.get_property_value("bIsEngram", default=False):
                     if obj.uuid in self.parsed_cryopods:
                         dino = self.parsed_cryopods[obj.uuid].dino
@@ -141,7 +141,7 @@ class DinoApi:
         return filtered_dinos
     
     def get_all_wild(self) -> Dict[UUID, Dino]:
-        return self.get_all(include_cryos= False, include_tamed=False)
+        return self.get_all(include_cryos=False, include_tamed=False)
     
     def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
         return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
