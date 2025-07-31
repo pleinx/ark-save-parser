@@ -77,10 +77,11 @@ class Weapon(EquipmentWithDurability):
 
     @staticmethod
     def from_object(obj: ArkGameObject):
-        saddle = Weapon()
-        saddle.__init_props__(obj)
+        weapon = Weapon()
+        weapon.object = obj
+        weapon.__init_props__()
         
-        return saddle
+        return weapon
 
     def __str__(self):
         return f"Weapon: {self.get_short_name()} - Damage: {self.damage} - Durability: {self.durability} - BP: {self.is_bp} - Crafted: {self.is_crafted()} - Rating: {self.rating}"

@@ -39,7 +39,8 @@ class Saddle(EquipmentWithArmor):
     @staticmethod
     def from_object(obj: ArkGameObject):
         saddle = Saddle()
-        saddle.__init_props__(obj)
+        saddle.object = obj
+        saddle.__init_props__()
         
         return saddle
 

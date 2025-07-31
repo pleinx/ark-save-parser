@@ -107,7 +107,8 @@ class Armor(EquipmentWithArmor):
     @staticmethod
     def from_object(obj: ArkGameObject):
         armor = Armor()
-        armor.__init_props__(obj)
+        armor.object = obj
+        armor.__init_props__()
         
         return armor
     

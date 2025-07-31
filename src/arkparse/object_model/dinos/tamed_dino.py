@@ -53,7 +53,8 @@ class TamedDino(Dino):
     @staticmethod
     def from_object(dino_obj: ArkGameObject, status_obj: ArkGameObject, cryopod: "Cryopod" = None):
         d: TamedDino = TamedDino()
-        d.__init_props__(dino_obj)
+        d.object = dino_obj
+        d.__init_props__()
 
         d.cryopod = cryopod
         Dino.from_object(dino_obj, status_obj, d)
