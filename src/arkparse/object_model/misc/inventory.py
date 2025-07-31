@@ -103,9 +103,9 @@ class Inventory(ParsedObjectBase):
         return out
 
     def to_json_obj(self):
-        json_items = {}
+        json_items = []
         for key, item in self.items.items():
-            json_items[key.__str__()] = item.to_json_obj(include_owner_inv_uuid=False)
+            json_items.append(item.to_json_obj(include_owner_inv_uuid=False))
         return { "UUID": self.object.uuid.__str__(), "items": json_items }
 
     def to_json_str(self):

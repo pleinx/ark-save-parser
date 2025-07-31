@@ -74,7 +74,10 @@ class InventoryItem(ParsedObjectBase):
     #     return inv.
 
     def to_json_obj(self, include_owner_inv_uuid=True):
-        return { "id": self.id_.to_json_obj(), "owner_inv_uuid": self.owner_inv_uuid.__str__(), "quantity": self.quantity }
+        json_obj = { "UUID": self.object.uuid.__str__(), "id": self.id_.to_json_obj(), "quantity": self.quantity }
+        if include_owner_inv_uuid:
+            json_obj["owner_inv_uuid"] = self.owner_inv_uuid.__str__()
+        return json_obj
 
     def to_json_str(self):
         return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)
