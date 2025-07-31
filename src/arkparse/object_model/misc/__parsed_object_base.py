@@ -19,7 +19,7 @@ class ParsedObjectBase:
         self.binary.set_position(0)
         self.binary.read_name()
 
-    def __init_props__(self, _: ArkGameObject = None):
+    def __init_props__(self):
         pass
 
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: "AsaSave" = None):
