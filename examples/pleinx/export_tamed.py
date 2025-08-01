@@ -1,7 +1,7 @@
 from uuid import UUID
 import json
 from time import time
-from arkparse.api.dino_api import DinoApi, TamedDino
+from arkparse.api.dino_api import DinoApi, TamedDino, TamedBaby
 from arkparse.enums import ArkMap, ArkStat
 from arkparse.saves.asa_save import AsaSave
 from arkparse.api.player_api import PlayerApi
@@ -73,7 +73,7 @@ def extract_added_stat_values(stat_string):
     matches = re.findall(r'(\w+)=([\d.]+)', stat_string)
 
     return {
-        key_map[k]: float(v)
+        key_map[k]: v
         for k, v in matches
         if k in key_map
     }
@@ -102,17 +102,14 @@ dino_api = DinoApi(save)
 
 tamed_dinos = []
 for dino_id, dino in dino_api.get_all_tamed().items():
-    if not isinstance(dino, TamedDino):
+    if not isinstance(dino, (TamedDino, TamedBaby)):
         continue
 
     dino_json_data = dino.to_json_obj()
 
-
-    #public_attrs = [attr for attr in dir(tribe_lookup) if not attr.startswith('_')]
-    #if(public_attrs is not []):
-        #pprint(dir(public_attrs))
-        #coords = dino.location.as_map_coords(ArkMap.ABERRATION)
-        #pprint(dir(coords))
+#     public_attrs = [attr for attr in dir(dino) if not attr.startswith('_')]
+#     if(public_attrs is not []):
+#         pprint(public_attrs)
 
     lat, lon = (0.0, 0.0)
     ccc = ""
@@ -149,7 +146,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "tribe": dino_json_data.get("TribeName", None),
         "tamer": tamer_name,
         "imprinter": extract_owner_attr(dino, dino_json_data, "imprinter"),
-        "imprint": 0.0,     # TODO
+        "imprint": int(dino.percentage_imprinted),
         "creature": dino.get_short_name() + "_C",
         "name": dino.tamed_name if dino.tamed_name else "",
         "sex": "Female" if dino.is_female else "Male",
@@ -191,7 +188,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "isClone": False,           # TODO
         "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": "1" if dino_json_data.get("bIsBaby", None) else "100",
+        "maturation": int(dino.percentage_matured) if isinstance(dino, TamedBaby) else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
         "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
@@ -224,7 +221,7 @@ if os.path.exists(json_output_path):
     os.remove(json_output_path)
 
 with open(json_output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False, indent=2)
+    json.dump(json_data, f, ensure_ascii=False)
 
 # DONE, OUTPUT
 print(f"Saved {len(tamed_dinos)} tamed dinos to {json_output_path}")
