@@ -64,7 +64,7 @@ def extract_added_stat_values(stat_string):
         "health": "hp-a",
         "stamina": "stam-a",
         "melee_damage": "melee-a",
-        "weight": "weight-a",
+        "weight": "weight-a",   # TODO is missing always 0.0
         "movement_speed": "speed-a",
         "food": "food-a",
         "oxygen": "oxy-a"
@@ -191,7 +191,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "isClone": False,           # TODO
         "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": dino_json_data.get("bIsBaby", None) if "1" else "100",
+        "maturation": "1" if dino_json_data.get("bIsBaby", None) else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
         "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
