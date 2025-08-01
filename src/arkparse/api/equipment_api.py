@@ -30,6 +30,7 @@ class EquipmentApi(GeneralApi):
                                                  
         )
         super().__init__(save, config)
+        self.parsed_objects: Dict[UUID, Equipment] = {}
 
     def __get_cls_filter(self, cls: "EquipmentApi.Classes"):
         if cls == self.Classes.WEAPON:
@@ -133,6 +134,17 @@ class EquipmentApi(GeneralApi):
             armor = {uuid: armor_piece for uuid, armor_piece in armor.items() if armor_piece.hyperthermal_insulation >= minimum_heat_resistance}
         
         return armor
+    
+    def get_shields(self, classes: List[str] = None, minimum_armor: int = None, minimum_durability: int = None) -> Dict[UUID, Shield]:
+        shields: Dict[UUID, Shield] = self.get_filtered(self.Classes.SHIELD, classes=classes)
+        
+        if minimum_armor is not None:
+            shields = {uuid: shield for uuid, shield in shields.items() if shield.armor >= minimum_armor}
+        
+        if minimum_durability is not None:
+            shields = {uuid: shield for uuid, shield in shields.items() if shield.durability >= minimum_durability}
+        
+        return shields
     
     def modify_equipment(self, eq_class_ : "EquipmentApi.Classes", equipment: Equipment, target_class: str = None, target_stat: ArkEquipmentStat = None, value: float = None, range: tuple[float, float] = None):
         if eq_class_ == self.Classes.WEAPON:

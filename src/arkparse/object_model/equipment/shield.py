@@ -13,12 +13,12 @@ class Shield(EquipmentWithDurability):
     def __init_props__(self):
         super().__init_props__()
 
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        super().__init__(uuid, binary)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None):
+        super().__init__(uuid, save=save)
         self.class_name = "shield"
 
-    def auto_rate(self, save: AsaSave = None):
-        self._auto_rate(0.000519, self.get_average_stat(), save)    
+    def auto_rate(self):
+        self._auto_rate(0.000519, self.get_average_stat())    
 
     def get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float) -> float:
         value = super()._get_stat_for_rating(stat, rating, 0.000519)

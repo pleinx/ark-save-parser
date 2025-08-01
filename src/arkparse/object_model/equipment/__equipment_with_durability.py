@@ -10,6 +10,7 @@ from arkparse.classes.equipment import Armor as ArmorBps, Shields as ShieldBps, 
 from .__equipment import Equipment
 from ...utils.json_utils import DefaultJsonEncoder
 
+_LOGGED_WARNINGS = set()
 
 class EquipmentWithDurability(Equipment):
     durability: float = 0
@@ -26,8 +27,10 @@ class EquipmentWithDurability(Equipment):
             return 25
         elif bp in ArmorBps.riot.all_bps or bp in ArmorBps.flak.all_bps or bp in ArmorBps.tek.all_bps:
             return 120
-        elif bp in ArmorBps.scuba.all_bps:
-            return 185
+        elif bp in ArmorBps.scuba.pants:
+            return 50
+        elif bp in [ArmorBps.scuba.chest, ArmorBps.scuba.flippers, ArmorBps.scuba.goggles]:
+            return 45
         elif bp in ArmorBps.hazard.all_bps:
             return 85.5
         elif bp == ShieldBps.metal:
@@ -51,16 +54,10 @@ class EquipmentWithDurability(Equipment):
             return 100
         elif bp == Weapons.advanced.compound_bow:
             return 55
-        elif bp == Weapons.primitive.pike:
-            return 40
-        elif bp == Weapons.primitive.stone_club:
-            return 40
         elif bp == Weapons.primitive.sword:
             return 70
         elif bp == Misc.prod:
             return 10
-        elif bp == Weapons.primitive.slingshot:
-            return 40
         elif bp == Weapons.primitive.bow:
             return 50
         elif bp == Weapons.primitive.crossbow:
@@ -71,36 +68,29 @@ class EquipmentWithDurability(Equipment):
             return 60
         elif bp == Weapons.advanced.longneck:
             return 70
-        elif bp == Weapons.primitive.shotgun:
+        elif bp in [Weapons.primitive.shotgun, Weapons.advanced.chainsaw]:
             return 80
         elif bp == Weapons.advanced.fabricated_pistol:
             return 60
         elif bp == Weapons.advanced.fabricated_shotgun:
             return 120
-        elif bp == Weapons.advanced.assault_rifle:
-            return 40
         elif bp == Weapons.advanced.fabricated_sniper:
             return 70
         elif bp == Weapons.advanced.rocket_launcher:
             return 120
         elif bp == Weapons.advanced.tek_rifle:
             return 80
-        elif bp == Weapons.gathering.sickle:
-            return 40
-        elif bp == Weapons.gathering.metal_hatchet:
-            return 40
-        elif bp == Weapons.gathering.metal_pick:
-            return 40
-        elif bp == Weapons.gathering.stone_hatchet:
-            return 40
-        elif bp == Weapons.gathering.stone_pick:
-            return 40
-        elif bp == Weapons.gathering.fishing_rod:
+        elif bp in [Weapons.gathering.sickle, Weapons.gathering.metal_hatchet, Weapons.gathering.metal_pick, 
+                    Weapons.gathering.stone_hatchet, Weapons.gathering.stone_pick, Weapons.gathering.fishing_rod,
+                    Weapons.advanced.assault_rifle, Weapons.primitive.slingshot, Weapons.primitive.stone_club,
+                    Weapons.primitive.pike, Weapons.primitive.lance, Weapons.advanced.flamethrower, Weapons.primitive.torch]:
             return 40
         elif bp == Misc.climb_pick:
             return 65
         else:
-            print(f"WARNING: No durability found for {bp}")
+            if bp not in _LOGGED_WARNINGS:
+                _LOGGED_WARNINGS.add(bp)
+                print(f"WARNING: No durability found for {bp}, using default value of 1")
             return 1
 
     def __init_props__(self):
@@ -109,8 +99,8 @@ class EquipmentWithDurability(Equipment):
         dura = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.DURABILITY.value, default=0)
         self.durability = self.get_actual_value(ArkEquipmentStat.DURABILITY, dura)
 
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        super().__init__(uuid, binary)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None):
+        super().__init__(uuid, save=save)
 
     def get_average_stat(self, __stats = []) -> float:
         return super().get_average_stat(__stats + [self.get_internal_value(ArkEquipmentStat.DURABILITY)])
@@ -133,15 +123,15 @@ class EquipmentWithDurability(Equipment):
         else:
             raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
         
-    def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
+    def set_stat(self, stat: ArkEquipmentStat, value: float):
         if stat == ArkEquipmentStat.DURABILITY:
-            self.__set_durability(value, save)
+            self.__set_durability(value)
         else:
             raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
 
-    def __set_durability(self, durability: float, save: AsaSave = None):
+    def __set_durability(self, durability: float):
         self.durability = durability
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY, save)
+        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY)
 
     def _get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float, multiplier: float) -> float:
         if stat == ArkEquipmentStat.DURABILITY:

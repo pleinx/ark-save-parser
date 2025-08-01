@@ -13,6 +13,8 @@ from arkparse.classes.equipment import Saddles as SaddleBps
 from .__equipment_with_durability import EquipmentWithDurability
 from ...utils.json_utils import DefaultJsonEncoder
 
+_LOGGED_WARNINGS = set()
+
 class EquipmentWithArmor(EquipmentWithDurability):
     armor: float = 0
 
@@ -57,7 +59,9 @@ class EquipmentWithArmor(EquipmentWithDurability):
         elif bp in SaddleBps.all_bps:
             return 25
         else:
-            print(f"WARNING: No armor found for {bp}")
+            if bp not in _LOGGED_WARNINGS:
+                _LOGGED_WARNINGS.add(bp)
+                print(f"WARNING: No armor found for {bp}, using default value of 1")
             return 1
 
     def __init_props__(self):
@@ -66,8 +70,8 @@ class EquipmentWithArmor(EquipmentWithDurability):
         armor = self.object.get_property_value("ItemStatValues", position=ArkEquipmentStat.ARMOR.value, default=0)
         self.armor = self.get_actual_value(ArkEquipmentStat.ARMOR, armor)
 
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        super().__init__(uuid, binary)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None):
+        super().__init__(uuid, save=save)
 
     def get_implemented_stats(self) -> list:
         return super().get_implemented_stats() + [ArkEquipmentStat.ARMOR]
@@ -89,11 +93,11 @@ class EquipmentWithArmor(EquipmentWithDurability):
         else:
             return super().get_actual_value(stat, internal_value)
         
-    def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
+    def set_stat(self, stat: ArkEquipmentStat, value: float):
         if stat == ArkEquipmentStat.ARMOR:
-            self.__set_armor(value, save)
+            self.__set_armor(value)
         else:
-            return super().set_stat(stat, value, save)
+            return super().set_stat(stat, value)
     
     def _get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float, multiplier: float) -> float:
         if stat == ArkEquipmentStat.ARMOR:
@@ -101,9 +105,9 @@ class EquipmentWithArmor(EquipmentWithDurability):
         else:
             return super()._get_stat_for_rating(stat, rating, multiplier)
 
-    def __set_armor(self, armor: float, save: AsaSave = None):
+    def __set_armor(self, armor: float):
         self.armor = armor
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.ARMOR), ArkEquipmentStat.ARMOR, save)
+        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.ARMOR), ArkEquipmentStat.ARMOR)
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()

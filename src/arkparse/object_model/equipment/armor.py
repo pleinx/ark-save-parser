@@ -28,8 +28,8 @@ class Armor(EquipmentWithArmor):
         self.hypothermal_insulation = self.get_actual_value(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE, hypo)
         self.hyperthermal_insulation = self.get_actual_value(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE, hyper)
 
-    def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None):
-        super().__init__(uuid, binary)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None):
+        super().__init__(uuid, save=save)
                          
         self.class_name = "armor"
 
@@ -73,24 +73,24 @@ class Armor(EquipmentWithArmor):
         else:
             return super().get_actual_value(stat, internal_value)
         
-    def set_stat(self, stat: ArkEquipmentStat, value: float, save: AsaSave = None):
+    def set_stat(self, stat: ArkEquipmentStat, value: float):
         if stat == ArkEquipmentStat.HYPOTHERMAL_RESISTANCE:
-            self.__set_hypothermal_insulation(value, save)
+            self.__set_hypothermal_insulation(value)
         elif stat == ArkEquipmentStat.HYPERTHERMAL_RESISTANCE:
-            self.__set_hyperthermal_insulation(value, save)
+            self.__set_hyperthermal_insulation(value)
         else:
-            return super().set_stat(stat, value, save)
+            return super().set_stat(stat, value)
 
-    def __set_hypothermal_insulation(self, hypoT: float, save: AsaSave = None):
+    def __set_hypothermal_insulation(self, hypoT: float):
         self.hypothermal_insulation = hypoT
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE), ArkEquipmentStat.HYPOTHERMAL_RESISTANCE, save)
+        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE), ArkEquipmentStat.HYPOTHERMAL_RESISTANCE)
 
-    def __set_hyperthermal_insulation(self, hyperT: float, save: AsaSave = None):
+    def __set_hyperthermal_insulation(self, hyperT: float):
         self.hyperthermal_insulation = hyperT
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE), ArkEquipmentStat.HYPERTHERMAL_RESISTANCE, save)
+        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE), ArkEquipmentStat.HYPERTHERMAL_RESISTANCE)
 
-    def auto_rate(self, save: AsaSave = None):
-        self._auto_rate(0.000760, self.get_average_stat(), save)
+    def auto_rate(self):
+        self._auto_rate(0.000760, self.get_average_stat())
 
     def get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float) -> float:
         if stat == ArkEquipmentStat.HYPOTHERMAL_RESISTANCE or stat == ArkEquipmentStat.HYPERTHERMAL_RESISTANCE:
