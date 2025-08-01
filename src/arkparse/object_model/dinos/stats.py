@@ -145,6 +145,7 @@ class DinoStats(ParsedObjectBase):
     added_stat_points: StatPoints = StatPoints(type="NumberOfLevelUpPointsAppliedTamed")
     mutated_stat_points: StatPoints = StatPoints(type="NumberOfMutationsAppliedTamed")
     stat_values: StatValues = StatValues()
+    _percentage_imprinted: float
 
     def __init_props__(self):
         super().__init_props__()
@@ -156,6 +157,7 @@ class DinoStats(ParsedObjectBase):
         self.mutated_stat_points = StatPoints(self.object, "NumberOfMutationsAppliedTamed")
         self.stat_values = StatValues(self.object)
         self.current_level = self.base_stat_points.get_level() + self.added_stat_points.get_level() + self.mutated_stat_points.get_level()
+        self._percentage_imprinted = self.object.get_property_value("DinoImprintingQuality", 0.0) * 100
     
     def __init__(self, uuid: UUID = None, binary: ArkBinaryParser = None, save: AsaSave = None):
         super().__init__(uuid, binary=binary, save=save)

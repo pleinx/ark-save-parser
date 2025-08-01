@@ -3,6 +3,8 @@ from uuid import UUID
 
 from arkparse.object_model.cryopods.cryopod import Cryopod
 from arkparse.object_model.dinos.dino import Dino
+from arkparse.object_model.dinos.tamed_baby import TamedBaby
+from arkparse.object_model.dinos.baby import Baby
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.object_model.misc.dino_owner import DinoOwner
@@ -21,7 +23,6 @@ class DinoApi:
         self.save = save
         self.all_objects = None
         self.parsed_dinos: Dict[UUID, Dino] = {}
-        self.parsed_tamed_dinos: Dict[UUID, TamedDino] = {}
         self.parsed_cryopods: Dict[UUID, Cryopod] = {}
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
@@ -56,24 +57,21 @@ class DinoApi:
             is_tamed = object.get_property_value("TamedTimeStamp") is not None
 
             if uuid in self.parsed_dinos:
-                if is_tamed:
-                    dino = self.parsed_tamed_dinos[uuid]
-                else:
-                    dino = self.parsed_dinos[uuid]
+                dino = self.parsed_dinos[uuid]
             else:
                 parser = ArkBinaryParser(self.save.get_game_obj_binary(uuid), self.save.save_context)
                 if is_tamed:
                     dino = TamedDino(uuid, parser, self.save)
-                    self.parsed_tamed_dinos[uuid] = dino
                 else:
                     dino = Dino(uuid, parser, self.save)
-                    self.parsed_dinos[uuid] = dino
+                self.parsed_dinos[uuid] = dino
 
         return dino
 
-    def get_all(self, config = None, include_cryos: bool = True, include_wild: bool = True, include_tamed: bool = True) -> Dict[UUID, Dino]:
-        objects = self.get_all_objects(config)
+    def get_all(self, config = None, include_cryos: bool = True, include_wild: bool = True, include_tamed: bool = True, include_babies: bool = True) -> Dict[UUID, Dino]:
+        ArkSaveLogger.api_log("Retrieving all dinos from save...")
 
+        objects = self.get_all_objects(config)
         dinos = {}
 
         ArkSaveLogger.api_log(f"Found {len(objects)} dinos, parsing them... (and retrieving inventories)")
@@ -81,23 +79,40 @@ class DinoApi:
             dino = None
             if "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
                 is_tamed = obj.get_property_value("TamedTimeStamp") is not None
+                is_baby = obj.get_property_value("bIsBaby", False)
 
                 if obj.uuid in self.parsed_dinos:
-                    if is_tamed:
-                        dino = self.parsed_tamed_dinos[obj.uuid]
-                    else:
-                        dino = self.parsed_dinos[obj.uuid]
-                else:
                     if is_tamed and include_tamed:
+                        if is_baby and include_babies:
+                            dino = self.parsed_dinos[obj.uuid]
+                        else:
+                            dino = self.parsed_dinos[obj.uuid]
+                    elif not is_tamed and include_wild:
+                        if is_baby and include_babies:
+                            dino = self.parsed_dinos[obj.uuid]
+                        else:
+                            dino = self.parsed_dinos[obj.uuid]
+                elif is_tamed and include_tamed:
+                    if is_baby and include_babies:
+                        dino = TamedBaby(obj.uuid, save=self.save)
+                    else:
                         dino = TamedDino(obj.uuid, save=self.save)
-                        self.parsed_tamed_dinos[obj.uuid] = dino
-                    elif include_wild:
+                    self.parsed_dinos[obj.uuid] = dino
+                elif include_wild and not is_tamed:
+                    if is_baby and include_babies:
+                        dino = Baby(obj.uuid, save=self.save)
+                    else:
                         dino = Dino(obj.uuid, save=self.save)
-                        self.parsed_dinos[obj.uuid] = dino
-            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos:
+                    self.parsed_dinos[obj.uuid] = dino
+
+            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos and include_tamed:
                 if not obj.get_property_value("bIsEngram", default=False):
                     if obj.uuid in self.parsed_cryopods:
-                        dino = self.parsed_cryopods[obj.uuid].dino
+                        is_baby = self.parsed_cryopods[obj.uuid].dino is not None and isinstance(self.parsed_cryopods[obj.uuid].dino, TamedBaby)
+                        if is_baby and include_babies:
+                            dino = self.parsed_cryopods[obj.uuid].dino
+                        else:
+                            dino = self.parsed_cryopods[obj.uuid].dino
                     else:
                         try:
                             parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
@@ -123,6 +138,8 @@ class DinoApi:
             if dino is not None:
                 dinos[key] = dino
 
+        ArkSaveLogger.api_log(f"Parsed {len(dinos)} dinos")
+
         return dinos
     
     def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, tamed: bool = True, untamed: bool = True) -> Dict[UUID, Dino]:
@@ -141,10 +158,17 @@ class DinoApi:
         return filtered_dinos
     
     def get_all_wild(self) -> Dict[UUID, Dino]:
-        return self.get_all(include_cryos= False, include_tamed=False)
+        return self.get_all(include_cryos=False, include_tamed=False)
     
     def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
         return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
+
+    def get_all_babies(self, include_tamed: bool = True, include_cryopodded: bool = True, include_wild: bool = False) -> Dict[UUID, TamedBaby]:
+        dinos = self.get_all(include_cryos=include_cryopodded, include_wild=include_wild, include_tamed=include_tamed)
+
+        babies = {key: dino for key, dino in dinos.items() if isinstance(dino, Baby)}
+
+        return babies
     
     def get_all_in_cryopod(self) -> Dict[UUID, TamedDino]:
         return self.get_all(include_cryos=True, include_wild=False, include_tamed=False)

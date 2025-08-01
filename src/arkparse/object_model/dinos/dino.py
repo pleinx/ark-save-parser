@@ -45,9 +45,7 @@ class Dino(ParsedObjectBase):
 
         if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
             stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value
-            bin = save.get_game_obj_binary(UUID(stat_uuid))
-            parser = ArkBinaryParser(bin, save.save_context)
-            self.stats = DinoStats(UUID(stat_uuid), parser, save=save)
+            self.stats = DinoStats(UUID(stat_uuid), save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)
