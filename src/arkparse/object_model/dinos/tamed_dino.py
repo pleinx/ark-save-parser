@@ -22,9 +22,13 @@ class TamedDino(Dino):
     inv_uuid: UUID
     inventory: Inventory
     tamed_name: str
+    percentage_imprinted: float
     cryopod: "Cryopod"
-    
 
+    @property
+    def percentage_imprinted(self):
+        return self.stats._percentage_imprinted
+    
     def __init_props__(self):
         super().__init_props__()
 
