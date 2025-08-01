@@ -9,7 +9,7 @@ from arkparse.object_model.dinos import Dino
 from arkparse.object_model.equipment import Weapon, Shield, Armor, Saddle
 from arkparse.object_model.equipment.__equipment_with_armor import EquipmentWithArmor
 from arkparse.object_model.equipment.__equipment_with_durability import EquipmentWithDurability
-from arkparse.object_model.structures import Structure
+from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.object_model import ArkGameObject
 from arkparse.api import EquipmentApi, PlayerApi, StructureApi, DinoApi
 from arkparse.parsing import ArkBinaryParser
@@ -264,8 +264,7 @@ class JsonApi:
                             "SavedBaseWorldLocation" not in prop.name and \
                             "MyInventoryComponent" not in prop.name and \
                             "OwnerInventory" not in prop.name:
-                        prop_value = pawn_obj.get_property_value(prop.name)
-                        pawn_data[prop.name] = prop_value
+                        pawn_data[prop.name] = pawn_obj.get_property_value(prop.name)
 
             all_pawns.append(pawn_data)
 
@@ -314,7 +313,7 @@ class JsonApi:
             structure_api = StructureApi(self.save)
 
         # Get structures.
-        structures: list[Structure] = structure_api.get_all_fast()
+        structures: list[Structure | StructureWithInventory] = structure_api.get_all_fast()
 
         # Format dinos into JSON.
         all_structures = []

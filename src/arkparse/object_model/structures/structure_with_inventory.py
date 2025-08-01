@@ -15,7 +15,7 @@ class StructureWithInventory(Structure):
     inventory: Inventory
     db = AsaSave
 
-    def __init__(self, uuid: UUID, binary: ArkBinaryParser, database: AsaSave):
+    def __init__(self, uuid: UUID, binary: ArkBinaryParser, database: AsaSave, bypass_inventory: bool = False):
         binary.save_context = database.save_context
         super().__init__(uuid, binary)
         self.db = database
@@ -25,7 +25,7 @@ class StructureWithInventory(Structure):
         self.item_count = self.object.get_property_value("CurrentItemCount", default=0)
         self.max_item_count = self.object.get_property_value("MaxItemCount")
 
-        if self.inventory_uuid is not None:
+        if self.inventory_uuid is not None and not bypass_inventory:
             inv_reader = ArkBinaryParser(database.get_game_obj_binary(self.inventory_uuid))
             inv_reader.save_context = binary.save_context
             self.inventory = Inventory(self.inventory_uuid, inv_reader, save=database)
