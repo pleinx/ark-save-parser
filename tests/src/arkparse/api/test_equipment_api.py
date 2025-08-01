@@ -1,9 +1,17 @@
 import pytest
+import random
+from uuid import uuid4
 from pathlib import Path
 from arkparse.api import EquipmentApi
+from arkparse.classes.equipment import Equipment
 from arkparse import AsaSave
-from arkparse.enums import ArkMap
+from arkparse.enums import ArkMap, ArkEquipmentStat
 from arkparse.logging import ArkSaveLogger
+from arkparse.object_model.equipment import Armor, Saddle, Weapon, Shield
+
+def diff(v1, v2, delta_percentage):
+    delta = abs(v1 * delta_percentage)
+    return abs(v1 - v2) <= delta
 
 def equipment_per_map():
     """ Fixture to provide the expected number of equipment for each map. """
@@ -146,3 +154,123 @@ def test_parse_the_center(the_center_save: AsaSave, enabled_maps: list):
         pytest.skip("The Center map is not enabled in the test configuration.")
     eq_api = EquipmentApi(the_center_save)
     get_for_map(ArkMap.THE_CENTER, eq_api)
+
+def test_armor_generation_boundaries(eq_api: EquipmentApi):
+    """
+    Test the generation of armor items across different quality boundaries.
+    """
+    
+    quality_boundaries = [0, 60]
+    nr_of_tries = 50
+
+    for _ in range(nr_of_tries):
+        blueprint = random.choice(Equipment.armor.all_bps)
+        item: Armor = eq_api.generate_equipment(EquipmentApi.Classes.ARMOR, blueprint, ArkEquipmentStat.ARMOR, min_value=quality_boundaries[0], max_value=quality_boundaries[1], from_rating=True, bp_chance=0.15)
+        default_armor = Armor.get_default_armor(blueprint)
+        default_dura = Armor.get_default_dura(blueprint)
+
+        print(f"Generated Armor (bp:{'Yes' if item.is_bp else ' No'}): Quality: {item.quality}, Dura: {item.durability:.2f} ({Armor.get_internal_value(item, ArkEquipmentStat.DURABILITY)}), Armor: {item.armor:.2f} ({Armor.get_internal_value(item, ArkEquipmentStat.ARMOR)}) ({item.get_short_name()})")
+        assert item.quality >= quality_boundaries[0] and item.quality <= quality_boundaries[1], "Generated armor quality is out of bounds."
+        assert item.durability >= default_dura, "Generated armor durability is below the default value."
+        assert item.armor >= default_armor, "Generated armor value is below the default value."
+
+        # reparse item to ensure it is valid
+        new_uuid = uuid4()
+        eq_api.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
+        item.reidentify(new_uuid)
+        new_armor = Armor(new_uuid, eq_api.save)
+
+        print(f"Reidentified Armor (bp:{'Yes' if item.is_bp else ' No'}): Quality: {new_armor.quality:.2f}, Dura: {new_armor.durability:.2f} ({Armor.get_internal_value(new_armor, ArkEquipmentStat.DURABILITY)}), Armor: {new_armor.armor:.2f} ({Armor.get_internal_value(new_armor, ArkEquipmentStat.ARMOR)}) ({new_armor.get_short_name()})")
+        assert diff(new_armor.quality, item.quality, 0.1), "Reidentified armor quality does not match."
+        assert diff(new_armor.durability, item.durability, 0.1), "Reidentified armor durability does not match."
+        assert diff(new_armor.armor, item.armor, 0.1), "Reidentified armor value does not match."
+
+    
+def test_weapon_generation_boundaries(eq_api: EquipmentApi):
+    """
+    Test the generation of weapon items across different quality boundaries.
+    """
+    
+    quality_boundaries = [0, 60]
+    nr_of_tries = 50
+
+    for _ in range(nr_of_tries):
+        blueprint = random.choice(Equipment.weapons.all_bps)
+        item: Weapon = eq_api.generate_equipment(EquipmentApi.Classes.WEAPON, blueprint, ArkEquipmentStat.DAMAGE, min_value=quality_boundaries[0], max_value=quality_boundaries[1], from_rating=True, bp_chance=0.15)
+        default_damage = 100
+        default_dura = Weapon.get_default_dura(blueprint)
+
+        print(f"Generated Weapon (bp:{'Yes' if item.is_bp else ' No'}): Quality: {item.quality}, Dura: {item.durability:.2f} ({Weapon.get_internal_value(item, ArkEquipmentStat.DURABILITY)}), Damage: {item.damage:.2f} ({Weapon.get_internal_value(item, ArkEquipmentStat.DAMAGE)}) ({item.get_short_name()})")
+        assert item.quality >= quality_boundaries[0] and item.quality <= quality_boundaries[1], "Generated weapon quality is out of bounds."
+        assert item.durability >= default_dura, "Generated weapon durability is below the default value."
+        assert item.damage >= default_damage, "Generated weapon damage is below the default value."
+
+        # reparse item to ensure it is valid
+        new_uuid = uuid4()
+        eq_api.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
+        item.reidentify(new_uuid)
+        new_weapon = Weapon(new_uuid, eq_api.save)
+
+        print(f"Reidentified Weapon (bp:{'Yes' if item.is_bp else ' No'}): Quality: {new_weapon.quality:.2f}, Dura: {new_weapon.durability:.2f} ({Weapon.get_internal_value(new_weapon, ArkEquipmentStat.DURABILITY)}), Damage: {new_weapon.damage:.2f} ({Weapon.get_internal_value(new_weapon, ArkEquipmentStat.DAMAGE)}) ({new_weapon.get_short_name()})")
+        assert diff(new_weapon.quality, item.quality, 0.1), "Reidentified weapon quality does not match."
+        assert diff(new_weapon.durability, item.durability, 0.1), "Reidentified weapon durability does not match."
+        assert diff(new_weapon.damage, item.damage, 0.1), "Reidentified weapon damage does not match."
+
+
+def test_saddle_generation_boundaries(eq_api: EquipmentApi):
+    """
+    Test the generation of saddle items across different quality boundaries.
+    """
+    
+    quality_boundaries = [0, 60]
+    nr_of_tries = 50
+
+    for _ in range(nr_of_tries):
+        blueprint = random.choice(Equipment.saddles.all_bps)
+        item: Saddle = eq_api.generate_equipment(EquipmentApi.Classes.SADDLE, blueprint, ArkEquipmentStat.ARMOR, min_value=quality_boundaries[0], max_value=quality_boundaries[1], from_rating=True, bp_chance=0.15)
+        default_armor = Saddle.get_default_armor(blueprint)
+        default_dura = Saddle.get_default_dura(blueprint)
+
+        print(f"Generated Saddle (bp:{'Yes' if item.is_bp else ' No'}): Quality: {item.quality}, Dura: {item.durability:.2f} ({Saddle.get_internal_value(item, ArkEquipmentStat.DURABILITY)}), Armor: {item.armor:.2f} ({Saddle.get_internal_value(item, ArkEquipmentStat.ARMOR)}) ({item.get_short_name()})")
+        assert item.quality >= quality_boundaries[0] and item.quality <= quality_boundaries[1], "Generated saddle quality is out of bounds."
+        assert item.durability >= default_dura, "Generated saddle durability is below the default value."
+        assert item.armor >= default_armor, "Generated saddle armor is below the default value."
+
+        # reparse item to ensure it is valid
+        new_uuid = uuid4()
+        eq_api.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
+        item.reidentify(new_uuid)
+        new_saddle = Saddle(new_uuid, eq_api.save)
+
+        print(f"Reidentified Saddle (bp:{'Yes' if item.is_bp else ' No'}): Quality: {new_saddle.quality:.2f}, Dura: {new_saddle.durability:.2f} ({Saddle.get_internal_value(new_saddle, ArkEquipmentStat.DURABILITY)}), Armor: {new_saddle.armor:.2f} ({Saddle.get_internal_value(new_saddle, ArkEquipmentStat.ARMOR)}) ({new_saddle.get_short_name()})")
+        assert diff(new_saddle.quality, item.quality, 0.1), "Reidentified saddle quality does not match."
+        assert diff(new_saddle.durability, item.durability, 0.1), "Reidentified saddle durability does not match."
+        assert diff(new_saddle.armor, item.armor, 0.1), "Reidentified saddle armor does not match."
+
+
+def test_shield_generation_boundaries(eq_api: EquipmentApi):
+    """
+    Test the generation of shield items across different quality boundaries.
+    """
+    
+    quality_boundaries = [0, 60]
+    nr_of_tries = 50
+
+    for _ in range(nr_of_tries):
+        blueprint = random.choice(Equipment.shield.all_bps)
+        item: Shield = eq_api.generate_equipment(EquipmentApi.Classes.SHIELD, blueprint, ArkEquipmentStat.DURABILITY, min_value=quality_boundaries[0], max_value=quality_boundaries[1], from_rating=True, bp_chance=0.15)
+        default_dura = Shield.get_default_dura(blueprint)
+
+        print(f"Generated Shield (bp:{'Yes' if item.is_bp else ' No'}): Quality: {item.quality}, Dura: {item.durability:.2f} ({Shield.get_internal_value(item, ArkEquipmentStat.DURABILITY)}) ({item.get_short_name()})")
+        assert item.quality >= quality_boundaries[0] and item.quality <= quality_boundaries[1], "Generated shield quality is out of bounds."
+        assert item.durability >= default_dura, "Generated shield durability is below the default value."
+
+        # reparse item to ensure it is valid
+        new_uuid = uuid4()
+        eq_api.save.add_obj_to_db(new_uuid, item.binary.byte_buffer)
+        item.reidentify(new_uuid)
+        new_shield = Shield(new_uuid, eq_api.save)
+
+        print(f"Reidentified Shield (bp:{'Yes' if item.is_bp else ' No'}): Quality: {new_shield.quality:.2f}, Dura: {new_shield.durability:.2f} ({Shield.get_internal_value(new_shield, ArkEquipmentStat.DURABILITY)}) ({new_shield.get_short_name()})")
+        assert diff(new_shield.quality, item.quality, 0.1), "Reidentified shield quality does not match."
+        assert diff(new_shield.durability, item.durability, 0.1), "Reidentified shield durability does not match."

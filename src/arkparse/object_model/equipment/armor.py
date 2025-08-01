@@ -4,7 +4,7 @@ import os
 
 from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
-from arkparse.parsing import ArkBinaryParser
+from arkparse.logging import ArkSaveLogger
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.utils.json_utils import DefaultJsonEncoder
@@ -50,12 +50,14 @@ class Armor(EquipmentWithArmor):
             if self.hypothermal_insulation == 0:
                 return 0
             d = _get_default_hypoT(self.object.blueprint)
-            return int((self.hypothermal_insulation - d)/(d*0.0002))
+            value = int((self.hypothermal_insulation - d)/(d*0.0002))
+            return value if value >= d else d
         elif stat == ArkEquipmentStat.HYPERTHERMAL_RESISTANCE:
             if self.hyperthermal_insulation == 0:
                 return 0
             d = _get_default_hyperT(self.object.blueprint)
-            return int((self.hyperthermal_insulation - d)/(d*0.0002))
+            value = int((self.hyperthermal_insulation - d)/(d*0.0002))
+            return value if value >= d else d
         else:
             return super().get_internal_value(stat)
         
@@ -83,11 +85,17 @@ class Armor(EquipmentWithArmor):
 
     def __set_hypothermal_insulation(self, hypoT: float):
         self.hypothermal_insulation = hypoT
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE), ArkEquipmentStat.HYPOTHERMAL_RESISTANCE)
+        clipped = self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE), ArkEquipmentStat.HYPOTHERMAL_RESISTANCE)
+        if clipped:
+            self.hypothermal_insulation = self.get_actual_value(ArkEquipmentStat.HYPOTHERMAL_RESISTANCE, 65535)
+            ArkSaveLogger.warning_log(f"Hypothermal insulation value clipped to {self.hypothermal_insulation} for {self.object.blueprint}")
 
     def __set_hyperthermal_insulation(self, hyperT: float):
         self.hyperthermal_insulation = hyperT
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE), ArkEquipmentStat.HYPERTHERMAL_RESISTANCE)
+        clipped = self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE), ArkEquipmentStat.HYPERTHERMAL_RESISTANCE)
+        if clipped:
+            self.hyperthermal_insulation = self.get_actual_value(ArkEquipmentStat.HYPERTHERMAL_RESISTANCE, 65535)
+            ArkSaveLogger.warning_log(f"Hyperthermal insulation value clipped to {self.hyperthermal_insulation} for {self.object.blueprint}")
 
     def auto_rate(self):
         self._auto_rate(0.000760, self.get_average_stat())

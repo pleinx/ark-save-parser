@@ -2,6 +2,7 @@ import json
 from uuid import UUID
 import os
 
+from arkparse.logging import ArkSaveLogger
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.object_crafter import ObjectCrafter
@@ -122,10 +123,19 @@ class Equipment(InventoryItem):
         self.binary.replace_float(self.object.find_property("SavedDurability"), self.current_durability)
         self.update_binary()
 
-    def _set_internal_stat_value(self, value: float, position: ArkEquipmentStat):
+    def _set_internal_stat_value(self, value: float, position: ArkEquipmentStat) -> bool:
         prop = self.object.find_property("ItemStatValues", position.value)
-        self.binary.replace_16(prop, int(value))
+        clipped = False
+
+        if int(value) > 65535:
+            ArkSaveLogger.warning_log(f"Value {value} for stat {position} is too high to fit in equipment value property, clipping to 65535")
+            value = 65535
+            clipped = True
+
+        self.binary.replace_u16(prop, int(value))
         self.update_binary()
+
+        return clipped
 
     def get_stat_value(self, position: ArkEquipmentStat) -> int:
         return self.object.get_property_value("ItemStatValues", position=position.value, default=0)

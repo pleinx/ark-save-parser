@@ -2,6 +2,7 @@ import json
 from uuid import UUID
 
 from arkparse import AsaSave
+from arkparse.logging.ark_save_logger import ArkSaveLogger
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
@@ -111,7 +112,8 @@ class EquipmentWithDurability(Equipment):
     def get_internal_value(self, stat: ArkEquipmentStat) -> int:
         if stat == ArkEquipmentStat.DURABILITY:
             d = EquipmentWithDurability.get_default_dura(self.object.blueprint)
-            return int((self.durability - d)/(d*0.00025))
+            value = int((self.durability - d)/(d*0.00025))
+            return value if value >= d else d
         else:
             raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
         
@@ -131,7 +133,10 @@ class EquipmentWithDurability(Equipment):
 
     def __set_durability(self, durability: float):
         self.durability = durability
-        self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY)
+        clipped = self._set_internal_stat_value(self.get_internal_value(ArkEquipmentStat.DURABILITY), ArkEquipmentStat.DURABILITY)
+        if clipped:
+            self.durability = self.get_actual_value(ArkEquipmentStat.DURABILITY, 65535)
+            ArkSaveLogger.warning_log(f"Durability value clipped to {self.durability} for {self.object.blueprint}")
 
     def _get_stat_for_rating(self, stat: ArkEquipmentStat, rating: float, multiplier: float) -> float:
         if stat == ArkEquipmentStat.DURABILITY:
