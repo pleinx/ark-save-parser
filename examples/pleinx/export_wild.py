@@ -150,7 +150,7 @@ for dino_id, dino in dino_api.get_all_wild().items():
         "oxy": stats_entry["oxy-w"],
         "craft": stats_entry["craft-w"],
         "ccc": "138901,88 11376,108 18292,477",
-        "dinoid": "433686362306623672",
+        "dinoid": str(dino_id),
         "tameable": "true" if is_dino_tamable(dino) else "false",
         "trait": dino_json_data.get("GeneTraits", None) if dino_json_data.get("GeneTraits", None) else ""
     }
