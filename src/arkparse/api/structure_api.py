@@ -53,13 +53,11 @@ class StructureApi:
 
     def _parse_single_structure_fast(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure | StructureWithInventory]:
         """Same as _parse_single_structure, but does not parse Inventory and does not store in cache."""
-        if parser is None:
-            parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
 
         if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, parser, self.save, bypass_inventory=True)
+            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=True)
         else:
-            structure = Structure(obj.uuid, parser)
+            structure = Structure(obj.uuid, self.save)
 
         if obj.uuid in self.save.save_context.actor_transforms:
             structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])

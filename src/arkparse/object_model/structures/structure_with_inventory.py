@@ -14,7 +14,7 @@ class StructureWithInventory(Structure):
 
     inventory: Inventory
 
-    def __init__(self, uuid: UUID, binary: ArkBinaryParser, database: AsaSave, bypass_inventory: bool = False):
+    def __init__(self, uuid: UUID, save: AsaSave, bypass_inventory: bool = False):
         super().__init__(uuid, save=save)
         self.save = save
 
