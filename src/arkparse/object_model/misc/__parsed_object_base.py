@@ -27,11 +27,12 @@ class ParsedObjectBase:
         if uuid is None or save is None:
             return
         if save is not None:
+            self.save = save
             if not save.is_in_db(uuid):
                 ArkSaveLogger.error_log(f"Could not find binary for game object {uuid} in save")
-            self.save = save
-            self.binary = save.get_parser_for_game_object(uuid)
-            self.object = save.get_game_object_by_id(uuid)
+            else:
+                self.binary = save.get_parser_for_game_object(uuid)
+                self.object = save.get_game_object_by_id(uuid)
 
         self.__init_props__()
 
@@ -83,6 +84,10 @@ class ParsedObjectBase:
             json.dump(self.binary.find_names(), file, indent=4)
 
     def update_binary(self):
+
+        if self.object is None:
+            ArkSaveLogger.error_log("This object has no ArkGameObject associated with it, cannot update binary as not in save")
+            return
         if self.save is not None:
             self.save.modify_game_obj(self.object.uuid, self.binary.byte_buffer)
         else:

@@ -19,6 +19,10 @@ class Inventory(ParsedObjectBase):
         super().__init__(uuid, save=save)
         self.items = {}
 
+        if self.object is None:
+            ArkSaveLogger.error_log(f"Inventory object with UUID {uuid} could not be loaded from save, not found")
+            return
+
         item_arr = self.object.get_array_property_value("InventoryItems")
         for item in item_arr:
             item_uuid = UUID(item.value)
