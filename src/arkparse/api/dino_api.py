@@ -18,13 +18,20 @@ from arkparse.enums import ArkMap, ArkStat
 from arkparse.utils import TEMP_FILES_DIR
 from arkparse.logging import ArkSaveLogger
 
+from importlib.resources import files
+
 class DinoApi:
     def __init__(self, save: AsaSave):
         self.save = save
         self.all_objects = None
         self.parsed_dinos: Dict[UUID, Dino] = {}
         self.parsed_cryopods: Dict[UUID, Cryopod] = {}
-        self.__tamables = set(line.strip() for line in open("../../wip/classes/uncategorized/tamable_dinos.txt", "r", encoding="utf-8") if line.strip())
+        package = 'arkparse.assets'
+        try:
+            with open(files(package) / f'tamable_dinos.txt', 'r', encoding='utf-8') as f:
+                self.__tamables = set(line.strip() for line in f if line.strip())
+        except FileNotFoundError:
+            self.__tamables = set()
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         reuse = False
