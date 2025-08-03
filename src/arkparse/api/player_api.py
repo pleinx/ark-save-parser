@@ -271,8 +271,8 @@ class PlayerApi:
             new_tribes[tribe.tribe_id] = tribe
             new_tribe_to_player[tribe.tribe_id] = players
 
-        self.players = new_players.values()
-        self.tribes = new_tribes.values()
+        self.players = list(new_players.values())
+        self.tribes = list(new_tribes.values())
         self.tribe_to_player_map = new_tribe_to_player
 
     def __calc_stat(self, stat: List[int], stat_type: int):

@@ -16,9 +16,9 @@ class ParsedObjectBase:
     props_initialized: bool = False
     save: "AsaSave" = None
 
-    def __get_class_name(self):
-        self.binary.set_position(0)
-        self.binary.read_name()
+    @property
+    def uuid(self) -> UUID:
+        return self.object.uuid if self.object is not None else None
 
     def __init_props__(self):
         pass
