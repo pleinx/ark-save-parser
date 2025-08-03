@@ -160,10 +160,10 @@ class RconApi:
 
     def send_cmd(self, cmd: str):
         try:
-            with source.Client(self.host, self.port, passwd=self.password, timeout=3) as rcon:
+            with source.Client(self.host, self.port, passwd=self.password, timeout=2) as rcon:
                 return rcon.run(cmd)
         except Exception as e:
-            ArkSaveLogger.error_log(f"Failed to send command: {e}")
+            ArkSaveLogger.error_log(f"RCON command failed: {cmd} with error: {e}")
             return None
         
     def send_message(self, message: str):

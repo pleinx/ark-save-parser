@@ -224,6 +224,10 @@ class Base:
             raise ValueError(f"Unknown item class: {item_class}")
         
         previous_items = structure.inventory.items.copy()
+
+        if len(previous_items) == 0:
+            return
+
         keep = list(previous_items.keys())[0]
         ArkSaveLogger.objects_log(f"Keeping item {keep} in inventory {structure.object.uuid} while adding new items, total original items: {len(previous_items)}")
 
