@@ -97,9 +97,6 @@ json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
 dino_api = DinoApi(save)
 
-# 53,5 / 79,5
-# DMG59_EXT
-
 tamed_dinos = []
 for dino_id, dino in dino_api.get_all_tamed().items():
     if not isinstance(dino, (TamedDino, TamedBaby)):
@@ -138,6 +135,9 @@ for dino_id, dino in dino_api.get_all_tamed().items():
     # if baby but claimed
     if(tribe_id==2000000000 and dino_json_data.get("TargetingTeam", None)):
          tribe_id=dino_json_data.get("TargetingTeam", None)
+
+#     if "tester" in (dino.tamed_name or "").lower():
+#         pprint(dino.tamed_name + ": " + (str(float(dino.percentage_matured)) if isinstance(dino, TamedBaby) else "100"))
 
     entry = {
         "id": str(dino_id),
@@ -188,7 +188,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "isClone": False,           # TODO
         "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
         "uploadedServer": dino.get_uploaded_from_server_name(),
-        "maturation": int(dino.percentage_matured) if isinstance(dino, TamedBaby) else "100",
+        "maturation": float(dino.percentage_matured) if isinstance(dino, TamedBaby) else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
         "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
