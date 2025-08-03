@@ -12,6 +12,8 @@ class ArkMap(Enum):
     THE_CENTER = 8
     THE_ISLAND = 9
     ASTRAEOS = 10
+    SVARTALFHEIM = 11
+    CLUB_ARK = 12
 
     def to_file_name(self) -> str:
         """
