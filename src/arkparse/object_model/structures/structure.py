@@ -9,7 +9,6 @@ from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct import ActorTransform
-from arkparse.parsing import ArkBinaryParser
 from arkparse import AsaSave
 from arkparse.utils.json_utils import DefaultJsonEncoder
 

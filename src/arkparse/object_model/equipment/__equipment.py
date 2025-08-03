@@ -170,15 +170,30 @@ class Equipment(InventoryItem):
         json_obj["ItemRating"] = self.rating
         json_obj["SavedDurability"] = self.current_durability
 
-        # Grab implemented stats if they exists
-        implemented_stats =self.get_implemented_stats()
-        if implemented_stats is not None:
-            json_obj["ImplementedStats"] = implemented_stats
-
         # Grab crafter if it exists
         if self.crafter is not None:
             json_obj["CrafterCharacterName"] = self.crafter.char_name
             json_obj["CrafterTribeName"] = self.crafter.tribe_name
+
+        # Grab remaining properties if any
+        if self.object.properties is not None and len(self.object.properties) > 0:
+            for prop in self.object.properties:
+                if prop is not None and \
+                        prop.name is not None and \
+                        len(prop.name) > 0 and \
+                        "ItemArchetype" not in prop.name and \
+                        "bIsBlueprint" not in prop.name and \
+                        "bEquippedItem" not in prop.name and \
+                        "ItemQualityIndex" not in prop.name and \
+                        "ItemRating" not in prop.name and \
+                        "SavedDurability" not in prop.name and \
+                        "CrafterCharacterName" not in prop.name and \
+                        "CrafterTribeName" not in prop.name and \
+                        "ItemQuantity" not in prop.name and \
+                        "ItemID" not in prop.name and \
+                        "OwnerInventory" not in prop.name and \
+                        "CustomItemDatas" not in prop.name:
+                    json_obj[prop.name] = self.object.get_property_value(prop.name)
 
         return json_obj
 
