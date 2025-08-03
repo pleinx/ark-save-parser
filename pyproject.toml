@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "arkparse"
-version = "0.1.8"
+version = "0.2.0"
 dependencies = [
     "pytz>=2025.2",
     "rcon>=2.4.9",
@@ -28,7 +28,8 @@ Homepage = "https://github.com/VincentHenauGithub/ark-save-parser"
 
 [tool.hatch.build]
 include = [
-    "src/arkparse/assets/**",  # Include all assets
+    "src/arkparse/**",
+    "src/arkparse/assets/**"
 ]
 
 [tool.pytest.ini_options]

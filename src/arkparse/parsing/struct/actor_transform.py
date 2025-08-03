@@ -18,64 +18,180 @@ FOUNDATION_DISTANCE = 300  # 300 units in ark is 1 foundation
 
 @dataclass
 class MapCoordinateParameters:
-    latitude_shift: float
-    longitude_shift: float
-    latitude_scale: float
-    longitude_scale: float
+    origin_min_x: float
+    origin_min_y: float
+    origin_min_z: float
+
+    origin_max_x: float
+    origin_max_y: float
+    origin_max_z: float
+
+    playable_min_x: float
+    playable_min_y: float
+    playable_min_z: float
+
+    playable_max_x: float
+    playable_max_y: float
+    playable_max_z: float
 
     def __init__(self, map: ArkMap):
-        #https://arkparse.fandom.com/wiki/Coordinates
-        if map == ArkMap.ABERRATION:
-            self.latitude_shift = 50
-            self.longitude_shift = 50
-            self.latitude_scale = 8000
-            self.longitude_scale = 8000
-        elif map == ArkMap.EXTINCTION:
-            self.latitude_shift = 50
-            self.longitude_shift = 50
-            self.latitude_scale = 6850
-            self.longitude_scale = 6850
-        elif map == ArkMap.THE_ISLAND:
-            self.latitude_shift = 50
-            self.longitude_shift = 50
-            self.latitude_scale = 6859.91
-            self.longitude_scale = 6859.87
+        # These are the MapData grabbed from ASA Dev Kit.
+        # A map can have multiple MapData associated to it, but at the moment none of the ASA maps available is doing so.
+        # Origin Min-Max is used for minimap coords computation.
+        # Playable Min-Max is used to know which MapData to query for computation.
+        if map == ArkMap.SCORCHED_EARTH:
+            self.origin_min_x = -393650.0
+            self.origin_min_y = -393650.0
+            self.origin_min_z = -25515.0
+            self.origin_max_x = 393750.0
+            self.origin_max_y = 393750.0
+            self.origin_max_z = 66645.0
+            self.playable_min_x = -393650.0
+            self.playable_min_y = -393650.0
+            self.playable_min_z = -25515.0
+            self.playable_max_x = 393750.0
+            self.playable_max_y = 393750.0
+            self.playable_max_z = 66645.0
         elif map == ArkMap.THE_CENTER:
-            self.latitude_shift = 32.5
-            self.longitude_shift = 50.5
-            self.latitude_scale = 10369.06
-            self.longitude_scale = 10371.06
-        elif map == ArkMap.SCORCHED_EARTH:
-            self.latitude_shift = 50
-            self.longitude_shift = 50
-            self.latitude_scale = 7884.75
-            self.longitude_scale = 7871.25
-        elif map == ArkMap.ASTRAEOS:
-            self.latitude_shift = 50
-            self.longitude_shift = 50
-            self.latitude_scale = 16000
-            self.longitude_scale = 16000
+            self.origin_min_x = -342900.0
+            self.origin_min_y = -342900.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 342900.0
+            self.origin_max_y = 342900.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -342900.0
+            self.playable_min_y = -342900.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 342900.0
+            self.playable_max_y = 342900.0
+            self.playable_max_z = 54695.0
+        elif map == ArkMap.ABERRATION:
+            self.origin_min_x = -400000.0
+            self.origin_min_y = -400000.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 400000.0
+            self.origin_max_y = 400000.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -400000.0
+            self.playable_min_y = -400000.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 400000.0
+            self.playable_max_y = 400000.0
+            self.playable_max_z = 54695.0
+        elif map == ArkMap.EXTINCTION:
+            self.origin_min_x = -342900.0
+            self.origin_min_y = -342900.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 342900.0
+            self.origin_max_y = 342900.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -342900.0
+            self.playable_min_y = -342900.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 342900.0
+            self.playable_max_y = 342900.0
+            self.playable_max_z = 54695.0
         elif map == ArkMap.RAGNAROK:
-            self.latitude_shift = 50
-            self.longitude_shift = 50
-            self.latitude_scale = 13100
-            self.longitude_scale = 13100
-        else:
-            raise ValueError(f"Map {map} not supported")
-        
+            self.origin_min_x = -655000.0
+            self.origin_min_y = -655000.0
+            self.origin_min_z = -655000.0
+            self.origin_max_x = 655000.0
+            self.origin_max_y = 655000.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -655000.0
+            self.playable_min_y = -655000.0
+            self.playable_min_z = -100000.0
+            self.playable_max_x = 655000.0
+            self.playable_max_y = 655000.0
+            self.playable_max_z = 655000.0
+        elif map == ArkMap.ASTRAEOS:
+            self.origin_min_x = -800000.0
+            self.origin_min_y = -800000.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 800000.0
+            self.origin_max_y = 800000.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -800000.0
+            self.playable_min_y = -800000.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 800000.0
+            self.playable_max_y = 800000.0
+            self.playable_max_z = 54695.0
+        elif map == ArkMap.SVARTALFHEIM:
+            self.origin_min_x = -203250.0
+            self.origin_min_y = -203250.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 203250.0
+            self.origin_max_y = 203250.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -203250.0
+            self.playable_min_y = -203250.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 203250.0
+            self.playable_max_y = 203250.0
+            self.playable_max_z = 54695.0
+        elif map == ArkMap.CLUB_ARK:
+            self.origin_min_x = -12812.0
+            self.origin_min_y = -15121.0
+            self.origin_min_z = -12500.0
+            self.origin_max_x = 12078.0
+            self.origin_max_y = 9770.0
+            self.origin_max_z = 12500.0
+            self.playable_min_x = -10581.0
+            self.playable_min_y = -15121.0
+            self.playable_min_z = -12500.0
+            self.playable_max_x = 9847.0
+            self.playable_max_y = 9770.0
+            self.playable_max_z = 12500.0
+        else: # Fallback to MinimapData_Base, this is the default data if not overridden by the map (used by The Island for example).
+            self.origin_min_x = -342900.0
+            self.origin_min_y = -342900.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 342900.0
+            self.origin_max_y = 342900.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -342900.0
+            self.playable_min_y = -342900.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 342900.0
+            self.playable_max_y = 342900.0
+            self.playable_max_z = 54695.0
+
     def transform_to(self, x: float, y: float) -> ArkVector:
-        lo = (x / self.latitude_scale) + self.latitude_shift
-        lat = (y / self.longitude_scale) + self.longitude_shift
+        y_max_diff = y - self.origin_max_y
+        x_max_diff = x - self.origin_max_x
+        origin_y_diff = self.origin_min_y - self.origin_max_y
+        origin_x_diff = self.origin_min_x - self.origin_max_x
+        lat_ratio = y_max_diff / origin_y_diff
+        lo_ratio = x_max_diff / origin_x_diff
+        lat = MapCoordinateParameters.lerp(100.0, 0.0, lat_ratio)
+        lo = MapCoordinateParameters.lerp(100.0, 0.0, lo_ratio)
 
         # 2 digits after the comma
         return round(lat, 2), round(lo, 2)
     
     def transform_from(self, lat: float, lo: float) -> ArkVector:
-        y = (lat - self.latitude_shift) * self.latitude_scale
-        x = (lo - self.longitude_shift) * self.longitude_scale
+        origin_y_diff = self.origin_min_y - self.origin_max_y
+        origin_x_diff = self.origin_min_x - self.origin_max_x
+        lat_ratio = MapCoordinateParameters.inv_lerp(100.0, 0.0, lat)
+        lo_ratio = MapCoordinateParameters.inv_lerp(100.0, 0.0, lo)
+        y_max_diff = lat_ratio * origin_y_diff
+        x_max_diff = lo_ratio * origin_x_diff
+        y = y_max_diff + self.origin_max_y
+        x = x_max_diff + self.origin_max_x
 
         return ArkVector(x=x, y=y, z=0)
-    
+
+    @staticmethod
+    def lerp(a: float, b: float, t: float) -> float:
+        """Linear interpolate on the scale given by a to b, using t as the point on that scale."""
+        return (1 - t) * a + t * b
+
+    @staticmethod
+    def inv_lerp(a: float, b: float, v: float) -> float:
+        """Inverse linear interpolation, gets the fraction between a and b on which v resides."""
+        return (v - a) / (b - a)
+
     @staticmethod
     def fit_transform_params(xs, ys, lats, los):
         # fit lo = m_x * x + b_x
@@ -169,7 +285,6 @@ class ActorTransform:
                 self.yaw = data["yaw"]
                 self.roll = data["roll"]
                 self.unknown = data["unknown"]
-        
 
     def get_distance_to(self, other: "ActorTransform") -> float:
         if self.in_cryopod or other.in_cryopod:
