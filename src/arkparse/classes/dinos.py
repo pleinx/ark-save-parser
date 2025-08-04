@@ -67,10 +67,15 @@ class Alphas:
     alpha_megalodon = "/Game/PrimalEarth/Dinos/Megalodon/MEgaMegalodon_Character_BP.MegaMegalodon_Character_BP_C"
     alpha_mosasaurus = "/Game/PrimalEarth/Dinos/Mosasaurus/Mosa_Character_BP_Mega.Mosa_Character_BP_Mega_C"
     alpha_raptor = "/Game/PrimalEarth/Dinos/Raptor/MegaRaptor_Character_BP.MegaRaptor_Character_BP_C"
+    alpha_deathworm = "/Game/ScorchedEarth/Dinos/Deathworm/MegaDeathworm_Character_BP.MegaDeathworm_Character_BP_C"
+    alpha_rex = "/Game/PrimalEarth/Dinos/Rex/MegaRex_Character_BP.MegaRex_Character_BP_C"
+    alpha_tuso = "/Game/PrimalEarth/Dinos/Tusoteuthis/Mega_Tusoteuthis_Character_BP.Mega_Tusoteuthis_Character_BP_C"
+    alpha_leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Alpha_Leedsichthys_Character_BP.Alpha_Leedsichthys_Character_BP_C"
 
     all_bps = [
         alpha_reaper_king, alpha_karkinos, alpha_basilisk,
-        alpha_carnotaurus, alpha_megalodon, alpha_mosasaurus, alpha_raptor
+        alpha_carnotaurus, alpha_megalodon, alpha_mosasaurus, alpha_raptor, 
+        alpha_deathworm, alpha_rex, alpha_tuso, alpha_leedsichthys
     ]
 
 class Flyers:
@@ -80,8 +85,11 @@ class Flyers:
         poison = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_Poison.Wyvern_Character_BP_Poison_C"
         crystal = "/Game/ASA/Dinos/CrystalWyvern/CrystalWyvern_Character_BP.CrystalWyvern_Character_BP_C"
         ice = "/Game/ASA/Dinos/IceWyvern/Wyvern_Character_BP_Ice.Wyvern_Character_BP_Ice_C"
-
-        all_bps = [fire, lightning, poison, crystal, ice]
+        zombie_fire = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_ZombieFire.Wyvern_Character_BP_ZombieFire_C"
+        zombie_lightning = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_ZombieLightning.Wyvern_Character_BP_ZombieLightning_C"
+        zombie_poison = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_ZombiePoison.Wyvern_Character_BP_ZombiePoison_C"
+    
+        all_bps = [fire, lightning, poison, crystal, ice, zombie_fire, zombie_lightning, zombie_poison]
 
     wyverns = Wyverns()
     argentavis = "/Game/PrimalEarth/Dinos/Argentavis/Argent_Character_BP.Argent_Character_BP_C"
@@ -93,16 +101,21 @@ class Flyers:
     rhyniognatha = "/Game/PrimalEarth/Dinos/Rhyniognatha/Rhynio_Character_BP.Rhynio_Character_BP_C"
     tapejara = "/Game/PrimalEarth/Dinos/Tapejara/Tapejara_Character_BP.Tapejara_Character_BP_C"
     lymantria = "/Game/ScorchedEarth/Dinos/Moth/Moth_Character_BP.Moth_Character_BP_C"
+    phoenix = "/Game/ScorchedEarth/Dinos/Phoenix/Phoenix_Character_BP.Phoenix_Character_BP_C"
+    tek_quetzal = "/Game/PrimalEarth/Dinos/Quetzalcoatlus/BionicQuetz_Character_BP.BionicQuetz_Character_BP_C"
+    hesperornis = "/Game/PrimalEarth/Dinos/Hesperornis/Hesperornis_Character_BP.Hesperornis_Character_BP_C"
+    snow_owl = "/Game/Extinction/Dinos/Owl/Owl_Character_BP.Owl_Character_BP_C"
 
     all_bps = [argentavis, griffin, ichthyornis, pelagornis, pteranodon,
-                quetzal, rhyniognatha, tapejara, lymantria] + Wyverns.all_bps
+                quetzal, rhyniognatha, tapejara, lymantria, phoenix,
+                tek_quetzal, hesperornis, snow_owl] + Wyverns.all_bps
 
 class DlcDinos:
     firemane = "/Game/ASA/Dinos/FireLion/FireLion_Character_BP.FireLion_Character_BP_C"
     archelon = "/Game/ASA/Dinos/Archelon/Dinos/Archelon_Character_BP_ASA.Archelon_Character_BP_ASA_C"
     dread_mare = "/Game/ASA/Dinos/DarkPegasus/DarkPegasus_Character_BP.DarkPegasus_Character_BP_C"
-
-    all_bps = [firemane, archelon, dread_mare]
+    oasisaur = "/Game/Packs/Frontier/Dinos/Oasisaur/Oasisaur_Character_BP.Oasisaur_Character_BP_C"
+    all_bps = [firemane, archelon, dread_mare, oasisaur]
 
 class ShoulderPets:
     glowtail = "/Game/Aberration/Dinos/LanternLizard/LanternLizard_Character_BP.LanternLizard_Character_BP_C"
@@ -131,6 +144,28 @@ class ShoulderPets:
         drakeling_summer, drakeling_winter
     ]
     
+class Corrupted:
+    arthropluera = "/Game/Extinction/Dinos/Corrupt/Arthropluera/Arthro_Character_BP_Corrupt.Arthro_Character_BP_Corrupt_C"
+    carno = "/Game/Extinction/Dinos/Corrupt/Carno/Carno_Character_BP_Corrupt.Carno_Character_BP_Corrupt_C"
+    chalicotherium = "/Game/Extinction/Dinos/Corrupt/Chalicotherium/Chalico_Character_BP_Corrupt.Chalico_Character_BP_Corrupt_C"
+    dilo = "/Game/Extinction/Dinos/Corrupt/Dilo/Dilo_Character_BP_Corrupt.Dilo_Character_BP_Corrupt_C"
+    giganotosaurus = "/Game/Extinction/Dinos/Corrupt/Giganotosaurus/Gigant_Character_BP_Corrupt.Gigant_Character_BP_Corrupt_C"
+    reaper_king = "/Game/Extinction/Dinos/Corrupt/Nameless/Xenomorph_Character_BP_Male_Tamed_Corrupt.Xenomorph_Character_BP_Male_Tamed_Corrupt_C"
+    paraceratherium = "/Game/Extinction/Dinos/Corrupt/Paraceratherium/Paracer_Character_BP_Corrupt.Paracer_Character_BP_Corrupt_C"
+    ptero = "/Game/Extinction/Dinos/Corrupt/Ptero/Ptero_Character_BP_Corrupt.Ptero_Character_BP_Corrupt_C"
+    raptor = "/Game/Extinction/Dinos/Corrupt/Raptor/Raptor_Character_BP_Corrupt.Raptor_Character_BP_Corrupt_C"
+    alpha_rex = "/Game/Extinction/Dinos/Corrupt/Rex/MegaRex_Character_BP_Corrupt.MegaRex_Character_BP_Corrupt_C"
+    rex = "/Game/Extinction/Dinos/Corrupt/Rex/Rex_Character_BP_Corrupt.Rex_Character_BP_Corrupt_C"
+    rock_drake = "/Game/Extinction/Dinos/Corrupt/RockDrake/RockDrake_Character_BP_Corrupt.RockDrake_Character_BP_Corrupt_C"
+    spino = "/Game/Extinction/Dinos/Corrupt/Spino/Spino_Character_BP_Corrupt.Spino_Character_BP_Corrupt_C"
+    stego = "/Game/Extinction/Dinos/Corrupt/Stego/Stego_Character_BP_Corrupt.Stego_Character_BP_Corrupt_C"
+    trike = "/Game/Extinction/Dinos/Corrupt/Trike/Trike_Character_BP_Corrupt.Trike_Character_BP_Corrupt_C"
+    wyvern = "/Game/Extinction/Dinos/Corrupt/Wyvern/Wyvern_Character_BP_Fire_Corrupt.Wyvern_Character_BP_Fire_Corrupt_C"
+
+    all_bps = [ arthropluera, carno, chalicotherium, dilo, giganotosaurus,
+                reaper_king, paraceratherium, ptero, raptor, alpha_rex,
+                rex, rock_drake, spino, stego, trike, wyvern ]
+
 class NonTameable:
     lamprey = "/Game/Aberration/Dinos/Lamprey/Lamprey_Character.Lamprey_Character_C"
     lightbug = "/Game/Aberration/Dinos/Lightbug/Lightbug_Character_BaseBP.Lightbug_Character_BaseBP_C"
@@ -150,13 +185,22 @@ class NonTameable:
     death_worm = "/Game/ScorchedEarth/Dinos/DeathWorm/DeathWorm_Character_BP.Deathworm_Character_BP_C"
     jugbug_oil = "/Game/ScorchedEarth/Dinos/Jugbug/Jugbug_Oil_Character_BP.Jugbug_Oil_Character_BP_C"
     jugbug_water = "/Game/ScorchedEarth/Dinos/Jugbug/Jugbug_Water_Character_BP.Jugbug_Water_Character_BP_C"
+    enforcer = "/Game/Extinction/Dinos/Enforcer/Enforcer_Character_BP.Enforcer_Character_BP_C"
+    scout = "/Game/Extinction/Dinos/Scout/Scout_Character_BP.Scout_Character_BP_C"
+    defence_unit = "/Game/Extinction/Dinos/Tank/Defender_Character_BP.Defender_Character_BP_C"
+    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
+    iceworm = "/Game/ASA/Dinos/Iceworm/Iceworm_Character_Minion_BP_smaller.Iceworm_Character_Minion_BP_smaller_C"
+    tek_giga = "/Game/PrimalEarth/Dinos/Giganotosaurus/BionicGigant_Character_BP.BionicGigant_Character_BP_C"
+    leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Leedsichthys_Character_BP.Leedsichthys_Character_BP_C"
+    corrupted = Corrupted()
 
     all_bps = [
         lamprey, lightbug, meganeura, surface_reaper, surface_nameless
         , titanomyrma, titanomyrma_flyer, cnidaria, coelacanth,
         coelacanth_ocean, leech, leech_diseased, piranha, 
-        sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water
-    ]
+        sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water,
+        enforcer, scout, defence_unit, polar_bear, iceworm, tek_giga
+    ] + Corrupted.all_bps
 
 class Dinos:
     # Aberrant Dinos
@@ -259,7 +303,20 @@ class Dinos:
     mantis = "/Game/ScorchedEarth/Dinos/Mantis/Mantis_Character_BP.Mantis_Character_BP_C"
     rock_golem = "/Game/ScorchedEarth/Dinos/RockGolem/RockGolem_Character_BP.RockGolem_Character_BP_C"
     thorny_dragon = "/Game/ScorchedEarth/Dinos/SpineyLizard/SpineyLizard_Character_BP.SpineyLizard_Character_BP_C"
-
+    dreadnoughtus = "/Game/ASA/Dinos/Dreadnoughtus/Dreadnoughtus_Character_BP.Dreadnoughtus_Character_BP_C"
+    maelizard = "/Game/ASA/Dinos/Maelizard/Maelizard_Character_BP.Maelizard_Character_BP_C"
+    shastasaurus = "/Game/ASA/Dinos/Shastasaurus/Shastasaurus_Character_BP.Shastasaurus_Character_BP_C"
+    gacha = "/Game/Extinction/Dinos/Gacha/Gacha_Character_BP.Gacha_Character_BP_C"
+    gasbag = "/Game/Extinction/Dinos/GasBag/GasBags_Character_BP.GasBags_Character_BP_C"
+    managarmr = "/Game/Extinction/Dinos/IceJumper/IceJumper_Character_BP.IceJumper_Character_BP_C"
+    tek_raptor = "/Game/PrimalEarth/Dinos/Raptor/BionicRaptor_Character_BP.BionicRaptor_Character_BP_C"
+    tek_rex = "/Game/PrimalEarth/Dinos/Rex/BionicRex_Character_BP.BionicRex_Character_BP_C"
+    tek_stego = "/Game/PrimalEarth/Dinos/Stego/BionicStego_Character_BP.BionicStego_Character_BP_C"
+    velonosaur = "/Game/Extinction/Dinos/Spindles/Spindles_Character_BP.Spindles_Character_BP_C"
+    yutyrannus = "/Game/PrimalEarth/Dinos/Yutyrannus/Yutyrannus_Character_BP.Yutyrannus_Character_BP_C"
+    tek_parasaur = "/Game/PrimalEarth/Dinos/Para/BionicPara_Character_BP.BionicPara_Character_BP_C"
+    queen_bee = "/Game/PrimalEarth/Dinos/Bee/Bee_Queen_Character_BP.Bee_Queen_Character_BP_C"
+    
     abberant = Abberant()
     alpha = Alphas()
     flyers = Flyers()
@@ -289,6 +346,9 @@ class Dinos:
         araneo,baby_araneo , spino ,megaloceros , terrorBird ,
         therizinosaurus , thylacoleo ,beelzebufo , trike ,
         troodon , carbonemys ,tusoteuthis , woolly_rhino ,
-        titanosaur , morellatops ,mantis , rock_golem ,thorny_dragon
+        titanosaur , morellatops ,mantis , rock_golem ,thorny_dragon,
+        dreadnoughtus, maelizard, shastasaurus, gacha, gasbag,
+        managarmr, tek_raptor, tek_rex, tek_stego,
+        velonosaur, yutyrannus, tek_parasaur, queen_bee
     ]  + abberant.all_bps + alpha.all_bps + flyers.all_bps + \
         dlc_dinos.all_bps + shoulder_pets.all_bps + non_tameable.all_bps

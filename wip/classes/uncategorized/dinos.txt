@@ -1,6 +1,18 @@
-/Game/PrimalEarth/Dinos/Hesperornis/Hesperornis_Character_BP.Hesperornis_Character_BP_C
-/Game/PrimalEarth/Dinos/Tusoteuthis/Mega_Tusoteuthis_Character_BP.Mega_Tusoteuthis_Character_BP_C
+/Game/Extinction/Dinos/Spindles/Spindles_Character_BP.Spindles_Character_BP_C
+/Game/LostColony/Dinos/YoungIceFox/YoungIceFox_DinoCompanion_Character_WildClone_BP.YoungIceFox_DinoCompanion_Character_WildClone_BP_C
+/Game/Packs/Frontier/Dinos/Train/Train_Character.Train_Character_C
+/Game/Packs/Steampunk/Dinos/HelperBot/HelperBot_Character_BP.HelperBot_Character_BP_C
+/Game/Packs/Steampunk/Dinos/Zeppelin/Zeppelin_Character_BP.Zeppelin_Character_BP_C
+/Game/Packs/Wasteland/Dinos/Doggo/Doggo_Character_BP.Doggo_Character_BP_C
+
+/Game/PrimalEarth/Dinos/Bigfoot/Yeti_Character_BP.Yeti_Character_BP_C
+/Game/PrimalEarth/Dinos/Dodo/ZombieDodo_Character_BP.ZombieDodo_Character_BP_C
+
+/Game/PrimalEarth/Dinos/Megalosaurus/Megalosaurus_Character_BP_TekCave.Megalosaurus_Character_BP_TekCave_C
+
+/Game/PrimalEarth/Dinos/Purlovia/Purlovia_Character_BP_Polar.Purlovia_Character_BP_Polar_C
 /Game/PrimalEarth/Dinos/Yutyrannus/Yutyrannus_Character_BP.Yutyrannus_Character_BP_C
+/Game/ScorchedEarth/Dinos/RockGolem/RubbleGolem_Character_BP.RubbleGolem_Character_BP_C
 /PA_Ascension/Dinos/GreaterYuty/Paleo_Yutyrannus_Character_BP.Paleo_Yutyrannus_Character_BP_C
 /PA_Ascension/Dinos/PaleoCarcha/Paleo_Carcha_Character_BP.Paleo_Carcha_Character_BP_C
 /PA_Ascension/Dinos/PaleoFasola/Paleo_Fasola_Character_BP.Paleo_Fasola_Character_BP_C
@@ -22,3 +34,4 @@
 /PA_EVO_Pack_01/Dinos/EVO_Rex/Legacy/EVO_Legacy_Rex_Character_BP.EVO_Legacy_Rex_Character_BP_C
 /PA_EVO_Pack_01/Dinos/EVO_Rex/Paleo/EVO_Paleo_Rex_Character_BP.EVO_Paleo_Rex_Character_BP_C
 /PA_EVO_Pack_02/Dinos/EVO_Mosa/EVO_Mosa_Character_BP.EVO_Mosa_Character_BP_C
+/SummerBash/Dinos/CoolPenguin/Kairuku_Character_BP_SummerBash.Kairuku_Character_BP_SummerBash_C
