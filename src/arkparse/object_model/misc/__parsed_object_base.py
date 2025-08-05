@@ -19,6 +19,10 @@ class ParsedObjectBase:
     @property
     def uuid(self) -> UUID:
         return self.object.uuid if self.object is not None else None
+    
+    @property
+    def blueprint(self) -> str:
+        return self.object.blueprint if self.object is not None else None
 
     def __init_props__(self):
         pass

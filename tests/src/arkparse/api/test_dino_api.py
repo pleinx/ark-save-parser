@@ -4,6 +4,7 @@ from arkparse.api.dino_api import DinoApi
 from arkparse import AsaSave
 from arkparse.object_model.dinos import TamedDino, TamedBaby, BabyStage
 from arkparse.enums import ArkMap
+from arkparse.classes.dinos import Dinos
 
 NR_DINOS = 33767
 NR_TAMED = 2242
@@ -236,4 +237,12 @@ def test_tamed_baby_stage(dino_api: DinoApi):
             assert maturation >= 50.0, "Adolescent stage should have maturation greater than or equal to 50%"
         else:
             raise ValueError(f"Unexpected baby stage: {stage}")
+        
+def test_get_tameable_dinos(dino_api: DinoApi):
+    """
+    Test to retrieve all tameable dinos from the Ragnarok save.
+    """
+    tameable_dinos = dino_api.get_all_wild_tamables()
+
+    print(f"Total tameable dinos found: {len(tameable_dinos)}")
     

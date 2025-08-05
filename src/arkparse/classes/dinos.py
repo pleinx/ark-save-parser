@@ -115,7 +115,11 @@ class DlcDinos:
     archelon = "/Game/ASA/Dinos/Archelon/Dinos/Archelon_Character_BP_ASA.Archelon_Character_BP_ASA_C"
     dread_mare = "/Game/ASA/Dinos/DarkPegasus/DarkPegasus_Character_BP.DarkPegasus_Character_BP_C"
     oasisaur = "/Game/Packs/Frontier/Dinos/Oasisaur/Oasisaur_Character_BP.Oasisaur_Character_BP_C"
-    all_bps = [firemane, archelon, dread_mare, oasisaur]
+    train = "/Game/Packs/Frontier/Dinos/Train/Train_Character.Train_Character_C"
+    helper_bot = "/Game/Packs/Steampunk/Dinos/HelperBot/HelperBot_Character_BP.HelperBot_Character_BP_C"
+    zeppelin = "/Game/Packs/Steampunk/Dinos/Zeppelin/Zeppelin_Character_BP.Zeppelin_Character_BP_C"
+    doggo = "/Game/Packs/Wasteland/Dinos/Doggo/Doggo_Character_BP.Doggo_Character_BP_C"
+    all_bps = [firemane, archelon, dread_mare, oasisaur, train, helper_bot, zeppelin, doggo]
 
 class ShoulderPets:
     glowtail = "/Game/Aberration/Dinos/LanternLizard/LanternLizard_Character_BP.LanternLizard_Character_BP_C"
@@ -192,15 +196,18 @@ class NonTameable:
     iceworm = "/Game/ASA/Dinos/Iceworm/Iceworm_Character_Minion_BP_smaller.Iceworm_Character_Minion_BP_smaller_C"
     tek_giga = "/Game/PrimalEarth/Dinos/Giganotosaurus/BionicGigant_Character_BP.BionicGigant_Character_BP_C"
     leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Leedsichthys_Character_BP.Leedsichthys_Character_BP_C"
+    yeti = "/Game/PrimalEarth/Dinos/Bigfoot/Yeti_Character_BP.Yeti_Character_BP_C"
     corrupted = Corrupted()
+    alpha = Alphas()
 
     all_bps = [
         lamprey, lightbug, meganeura, surface_reaper, surface_nameless
         , titanomyrma, titanomyrma_flyer, cnidaria, coelacanth,
         coelacanth_ocean, leech, leech_diseased, piranha, 
         sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water,
-        enforcer, scout, defence_unit, polar_bear, iceworm, tek_giga
-    ] + Corrupted.all_bps
+        enforcer, scout, defence_unit, polar_bear, iceworm, tek_giga,
+        leedsichthys, yeti
+    ] + corrupted.all_bps + alpha.all_bps
 
 class Dinos:
     # Aberrant Dinos
@@ -316,9 +323,9 @@ class Dinos:
     yutyrannus = "/Game/PrimalEarth/Dinos/Yutyrannus/Yutyrannus_Character_BP.Yutyrannus_Character_BP_C"
     tek_parasaur = "/Game/PrimalEarth/Dinos/Para/BionicPara_Character_BP.BionicPara_Character_BP_C"
     queen_bee = "/Game/PrimalEarth/Dinos/Bee/Bee_Queen_Character_BP.Bee_Queen_Character_BP_C"
-    
+    rubble_golem = "/Game/ScorchedEarth/Dinos/RockGolem/RubbleGolem_Character_BP.RubbleGolem_Character_BP_C"
+
     abberant = Abberant()
-    alpha = Alphas()
     flyers = Flyers()
     dlc_dinos = DlcDinos()
     shoulder_pets = ShoulderPets()
@@ -349,6 +356,7 @@ class Dinos:
         titanosaur , morellatops ,mantis , rock_golem ,thorny_dragon,
         dreadnoughtus, maelizard, shastasaurus, gacha, gasbag,
         managarmr, tek_raptor, tek_rex, tek_stego,
-        velonosaur, yutyrannus, tek_parasaur, queen_bee
-    ]  + abberant.all_bps + alpha.all_bps + flyers.all_bps + \
+        velonosaur, yutyrannus, tek_parasaur, queen_bee,
+        rubble_golem
+    ]  + abberant.all_bps + flyers.all_bps + \
         dlc_dinos.all_bps + shoulder_pets.all_bps + non_tameable.all_bps
