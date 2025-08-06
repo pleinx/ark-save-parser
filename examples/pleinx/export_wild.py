@@ -188,7 +188,7 @@ if os.path.exists(json_output_path):
     os.remove(json_output_path)
 
 with open(json_output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False)
+    json.dump(json_data, f, ensure_ascii=False, separators=(',', ':'))
 
 # DONE, OUTPUT
 print(f"Saved {len(dinos)} dinos to {json_output_path}")
