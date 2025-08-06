@@ -97,6 +97,9 @@ json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
 dino_api = DinoApi(save)
 
+# TODO: exclude cave dinos from is_dino_tamable
+# TODO: json format only on my machine
+
 tamed_dinos = []
 for dino_id, dino in dino_api.get_all_tamed().items():
     if not isinstance(dino, (TamedDino, TamedBaby)):
@@ -132,8 +135,12 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         stats_entry[f"{prefix}-t"] = getattr(dino.stats.added_stat_points, field, 0)
         stats_entry[f"{prefix}-m"] = getattr(dino.stats.mutated_stat_points, field, 0)
 
-    # if baby but claimed
-    if(tribe_id==2000000000 and dino_json_data.get("TargetingTeam", None)):
+#     if(str(dino_id) == "d74b5588-e457-4040-8bdc-a48e0c13a926"):
+#         pprint(tribe_id)
+#         pprint(dino_json_data.get("TargetingTeam", None))
+
+    # if baby but claimed OR if dino is in crypopod after get tamed
+    if(tribe_id==2000000000 and dino_json_data.get("TargetingTeam", None) or tribe_id == None):
          tribe_id=dino_json_data.get("TargetingTeam", None)
 
 #     if "tester" in (dino.tamed_name or "").lower():

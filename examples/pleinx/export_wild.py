@@ -15,6 +15,8 @@ import re
 
 start_time = time()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Args
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("--savegame", type=str, required=True, help="MapName e.g. Aberration_WP")
@@ -92,7 +94,9 @@ save_path = Path(f"{args.savegame}")
 if not save_path.exists():
     raise FileNotFoundError(f"Save file not found at: {save_path}")
 
-TAMABLE_CLASSNAMES = load_tamable_classnames("../wip/classes/uncategorized/tamable_dinos.txt")
+tamable_path = os.path.join(BASE_DIR, "..", "..", "wip", "classes", "uncategorized", "tamable_dinos.txt")
+TAMABLE_CLASSNAMES = load_tamable_classnames(tamable_path)
+
 save = AsaSave(save_path)
 
 # Extract map name
@@ -105,6 +109,9 @@ export_folder.mkdir(parents=True, exist_ok=True)
 json_output_path = export_folder / f"{map_folder}_WildDinos.json"
 
 dino_api = DinoApi(save)
+
+# TODO: exclude cave dinos from is_dino_tamable
+# TODO: json format only on my machine
 
 dinos = []
 for dino_id, dino in dino_api.get_all_wild().items():
@@ -181,7 +188,7 @@ if os.path.exists(json_output_path):
     os.remove(json_output_path)
 
 with open(json_output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False, indent=2)
+    json.dump(json_data, f, ensure_ascii=False)
 
 # DONE, OUTPUT
 print(f"Saved {len(dinos)} dinos to {json_output_path}")
