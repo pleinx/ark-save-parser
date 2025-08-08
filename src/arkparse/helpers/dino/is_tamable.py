@@ -22,4 +22,3 @@ def is_tamable(dino, max_tek_level=180, max_level=150) -> bool:
         return False
 
     return dino_class in TAMABLE_CLASSNAMES
-
