@@ -12,6 +12,7 @@ import os
 import ast
 from datetime import datetime
 import re
+from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
 
 start_time = time()
 
@@ -135,16 +136,19 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         stats_entry[f"{prefix}-t"] = getattr(dino.stats.added_stat_points, field, 0)
         stats_entry[f"{prefix}-m"] = getattr(dino.stats.mutated_stat_points, field, 0)
 
-#     if(str(dino_id) == "d74b5588-e457-4040-8bdc-a48e0c13a926"):
-#         pprint(tribe_id)
-#         pprint(dino_json_data.get("TargetingTeam", None))
+#     if(str(dino_id) == "baf0e32e-541c-f541-aec3-705f9d371580"):
+#         public_attrs = [attr for attr in dir(dino.cryopod.dino.owner) if not attr.startswith('_')]
+#         if(public_attrs is not []):
+#             pprint(dino.cryopod.dino.owner.imprinter)
+#             pprint(dino.cryopod.dino.owner.player)
+#             pprint(dino.cryopod.dino.owner.tamer_string)
+#             pprint(dino.cryopod.dino.owner.tamer_tribe_id)
+#             pprint(dino.cryopod.dino.owner.target_team)
+#             pprint(dino.cryopod.dino.owner.tribe)
 
     # if baby but claimed OR if dino is in crypopod after get tamed
     if(tribe_id==2000000000 and dino_json_data.get("TargetingTeam", None) or tribe_id == None):
          tribe_id=dino_json_data.get("TargetingTeam", None)
-
-#     if "tester" in (dino.tamed_name or "").lower():
-#         pprint(dino.tamed_name + ": " + (str(float(dino.percentage_matured)) if isinstance(dino, TamedBaby) else "100"))
 
     entry = {
         "id": str(dino_id),
@@ -198,6 +202,7 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "maturation": float(dino.percentage_matured) if isinstance(dino, TamedBaby) else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
+        "is_wild_tamed": True if is_wild_tamed(dino) else False,
         "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
     }
 
