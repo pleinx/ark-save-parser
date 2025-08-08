@@ -16,6 +16,7 @@ from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.parsing.struct.actor_transform import MapCoords
 from arkparse.enums import ArkMap, ArkStat
 from arkparse.utils import TEMP_FILES_DIR
+from arkparse.helpers.dino.is_tamable import is_tamable
 from arkparse.logging import ArkSaveLogger
 
 from importlib.resources import files
@@ -26,12 +27,6 @@ class DinoApi:
         self.all_objects = None
         self.parsed_dinos: Dict[UUID, Dino] = {}
         self.parsed_cryopods: Dict[UUID, Cryopod] = {}
-        package = 'arkparse.assets'
-        try:
-            with open(files(package) / f'tamable_dinos.txt', 'r', encoding='utf-8') as f:
-                self.__tamables = set(line.strip() for line in f if line.strip())
-        except FileNotFoundError:
-            self.__tamables = set()
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         reuse = False
@@ -48,18 +43,18 @@ class DinoApi:
                         ("PrimalItem_WeaponEmptyCryopod_C" in name)))
 
         objects = self.save.get_game_objects(config)
-        
+
         if reuse:
             self.all_objects = objects
 
         return objects
-    
+
     def get_by_uuid(self, uuid: UUID) -> Dino:
         object = self.save.get_game_object_by_id(uuid)
 
         if object is None:
             return None
-        
+
         dino = None
         if "Dinos/" in object.blueprint and "_Character_" in object.blueprint:
             is_tamed = object.get_property_value("TamedTimeStamp") is not None
@@ -140,14 +135,14 @@ class DinoApi:
                             if ArkSaveLogger._allow_invalid_objects:
                                 continue
                             raise e
-            
+
             if dino is not None:
                 dinos[key] = dino
 
         ArkSaveLogger.api_log(f"Parsed {len(dinos)} dinos")
 
         return dinos
-    
+
     def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, tamed: bool = True, untamed: bool = True) -> Dict[UUID, Dino]:
         dinos = self.get_all()
 
@@ -162,13 +157,13 @@ class DinoApi:
                     filtered_dinos[key] = dino
 
         return filtered_dinos
-    
+
     def get_all_wild(self) -> Dict[UUID, Dino]:
         return self.get_all(include_cryos=False, include_tamed=False)
 
-    def get_all_wild_tamables(self) -> Dict[UUID, Dino]:
-        return {key: dino for key, dino in self.get_all_wild().items() if dino.get_short_name() + "_C" in self.__tamables}
-    
+    def get_all_wild_tamables(self, max_tek_level=180, max_level=150) -> Dict[UUID, Dino]:
+        return {key: dino for key, dino in self.get_all_wild().items() if is_tamable(dino, max_tek_level, max_level)}
+
     def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
         return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
 
@@ -178,10 +173,10 @@ class DinoApi:
         babies = {key: dino for key, dino in dinos.items() if isinstance(dino, Baby)}
 
         return babies
-    
+
     def get_all_in_cryopod(self) -> Dict[UUID, TamedDino]:
         return self.get_all(include_cryos=True, include_wild=False, include_tamed=False)
-    
+
     def get_all_by_class(self, class_names: List[str]) -> Dict[UUID, Dino]:
         config = GameObjectReaderConfiguration(
             blueprint_name_filter=lambda name: name is not None and name in class_names
@@ -191,52 +186,52 @@ class DinoApi:
         class_dinos = {k: v for k, v in dinos.items() if v.object.blueprint in class_names}
 
         return class_dinos
-    
+
     def get_all_wild_by_class(self, class_name: List[str]) -> Dict[UUID, Dino]:
         dinos = self.get_all_by_class(class_name)
         wild_dinos = {k: v for k, v in dinos.items() if not isinstance(v, TamedDino)}
 
         return wild_dinos
-    
+
     def get_all_tamed_by_class(self, class_name: List[str]) -> Dict[UUID, TamedDino]:
         dinos = self.get_all_by_class(class_name)
         tamed_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino)}
 
         return tamed_dinos
-    
+
     def get_all_of_at_least_level(self, level: int) -> Dict[UUID, Dino]:
         dinos = self.get_all()
         level_dinos = {k: v for k, v in dinos.items() if v.stats.current_level >= level}
 
         return level_dinos
-    
+
     def get_all_wild_of_at_least_level(self, level: int) -> Dict[UUID, Dino]:
         dinos = self.get_all_of_at_least_level(level)
         wild_dinos = {k: v for k, v in dinos.items() if not isinstance(v, TamedDino)}
 
         return wild_dinos
-    
+
     def get_all_tamed_of_at_least_level(self, level: int) -> Dict[UUID, TamedDino]:
         dinos = self.get_all_of_at_least_level(level)
         tamed_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino)}
 
         return tamed_dinos
-    
+
     def get_all_with_stat_of_at_least(self, value: int, stat: List[ArkStat] = None) -> Dict[UUID, Dino]:
         dinos = self.get_all()
         filtered_dinos = {}
-        
+
         for key, dino in dinos.items():
             stats_above = dino.stats.get_of_at_least(value)
             if len(stats_above) and (stat is None or any(s in stats_above for s in stat)):
                 filtered_dinos[key] = dinos[key]
 
         return filtered_dinos
-    
-    def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, 
-                         class_names: List[str] = None, 
-                         tamed: bool = None, 
-                         include_cryopodded: bool = True, only_cryopodded: bool = False, 
+
+    def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None,
+                         class_names: List[str] = None,
+                         tamed: bool = None,
+                         include_cryopodded: bool = True, only_cryopodded: bool = False,
                          stat_minimum: int = None, stats: List[ArkStat] = None) -> Dict[UUID, Dino]:
         dinos = None
 
@@ -264,7 +259,7 @@ class DinoApi:
         if level_lower_bound is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level >= level_lower_bound}
             ArkSaveLogger.api_log(f"LowerLvBound - Filtered to {len(filtered_dinos)} dinos")
-        
+
         if level_upper_bound is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.stats.current_level <= level_upper_bound}
             ArkSaveLogger.api_log(f"UpperLvBound - Filtered to {len(filtered_dinos)} dinos")
@@ -299,7 +294,7 @@ class DinoApi:
             ArkSaveLogger.api_log(f"StatMin - Filtered to {len(filtered_dinos)} dinos")
 
         return filtered_dinos
-    
+
     def count_by_level(self, List: Dict[UUID, Dino]) -> Dict[int, int]:
         levels = {}
 
@@ -311,7 +306,7 @@ class DinoApi:
                 levels[level] = 1
 
         return levels
-    
+
     def count_by_class(self, List: Dict[UUID, Dino]) -> Dict[str, int]:
         classes = {}
 
@@ -323,7 +318,7 @@ class DinoApi:
                 classes[short_name] = 1
 
         return classes
-    
+
     def count_by_tamed(self, List: Dict[UUID, Dino]) -> Dict[bool, int]:
         tamed = {}
 
@@ -335,7 +330,7 @@ class DinoApi:
                 tamed[is_tamed] = 1
 
         return tamed
-    
+
     def count_by_cryopodded(self, List: Dict[UUID, Dino]) -> Dict[str, int]:
         cryopodded = {
             "all": 0,
@@ -352,7 +347,7 @@ class DinoApi:
                     cryopodded[short_name] = 1
 
         return cryopodded
-    
+
     def modify_dinos(self, dinos: Dict[UUID, TamedDino], new_owner: DinoOwner = None, ftp_client: ArkFtpClient = None):
         for key, dino in dinos.items():
             if new_owner is not None:
@@ -391,14 +386,14 @@ class DinoApi:
             heatmap[x][y] += 1
 
         return np.array(heatmap)
-    
+
     def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False, mutated_stat=False) -> (Dino, int, ArkStat):
         if only_tamed and only_untamed:
             raise ValueError("Cannot specify both only_tamed and only_untamed")
-        
+
         if mutated_stat and base_stat:
             raise ValueError("Cannot specify both base_stat and base_mutated_stat")
-        
+
         if classes is not None:
             dinos = self.get_all_filtered(class_names=classes, include_cryopodded=True)
         else:
@@ -428,8 +423,8 @@ class DinoApi:
                 best_stat = s
 
         return best_dino, best_value, best_stat
-    
-        
+
+
     def get_container_of_inventory(self, inv_uuid: UUID, include_cryopodded: bool = True, tamed_dinos: dict[UUID, TamedDino] = None) -> TamedDino:
         if tamed_dinos is None:
             tamed_dinos = self.get_all_tamed(include_cryopodded=include_cryopodded)
@@ -441,4 +436,3 @@ class DinoApi:
                 return obj
 
         return None
-
