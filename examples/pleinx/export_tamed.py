@@ -197,8 +197,8 @@ for dino_id, dino in dino_api.get_all_tamed().items():
         "isMating": False,          # TODO
         "isNeutered": False,        # TODO
         "isClone": False,           # TODO
-        "tamedServer": dino.get_uploaded_from_server_name(),      # TODO
-        "uploadedServer": dino.get_uploaded_from_server_name(),
+        #"tamedServer": dino.get_uploaded_from_server_name(),      # TODO NOT IN USED
+        #"uploadedServer": dino.get_uploaded_from_server_name(),   # TODO NOT IN USED
         "maturation": float(dino.percentage_matured) if isinstance(dino, TamedBaby) else "100",
         "traits": [],               # TODO
         "inventory": [],            # TODO
