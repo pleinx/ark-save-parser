@@ -79,12 +79,14 @@ class Structure(ParsedObjectBase):
     def set_max_health(self, health: float):
         self.max_health = health
         self.binary.replace_float(self.object.find_property("MaxHealth"), float(health))
+        self.update_binary()
 
     def heal(self):
         if self.current_health == self.max_health:
             return
         self.current_health = self.max_health
         self.binary.replace_float(self.object.find_property("Health"), float(self.max_health))
+        self.update_binary()
 
     def reidentify(self, new_uuid: UUID = None, update=True):
         new_id = random.randint(0, 2**32 - 1)

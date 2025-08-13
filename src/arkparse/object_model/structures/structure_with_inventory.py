@@ -1,7 +1,6 @@
 from uuid import UUID
 from pathlib import Path
 
-from arkparse.parsing import ArkBinaryParser
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model import ArkGameObject
