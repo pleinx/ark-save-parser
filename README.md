@@ -42,6 +42,7 @@ I just hope it's usefull for someone!
 - **Dino API**: Analyze dino data, generate heatmaps, find specific dinos, or track stats like mutations and levels.
 - **Base API**: Export and import entire bases for custom scenarios.
 - **Stackable API**: Simple API for parsing basic resources, ammo, structure items and such...
+- **Json API**: Simple API for exporting data as JSON.
 - **General Tools**: Create custom save file content or perform bulk modifications.
 
 ---
@@ -190,8 +191,8 @@ print(f"Owner: {most_mutations.owner}")
 ```python
 from pathlib import Path
 
-from src.arkparse import AsaSave
-from src.arkparse.api.json_api import JsonApi
+from arkparse import AsaSave
+from arkparse.api.json_api import JsonApi
 
 save_path = Path.cwd() / "Ragnarok_WP.ark" # replace with path to your save file
 save = AsaSave(save_path) # loads save file

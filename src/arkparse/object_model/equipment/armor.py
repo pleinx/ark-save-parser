@@ -1,6 +1,5 @@
 import json
 from uuid import UUID
-import os
 
 from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
@@ -125,8 +124,16 @@ class Armor(EquipmentWithArmor):
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()
+
+        # Grab already set properties
         json_obj["HyperthermalResistance"] = self.hyperthermal_insulation
         json_obj["HypothermalResistance"] = self.hypothermal_insulation
+
+        # Grab implemented stats if they exists
+        implemented_stats = self.get_implemented_stats()
+        if implemented_stats is not None:
+            json_obj["ImplementedStats"] = implemented_stats
+
         return json_obj
 
     def to_json_str(self):
