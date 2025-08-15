@@ -1,11 +1,9 @@
 import json
 from uuid import UUID
-import math
 
 from arkparse import AsaSave
 from arkparse.logging.ark_save_logger import ArkSaveLogger
 from arkparse.object_model.ark_game_object import ArkGameObject
-from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
 from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.utils.json_utils import DefaultJsonEncoder
@@ -93,7 +91,15 @@ class Weapon(EquipmentWithDurability):
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()
+
+        # Grab already set properties
         json_obj["Damage"] = self.damage
+
+        # Grab implemented stats if they exists
+        implemented_stats = self.get_implemented_stats()
+        if implemented_stats is not None:
+            json_obj["ImplementedStats"] = implemented_stats
+
         return json_obj
 
     def to_json_str(self):

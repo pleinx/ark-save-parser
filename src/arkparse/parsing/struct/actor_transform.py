@@ -53,18 +53,18 @@ class MapCoordinateParameters:
             self.playable_max_y = 393750.0
             self.playable_max_z = 66645.0
         elif map == ArkMap.THE_CENTER:
-            self.origin_min_x = -342900.0
-            self.origin_min_y = -342900.0
-            self.origin_min_z = -15000.0
-            self.origin_max_x = 342900.0
-            self.origin_max_y = 342900.0
-            self.origin_max_z = 54695.0
-            self.playable_min_x = -342900.0
-            self.playable_min_y = -342900.0
-            self.playable_min_z = -15000.0
-            self.playable_max_x = 342900.0
-            self.playable_max_y = 342900.0
-            self.playable_max_z = 54695.0
+            self.origin_min_x = -524364.0
+            self.origin_min_y = -337215.0
+            self.origin_min_z = -171880.46875
+            self.origin_max_x = 513040.0
+            self.origin_max_y = 700189.0
+            self.origin_max_z = 101159.6875
+            self.playable_min_x = -524364.0
+            self.playable_min_y = -337215.0
+            self.playable_min_z = -171880.46875
+            self.playable_max_x = 513040.0
+            self.playable_max_y = 700189.0
+            self.playable_max_z = 101159.6875
         elif map == ArkMap.ABERRATION:
             self.origin_min_x = -400000.0
             self.origin_min_y = -400000.0
