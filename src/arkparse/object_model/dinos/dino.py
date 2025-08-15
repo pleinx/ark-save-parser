@@ -1,20 +1,16 @@
 import json
 from uuid import UUID
 from typing import List
-import json
 
-from arkparse.logging.ark_save_logger import ArkSaveLogger
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.parsing.struct.ark_vector import ArkVector
 from arkparse.object_model.ark_game_object import ArkGameObject
-from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkDinoTrait
 from arkparse.utils.json_utils import DefaultJsonEncoder
 
 from .stats import DinoStats
-from ..misc.inventory import Inventory
 from ...parsing.struct import ObjectReference
 
 

@@ -3,7 +3,6 @@ from uuid import UUID
 
 from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
-from arkparse.parsing import ArkBinaryParser
 from arkparse.enums import ArkEquipmentStat
 from arkparse.utils.json_utils import DefaultJsonEncoder
 from .__equipment_with_durability import EquipmentWithDurability

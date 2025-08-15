@@ -163,7 +163,6 @@ class DinoApi:
 
     def get_all_wild_tamables(self, max_tek_level=180, max_level=150) -> Dict[UUID, Dino]:
         return {key: dino for key, dino in self.get_all_wild().items() if is_tamable(dino, max_tek_level, max_level)}
-
     def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
         return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
 
