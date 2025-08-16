@@ -64,4 +64,4 @@ class BaseValueValidator(ByteOperator):
         read = self.read_bytes_as_hex(nr_bytes)
         if read != s:
             ArkSaveLogger.open_hex_view()
-            raise Exception(f"Expected {hex(s)} but got {hex(read)} at position {pos}")
+            raise Exception(f"Expected {s} but got {read} at position {pos}")

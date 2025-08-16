@@ -15,7 +15,6 @@ from .struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
 from .ark_binary_parser import ArkBinaryParser
 from .ark_value_type import ArkValueType
 from arkparse.enums.ark_enum import ArkEnumValue
-
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.struct.ark_color import ArkColor
 from arkparse.parsing.struct.ark_linear_color import ArkLinearColor
@@ -311,9 +310,6 @@ class ArkProperty:
 
             if(byte_buffer.position != data_start_postion + data_size):
                 # just skip to the end of the struct if an error occurs
-                if not ArkSaveLogger.suppress_warnings:
-                    print("WARNING: Array read incorrectly, bytes left to read:", data_start_postion + data_size - byte_buffer.position)
-                    print("Skipping to the end of the struct, type:", array_content_type)
                 byte_buffer.set_position(data_start_postion + data_size)
                 # byte_buffer.find_names()
                 # ArkSaveLogger.open_hex_view()
