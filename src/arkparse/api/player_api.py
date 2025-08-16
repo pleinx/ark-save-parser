@@ -444,6 +444,20 @@ class PlayerApi:
             player.get_location_and_inventory(save, pawn)
 
         return player.location
+    
+    def generate_player_id(self, min=13781378, max=997533501) -> int:
+        import random
+        player_id = random.randint(min, max)
+        while any(p.id_ == player_id for p in self.players):
+            player_id = random.randint(min, max)
+        return player_id
+    
+    def generate_tribe_id(self, min=1022488265, max=1914242586) -> int:
+        import random
+        tribe_id = random.randint(min, max)
+        while any(t.tribe_id == tribe_id for t in self.tribes):
+            tribe_id = random.randint(min, max)
+        return tribe_id
 
     # def add_to_player_inventory(self, player: ArkPlayer, item: ArkGameObject, save: AsaSave = None):
     #     if player is None:

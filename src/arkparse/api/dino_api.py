@@ -1,9 +1,13 @@
 from typing import Dict, List
-from uuid import UUID
+from uuid import UUID, uuid4
+from pathlib import Path
+import os
 
 from arkparse.object_model.cryopods.cryopod import Cryopod
-from arkparse.object_model.dinos.dino import Dino
+from arkparse.object_model.dinos import dino
+from arkparse.object_model.dinos.dino import Dino, DinoStats
 from arkparse.object_model.dinos.tamed_baby import TamedBaby
+from arkparse.object_model.dinos.dino_ai_controller import DinoAiController
 from arkparse.object_model.dinos.baby import Baby
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.object_model.ark_game_object import ArkGameObject
@@ -13,11 +17,13 @@ from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.parsing import ArkBinaryParser
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.parsing.struct.actor_transform import MapCoords
+from arkparse.parsing.struct.actor_transform import MapCoords, ActorTransform
 from arkparse.enums import ArkMap, ArkStat
-from arkparse.utils import TEMP_FILES_DIR
+from arkparse.utils import TEMP_FILES_DIR, ImportFile
 from arkparse.logging import ArkSaveLogger
 from arkparse.classes.dinos import Dinos
+from arkparse.object_model.misc.inventory import Inventory
+from arkparse.object_model.misc.inventory_item import InventoryItem
 
 class DinoApi:
     def __init__(self, save: AsaSave):
@@ -384,6 +390,7 @@ class DinoApi:
 
         return np.array(heatmap)
     
+    
     def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False, mutated_stat=False) -> (Dino, int, ArkStat):
         if only_tamed and only_untamed:
             raise ValueError("Cannot specify both only_tamed and only_untamed")
@@ -433,4 +440,123 @@ class DinoApi:
                 return obj
 
         return None
+    
+    def __get_all_files_from_dir_recursive(self, dir_path: Path) -> Dict[str, bytes]:
+        out = []
+        base_file = None
+        for root, _, files in os.walk(dir_path):
+            for file in files:
+                file_path = Path(root) / Path(file)
+                if file_path.name.endswith(".bin") or file_path.name.startswith("loc_"):
+                    out.append(ImportFile(str(file_path)))
+        return out
+    
+    def import_dino(self, path: Path, location: ActorTransform = None) -> Dino:
+        uuid_translation_map = {}
 
+        def replace_uuids(uuid_map: Dict[UUID, UUID], bytes_: bytes):
+            for uuid in uuid_map:
+                new_bytes = uuid_map[uuid].bytes            
+                old_bytes = uuid.bytes
+                bytes_ = bytes_.replace(old_bytes, new_bytes)
+                # print(f"Replacing {uuid} with {uuid_map[uuid]}")
+            return bytes_
+
+        actor_transforms: Dict[UUID, ActorTransform] = {}
+        files: List[ImportFile] = self.__get_all_files_from_dir_recursive(path)
+
+        # assign new uuids to all
+        for file in files:
+            uuid_translation_map[file.uuid] = uuid4()
+
+        # Assign new uuids to all actor transforms and add them to the database
+        new_actor_transforms: bytes = bytes()
+        for file in files:
+            if file.type == "loc":
+                new_uuid: UUID = uuid_translation_map[file.uuid]
+                actor_transforms[new_uuid] = ActorTransform(from_json=Path(file.path))
+                new_actor_transforms += new_uuid.bytes + actor_transforms[new_uuid].to_bytes()
+                ArkSaveLogger.api_log(f"Added actor transform {new_uuid} to DB")
+        self.save.add_actor_transforms(new_actor_transforms)
+        # Update actor transforms in save context
+        self.save.read_actor_locations()
+
+        # get all inventory items and add them to DB
+        for file in files:
+            if file.type == "itm":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names, self.save)
+                self.save.add_obj_to_db(new_uuid, parser.byte_buffer)
+                item = InventoryItem(uuid=new_uuid, save=self.save)
+                item.reidentify(new_uuid)
+                ArkSaveLogger.api_log(f"Added inventory item {item.uuid} to DB")
+
+        # Get inventory and add to DB
+        for file in files:
+            if file.type == "inv":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names, self.save)
+                self.save.add_obj_to_db(new_uuid, parser.byte_buffer)
+                inventory = Inventory(uuid=new_uuid, save=self.save)
+                inventory.reidentify(new_uuid)
+                ArkSaveLogger.api_log(f"Added inventory {inventory.uuid} to DB")
+
+        # Get status and add to DB
+        for file in files:
+            if file.type == "status":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names, self.save)
+                self.save.add_obj_to_db(new_uuid, parser.byte_buffer)
+                stats = DinoStats(uuid=new_uuid, save=self.save)
+                stats.reidentify(new_uuid)
+                stats.binary.replace_boolean(stats.object.find_property("bServerFirstInitialized"), False)
+                self.save.modify_game_obj(stats.object.uuid, stats.binary.byte_buffer)
+                ArkSaveLogger.api_log(f"Added dino stats {stats.uuid} to DB")
+
+        # Get AI controller and add to DB
+        for file in files:
+            if file.type == "ai":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names, self.save)
+                self.save.add_obj_to_db(new_uuid, parser.byte_buffer)
+                ai_controller = DinoAiController(uuid=new_uuid, save=self.save)
+                ai_controller.reidentify(new_uuid)
+                ArkSaveLogger.api_log(f"Added AI controller {ai_controller.uuid} to DB")
+
+        # Get dino and add to DB
+        for file in files:
+            if file.type == "obj":
+                new_uuid = uuid_translation_map[file.uuid]
+                parser = ArkBinaryParser(file.bytes, self.save.save_context)
+                parser.byte_buffer = replace_uuids(uuid_translation_map, parser.byte_buffer)
+                parser.replace_name_ids(file.names, self.save)
+                self.save.add_obj_to_db(new_uuid, parser.byte_buffer)
+                dino = Dino(uuid=new_uuid, save=self.save)
+                dino.reidentify(new_uuid)
+                ArkSaveLogger.api_log(f"Added dino {dino.uuid} to DB")
+
+                if location is not None:
+                    dino.set_location(location)
+
+                dino.binary.replace_boolean(dino.object.find_property("bServerInitializedDino"), False)
+                # dino.binary.replace_boolean(dino.object.find_property("bSavedWhenStasised"), False)
+                # dino.binary.replace_u32(dino.object.find_property("TamingTeamID"), 1466169314)
+                # dino.binary.replace_u32(dino.object.find_property("TargetingTeam"), 1466169314)
+                # dino.binary.replace_u32(dino.object.find_property("OwningPlayerID"), 290175622)
+                dino.update_binary()
+
+                ArkSaveLogger.api_log(f"Replacing name \"{dino.stats.object.names[1]}\" with \"{dino.object.names[0]}\"")
+                dino.stats.replace_name_at_index_with(1, dino.object.names[0])
+                dino.stats.update_binary()
+
+                return dino
+
+        raise ValueError("No dino object found in the provided files. Please ensure the directory contains valid dino files.")

@@ -88,6 +88,12 @@ class Structure(ParsedObjectBase):
         self.binary.replace_float(self.object.find_property("Health"), float(self.max_health))
         self.update_binary()
 
+    def set_pincode(self, pin_code: int):
+        if not self.object.has_property("CurrentPinCode"):
+            raise ValueError("This structure does not have a pincode property.")
+        self.binary.replace_u32(self.object.find_property("CurrentPinCode"), pin_code)
+        self.update_binary()
+
     def reidentify(self, new_uuid: UUID = None, update=True):
         new_id = random.randint(0, 2**32 - 1)
         self.id_ = new_id

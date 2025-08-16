@@ -103,17 +103,17 @@ def categorize(path: Path):
 
 
 maps = [
-    ArkMap.ABERRATION,
-    ArkMap.EXTINCTION,
+    # ArkMap.ABERRATION,
+    # ArkMap.EXTINCTION,
     ArkMap.RAGNAROK,
-    ArkMap.SCORCHED_EARTH,
-    ArkMap.THE_CENTER,
-    ArkMap.THE_ISLAND,
-    ArkMap.ASTRAEOS
+    # ArkMap.SCORCHED_EARTH,
+    # ArkMap.THE_CENTER,
+    # ArkMap.THE_ISLAND,
+    # ArkMap.ASTRAEOS
 ]
 
 
-base_path = Path("C:\\data\\personal\\git\\ark-save-parser\\tests\\test_data\\set_1")
+base_path = Path("D:\\SteamLibrary\\steamapps\\common\\ARK Survival Ascended\\ShooterGame\\Saved\\SavedArksLocal")
 
 for map_name in maps:
     categorize(base_path / f"{map_name.to_file_name()}_WP" / f"{map_name.to_file_name()}_WP.ark")
