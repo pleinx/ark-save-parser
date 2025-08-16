@@ -6,7 +6,7 @@ from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api.dino_api import DinoApi
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.dinos import Dino
-from arkparse.helpers.dino.is_tamable import is_tamable
+from arkparse import Classes
 
 save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.RAGNAROK).download_save_file(Path.cwd())   # or download the save file from an FTP server
 save = AsaSave(save_path)                                                                                       # load the save file
@@ -17,7 +17,7 @@ wild_dinos: Dict[UUID, Dino] = dino_api.get_all_wild()
 
 wild_tamables_filtered = []
 for dino in wild_dinos.values():
-    if not is_tamable(dino):
+    if dino.blueprint in Classes.dinos.non_tameable.all_bps:
         continue
 
     wild_tamables_filtered.append(dino)

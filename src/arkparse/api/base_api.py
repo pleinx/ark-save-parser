@@ -14,24 +14,7 @@ from arkparse.enums import ArkMap
 from arkparse.parsing.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model import ArkGameObject
-
-
-class ImportFile:
-    def __init__(self, path: str):
-        def read_bytes_from_file(file_path: Path) -> bytes:
-            with open(file_path, "rb") as f:
-                return f.read()
-            
-        file = path.split("\\")[-1]
-        uuid = UUID(file.split("_")[1].split('.')[0])
-        t = file.split("_")[0]
-        name_path = None if t == "loc" else Path(path).parent / (file.split('.')[0] + "_n.json")
-
-        self.path: Path = Path(path)
-        self.type: str = t
-        self.uuid: UUID = uuid
-        self.names: Dict[int, str] = json.loads(name_path.read_text()) if name_path is not None else None
-        self.bytes = read_bytes_from_file(path)
+from arkparse.utils import ImportFile
 
 class BaseApi(StructureApi):
     def __init__(self, save, map: ArkMap):
@@ -73,7 +56,7 @@ class BaseApi(StructureApi):
 
         filtered_structures = {k: v for k, v in all_structures.items() if v.owner == keystone_owner}
 
-        return Base(keystone.object.uuid, filtered_structures)
+        return Base(keystone.object.uuid, filtered_structures) if keystone is not None else None
     
     def __get_all_files_from_dir_recursive(self, dir_path: Path) -> Dict[str, bytes]:
         out = []
