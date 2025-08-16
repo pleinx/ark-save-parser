@@ -9,7 +9,6 @@ from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct import ActorTransform
-from arkparse.parsing import ArkBinaryParser
 from arkparse import AsaSave
 from arkparse.utils.json_utils import DefaultJsonEncoder
 
@@ -87,6 +86,12 @@ class Structure(ParsedObjectBase):
             return
         self.current_health = self.max_health
         self.binary.replace_float(self.object.find_property("Health"), float(self.max_health))
+        self.update_binary()
+
+    def set_pincode(self, pin_code: int):
+        if not self.object.has_property("CurrentPinCode"):
+            raise ValueError("This structure does not have a pincode property.")
+        self.binary.replace_u32(self.object.find_property("CurrentPinCode"), pin_code)
         self.update_binary()
 
     def reidentify(self, new_uuid: UUID = None, update=True):

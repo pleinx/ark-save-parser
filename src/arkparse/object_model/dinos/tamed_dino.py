@@ -68,10 +68,11 @@ class TamedDino(Dino):
 
         return d
 
-    def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=True):
+    def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):
         if self.inventory is None and force_inventory:
             raise ValueError("Cannot store TamedDino without inventory.")
-        self.inventory.store_binary(path, name, no_suffix=no_suffix)
+        if self.inventory is not None:
+            self.inventory.store_binary(path, name, no_suffix=no_suffix)
         return super().store_binary(path, name, prefix, no_suffix)
 
     def to_json_obj(self):

@@ -63,6 +63,10 @@ class Thatch:
     ceiling = "/Game/PrimalEarth/Structures/Thatch/Thatch_Ceiling.Thatch_Ceiling_C"
     all_bps = [floor, ceiling]
 
+class Adobe:
+    tri_floor = "/Game/PrimalEarth/StructuresPlus/Structures/Foundations/Triangle/Adobe/BP_TriFoundation_Adobe.BP_TriFoundation_Adobe_C"
+    quarter_foundation = "/Game/PrimalEarth/Structures/Tileset/Foundations/Quarter/Floor_Quarter_Adobe.Floor_Quarter_Adobe_C"
+
 class Tek:
     floor = "/Game/PrimalEarth/Structures/TekTier/Floor_Tek.Floor_Tek_C"
     quarter_floor = "/Game/PrimalEarth/Structures/Tileset/Foundations/Quarter/Floor_Quarter_Tek.Floor_Quarter_Tek_C"
@@ -154,6 +158,7 @@ class PlacedStructures:
     stone: Stone = Stone()
     metal: Metal = Metal()
     thatch: Thatch = Thatch()
+    adobe: Adobe = Adobe()
     tek: Tek = Tek()
     wood: Wood = Wood()
     crafting: Crafting = Crafting()

@@ -114,7 +114,15 @@ class EquipmentWithArmor(EquipmentWithDurability):
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()
+
+        # Grab already set properties
         json_obj["Armor"] = self.armor
+
+        # Grab implemented stats if they exists
+        implemented_stats = self.get_implemented_stats()
+        if implemented_stats is not None:
+            json_obj["ImplementedStats"] = implemented_stats
+
         return json_obj
 
     def to_json_str(self):
