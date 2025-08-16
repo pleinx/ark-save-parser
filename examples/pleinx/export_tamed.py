@@ -1,10 +1,8 @@
-from uuid import UUID
 import json
 from time import time
 from arkparse.api.dino_api import DinoApi, TamedDino, TamedBaby
-from arkparse.enums import ArkMap, ArkStat
+from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
-from arkparse.api.player_api import PlayerApi
 from pprint import pprint
 import argparse
 from pathlib import Path
@@ -98,19 +96,12 @@ json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
 dino_api = DinoApi(save)
 
-# TODO: exclude cave dinos from is_dino_tamable
-# TODO: json format only on my machine
-
 tamed_dinos = []
 for dino_id, dino in dino_api.get_all_tamed().items():
     if not isinstance(dino, (TamedDino, TamedBaby)):
         continue
 
     dino_json_data = dino.to_json_obj()
-
-#     public_attrs = [attr for attr in dir(dino) if not attr.startswith('_')]
-#     if(public_attrs is not []):
-#         pprint(public_attrs)
 
     lat, lon = (0.0, 0.0)
     ccc = ""
@@ -232,6 +223,7 @@ json_data = {
 if os.path.exists(json_output_path):
     os.remove(json_output_path)
 
+# TODO: json format only on my machine
 with open(json_output_path, "w", encoding="utf-8") as f:
     json.dump(json_data, f, ensure_ascii=False, separators=(',', ':'))
 

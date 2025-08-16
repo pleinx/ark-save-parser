@@ -1,10 +1,8 @@
-from uuid import UUID
 import json
 from time import time
 from arkparse.api.dino_api import DinoApi, Dino
-from arkparse.enums import ArkMap, ArkStat
+from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
-from arkparse.api.player_api import PlayerApi
 from pprint import pprint
 import argparse
 from pathlib import Path
@@ -84,11 +82,6 @@ def load_tamable_classnames(filepath: str) -> set:
     with open(filepath, "r", encoding="utf-8") as f:
         return set(line.strip() for line in f if line.strip())
 
-def is_dino_tamable(dino):
-    class_name = dino.get_short_name() + "_C"
-    return class_name in TAMABLE_CLASSNAMES
-
-
 # Load ASA save
 save_path = Path(f"{args.savegame}")
 if not save_path.exists():
@@ -110,20 +103,28 @@ json_output_path = export_folder / f"{map_folder}_WildDinos.json"
 
 dino_api = DinoApi(save)
 
-# TODO: exclude cave dinos from is_dino_tamable
 # TODO: json format only on my machine
 
 dinos = []
-for dino_id, dino in dino_api.get_all_wild().items():
+for dino_id, dino in dino_api.get_all_wild_tamables().items():
     if not isinstance(dino, Dino):
         continue
 
     dino_json_data = dino.to_json_obj()
+    dino_class = dino.get_short_name() + "_C"
+    lvl = dino.stats.base_level if dino.stats else None
 
-#     public_attrs = [attr for attr in dir(dino) if not attr.startswith('_')]
-#     if(public_attrs is not []):
-#         pprint(dino_json_data)
-#         exit
+    # Corrupt dinos are not tamable
+    if "_Corrupt" in dino_class:
+        continue
+
+    # Bionic (TEK) dinos max level check
+    if "Bionic" in dino_class and lvl > 180:
+        continue
+
+    # Non-TEK dinos max level check
+    if "Bionic" not in dino_class and lvl > 150:
+        continue
 
     lat, lon = (0.0, 0.0)
     ccc = ""
@@ -143,9 +144,9 @@ for dino_id, dino in dino_api.get_all_wild().items():
 
     entry = {
         "id": str(dino_id),
-        "creature": dino.get_short_name() + "_C",
+        "creature": dino_class,
         "sex": "Female" if dino.is_female else "Male",
-        "lvl": dino.stats.base_level if dino.stats else None,
+        "lvl": lvl,
         "lat": lat,
         "lon": lon,
         "hp": stats_entry["hp-w"],
@@ -156,9 +157,8 @@ for dino_id, dino in dino_api.get_all_wild().items():
         "food": stats_entry["food-w"],
         "oxy": stats_entry["oxy-w"],
         "craft": stats_entry["craft-w"],
-        "ccc": "138901,88 11376,108 18292,477",
         "dinoid": str(dino_id),
-        "tameable": "true" if is_dino_tamable(dino) else "false",
+        "tameable": "true",
         "trait": dino_json_data.get("GeneTraits", None) if dino_json_data.get("GeneTraits", None) else ""
     }
 

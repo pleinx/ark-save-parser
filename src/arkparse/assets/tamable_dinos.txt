@@ -194,7 +194,6 @@ Yutyrannus_Character_BP_C
 Griffin_Character_BP_C
 BionicGigant_Character_BP_C
 Bison_Character_BP_C
-Carcha_Character_BP_C
 Equus_Character_BP_Unicorn_C
 HelperBot_Character_BP_C
 Mek_Character_BP_C
