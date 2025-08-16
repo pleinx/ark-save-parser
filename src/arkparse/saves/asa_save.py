@@ -71,7 +71,7 @@ class AsaSave:
             ArkSaveLogger.save_log("GameModeCustomBytes is too short, profile data not in saves")
             return False
         return True
-
+    
     def list_all_items_in_db(self):
         query = "SELECT key, value FROM game"
         with self.connection as conn:

@@ -19,6 +19,10 @@ class ParsedObjectBase:
     @property
     def uuid(self) -> UUID:
         return self.object.uuid if self.object is not None else None
+    
+    @property
+    def blueprint(self) -> str:
+        return self.object.blueprint if self.object is not None else None
 
     def __init_props__(self):
         pass
@@ -53,6 +57,11 @@ class ParsedObjectBase:
         self.replace_uuid(new_uuid=new_uuid)
         self.renumber_name()
         uuid = new_uuid if new_uuid is not None else self.object.uuid
+
+        # creation_time = self.object.find_property("OriginalCreationTime")
+        # if creation_time is not None:
+        #     self.binary.replace_double(creation_time, self.save.save_context.game_time)
+
         self.object = ArkGameObject(uuid=uuid, blueprint=self.object.blueprint, binary_reader=self.binary)
 
         if update:
@@ -72,10 +81,26 @@ class ParsedObjectBase:
     def renumber_name(self, new_number: bytes = None):
         self.binary.byte_buffer = self.object.re_number_names(self.binary, new_number)
 
+    def replace_name_at_index_with(self, index: int, new_name: str):
+        if self.object is None:
+            ArkSaveLogger.error_log("This object has no ArkGameObject associated with it, cannot replace name")
+            return
+
+        if index < 0 or index >= len(self.object.name_metadata):
+            ArkSaveLogger.error_log(f"Index {index} out of bounds for name metadata")
+            return
+
+        md = self.object.name_metadata[index]
+        new_bytes = new_name.encode("utf-8")
+        self.binary.replace_bytes(new_bytes, md.offset, md.length)
+
     def store_binary(self, path: Path, name: str = None, prefix: str = "obj_", no_suffix= False):
         name = name if name is not None else str(self.object.uuid)
         file_path = path / (f"{prefix}{name}.bin" if not no_suffix else f"{prefix}{name}")
         name_path = path / (f"{prefix}{name}_n.json")
+
+        if not path.exists():
+            path.mkdir(parents=True, exist_ok=True)
 
         with open(file_path, "wb") as file:
             file.write(self.binary.byte_buffer)

@@ -531,10 +531,13 @@ class ArkProperty:
     @staticmethod
     def read_soft_object_property_value(bb: "ArkBinaryParser") -> str:
         with log_block("SfO"):
-            obj_name = bb.read_name()
+            names = []
+            while bb.peek_int() != 0:
+                obj_name = bb.read_name()
+                names.append(obj_name)
             bb.validate_bytes_as_string("00 00 00 00", 4)
-            ArkSaveLogger.parser_log(f"Read soft object property {obj_name}")
-            return obj_name
+            ArkSaveLogger.parser_log(f"Read soft object property {names}")
+            return names
 
     @staticmethod
     def _fixup_if_left(bb: "ArkBinaryParser", start: int, size: int, label: str) -> None:

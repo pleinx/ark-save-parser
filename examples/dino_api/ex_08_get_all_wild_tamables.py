@@ -6,31 +6,22 @@ from arkparse.ftp.ark_ftp_client import ArkFtpClient, ArkMap
 from arkparse.api.dino_api import DinoApi
 from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.dinos import Dino
-from arkparse.helpers.dino.is_tamable import is_tamable
+from arkparse import Classes
 
-#save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.RAGNAROK).download_save_file(Path.cwd())   # or download the save file from an FTP server
-save_path = Path(f"temp/staging_a/Astraeos_WP/Astraeos_WP.ark")
-
+save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.RAGNAROK).download_save_file(Path.cwd())   # or download the save file from an FTP server
 save = AsaSave(save_path)                                                                                       # load the save file
 dino_api = DinoApi(save)                                                                                        # create a DinoApi object
 
 wild_tamables: Dict[UUID, Dino] = dino_api.get_all_wild_tamables()
-wild_tamables_diff10: Dict[UUID, Dino] = dino_api.get_all_wild_tamables(360, 300)
 wild_dinos: Dict[UUID, Dino] = dino_api.get_all_wild()
 
-wild_tamables_filtered = 0
-wild_tamables_diff10_filtered = 0
+wild_tamables_filtered = []
 for dino in wild_dinos.values():
-    if is_tamable(dino):
-        wild_tamables_filtered+=1
+    if dino.blueprint in Classes.dinos.non_tameable.all_bps:
+        continue
 
-    if is_tamable(dino, 360, 300):
-        wild_tamables_diff10_filtered+=1
+    wild_tamables_filtered.append(dino)
 
 print(f"Total Wild Dinos: {len(wild_dinos)}")
-
-# Results should be same
-print(f"Total Wild Tamables (default difficult): >>{len(wild_tamables)}<< should be equal to >>{wild_tamables_filtered}<<")
-
-# Results should be same
-print(f"Total Wild Tamables (10x difficult): >>{len(wild_tamables_diff10)}<< should be equal to >>{wild_tamables_diff10_filtered}<<")
+print(f"Total Wild Tamables: {len(wild_tamables)}")
+print(f"Total Wild Tamables (after filtering): {len(wild_tamables_filtered)}")

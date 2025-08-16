@@ -1,6 +1,7 @@
 import json
 from uuid import UUID
 from typing import List
+import random
 
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.saves.asa_save import AsaSave
@@ -9,6 +10,7 @@ from arkparse.parsing.struct.ark_vector import ArkVector
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.enums import ArkDinoTrait
 from arkparse.utils.json_utils import DefaultJsonEncoder
+from .dino_ai_controller import DinoAiController
 
 from .stats import DinoStats
 from ...parsing.struct import ObjectReference
@@ -20,6 +22,8 @@ class Dino(ParsedObjectBase):
 
     is_female: bool = False
     is_cryopodded: bool = False
+
+    ai_controller: DinoAiController = None
 
     gene_traits: List[str] = []
     stats: DinoStats = DinoStats()
@@ -42,6 +46,10 @@ class Dino(ParsedObjectBase):
         if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
             stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value
             self.stats = DinoStats(UUID(stat_uuid), save=save)
+
+        if save is not None and self.object.get_property_value("Owner") is not None:
+            ai_uuid = self.object.get_property_value("Owner").value
+            self.ai_controller = DinoAiController(UUID(ai_uuid), save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)
@@ -215,10 +223,11 @@ class Dino(ParsedObjectBase):
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False):
         loc_name = name if name is not None else str(self.object.uuid)
         self.stats.store_binary(path, name, prefix="status_", no_suffix=no_suffix)
+        self.ai_controller.store_binary(path, name, prefix="ai_", no_suffix=no_suffix)
         self.location.store_json(path, loc_name)
         return super().store_binary(path, name, prefix=prefix, no_suffix=no_suffix)
 
-    def set_location(self, location: ActorTransform, save: AsaSave):
+    def set_location(self, location: ActorTransform):
         current_location = self.object.find_property("SavedBaseWorldLocation")
         
         if current_location is None:
@@ -228,6 +237,36 @@ class Dino(ParsedObjectBase):
         self.binary.replace_struct_property(current_location, as_vector.to_bytes())
         self.object = ArkGameObject(self.object.uuid, self.object.blueprint, self.binary)
 
-        save.modify_actor_transform(self.object.uuid, location.to_bytes())
+        self.save.modify_actor_transform(self.object.uuid, location.to_bytes())
         self.update_binary()
         self.location = location
+
+    def reidentify(self, new_uuid: UUID = None, update=True):
+        new_id_1 = random.randint(0, 2**32 - 1)
+        new_id_2 = random.randint(0, 2**32 - 1)
+        self.id1 = new_id_1
+        self.id2 = new_id_2
+        self.binary.replace_u32(self.object.find_property("DinoID1"), new_id_1)
+        self.binary.replace_u32(self.object.find_property("DinoID2"), new_id_2)
+
+        current_time_stamp = self.save.save_context.game_time
+
+        for prop in [
+            "TamingLastFoodConsumptionTime",
+            "TamedAtTime",
+            "LastTameConsumedFoodTime",
+            "LastInAllyRangeSerialized",
+            "LastTimeUpdatedCharacterStatusComponent",
+            "LastEnterStasisTime",
+            "OriginalCreationTime",
+            "LastUpdatedBabyAgeAtTime",
+            "LastEggSpawnChanceTime",
+            
+            
+        ]:
+            p = self.object.find_property(prop)
+            if p is not None:
+                self.binary.replace_double(p, current_time_stamp)
+
+        super().reidentify(new_uuid, update=update)
+
