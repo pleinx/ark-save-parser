@@ -175,11 +175,14 @@ class ArkProperty:
     @staticmethod
     def read_soft_object_property_value(byte_buffer: 'ArkBinaryParser') -> str:
         ArkSaveLogger.enter_struct("SfO")
-        obj_name = byte_buffer.read_name()
+        names = []
+        while byte_buffer.peek_int() != 0:
+            obj_name = byte_buffer.read_name()
+            names.append(obj_name)
         byte_buffer.validate_bytes_as_string("00 00 00 00", 4)
-        ArkSaveLogger.parser_log(f"Read soft object property {obj_name}")
+        ArkSaveLogger.parser_log(f"Read soft object property {names}")
         ArkSaveLogger.exit_struct()
-        return obj_name
+        return names
 
     @staticmethod
     def read_struct_property(byte_buffer: 'ArkBinaryParser', data_size: int, struct_type: str, in_array: bool) -> Any:       
