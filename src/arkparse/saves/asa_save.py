@@ -382,7 +382,7 @@ class AsaSave:
                 try:
                     class_name = byte_buffer.read_name()
                 except Exception as e:
-                    ArkSaveLogger.error_log("Error reading class name for object %s: %s", obj_uuid, e)
+                    ArkSaveLogger.error_log("Error reading class name for object %s: %s")
                     class_name = "UnknownClass"
                 ArkSaveLogger.enter_struct(class_name)
 
