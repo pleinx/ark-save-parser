@@ -450,8 +450,8 @@ class DinoApi:
                 if file_path.name.endswith(".bin") or file_path.name.startswith("loc_"):
                     out.append(ImportFile(str(file_path)))
         return out
-    
-    def import_dino(self, path: Path, location: ActorTransform = None) -> Dino:
+
+    def import_dino(self, path: Path, location: ActorTransform = None) -> Dino | TamedDino:
         uuid_translation_map = {}
 
         def replace_uuids(uuid_map: Dict[UUID, UUID], bytes_: bytes):
@@ -494,6 +494,7 @@ class DinoApi:
                 ArkSaveLogger.api_log(f"Added inventory item {item.uuid} to DB")
 
         # Get inventory and add to DB
+        inventory = None
         for file in files:
             if file.type == "inv":
                 new_uuid = uuid_translation_map[file.uuid]
@@ -515,8 +516,6 @@ class DinoApi:
                 self.save.add_obj_to_db(new_uuid, parser.byte_buffer)
                 stats = DinoStats(uuid=new_uuid, save=self.save)
                 stats.reidentify(new_uuid)
-                stats.binary.replace_boolean(stats.object.find_property("bServerFirstInitialized"), False)
-                self.save.modify_game_obj(stats.object.uuid, stats.binary.byte_buffer)
                 ArkSaveLogger.api_log(f"Added dino stats {stats.uuid} to DB")
 
         # Get AI controller and add to DB
@@ -546,16 +545,16 @@ class DinoApi:
                 if location is not None:
                     dino.set_location(location)
 
-                dino.binary.replace_boolean(dino.object.find_property("bServerInitializedDino"), False)
-                # dino.binary.replace_boolean(dino.object.find_property("bSavedWhenStasised"), False)
-                # dino.binary.replace_u32(dino.object.find_property("TamingTeamID"), 1466169314)
-                # dino.binary.replace_u32(dino.object.find_property("TargetingTeam"), 1466169314)
-                # dino.binary.replace_u32(dino.object.find_property("OwningPlayerID"), 290175622)
-                dino.update_binary()
-
                 ArkSaveLogger.api_log(f"Replacing name \"{dino.stats.object.names[1]}\" with \"{dino.object.names[0]}\"")
                 dino.stats.replace_name_at_index_with(1, dino.object.names[0])
                 dino.stats.update_binary()
+                
+                if inventory is not None:
+                    ArkSaveLogger.api_log(f"Replacing inventory name \"{inventory.object.names[1]}\" with \"{dino.object.names[0]}\"")
+                    inventory.replace_name_at_index_with(1, dino.object.names[0])
+                    inventory.update_binary()
+                    dino: TamedDino = TamedDino(uuid=new_uuid, save=self.save)
+                    return dino
 
                 return dino
 

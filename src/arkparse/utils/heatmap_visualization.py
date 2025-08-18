@@ -21,6 +21,6 @@ def draw_heatmap(heatmap, map: ArkMap):
     is_all_zero = np.all(heatmap == 0)
     
     if not is_all_zero:
-        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.7, vmin=0.1)
-        heatmap_display.set_alpha(np.where(mask, 0, 0.7))
+        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.5, vmin=0.1)
+        heatmap_display.set_alpha(np.where(mask, 0, 0.9))
     plt.show()

@@ -2,7 +2,7 @@ from typing import Dict, Union, List
 from uuid import UUID
 
 from arkparse.saves.asa_save import AsaSave
-from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
+from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.utils import TEMP_FILES_DIR
 
@@ -32,39 +32,24 @@ class StructureApi:
         #     print(obj.blueprint)
 
         return objects
-    
-    def _parse_single_structure(self, obj: ArkGameObject) -> Union[Structure, StructureWithInventory]:
+
+    def _parse_single_structure(self, obj: ArkGameObject, bypass_inventory: bool = True) -> Union[Structure, StructureWithInventory]:
         if obj.uuid in self.parsed_structures.keys():
             return self.parsed_structures[obj.uuid]
         
         if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, self.save)
-        else:
-            structure = Structure(obj.uuid, self.save)
-
-        for key, loc in self.save.save_context.actor_transforms.items():
-            if key == obj.uuid:
-                structure.set_actor_transform(loc)
-                break
-
-        self.parsed_structures[obj.uuid] = structure
-
-        return structure
-
-    def _parse_single_structure_fast(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure | StructureWithInventory]:
-        """Same as _parse_single_structure, but does not parse Inventory and does not store in cache."""
-
-        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=True)
+            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=bypass_inventory)
         else:
             structure = Structure(obj.uuid, self.save)
 
         if obj.uuid in self.save.save_context.actor_transforms:
             structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
 
+        self.parsed_structures[obj.uuid] = structure
+
         return structure
 
-    def get_all(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+    def get_all(self, config: GameObjectReaderConfiguration = None, bypass_inventory: bool = True) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
 
         if self.retrieved_all:
             return self.parsed_structures
@@ -79,27 +64,12 @@ class StructureApi:
                 print(f"Object is None for {key}")
                 continue
             
-            structure = self._parse_single_structure(obj)
+            structure = self._parse_single_structure(obj, bypass_inventory)
 
             structures[obj.uuid] = structure
 
         if config is None:
             self.retrieved_all = True
-
-        return structures
-
-    def get_all_fast(self, config: GameObjectReaderConfiguration = None) -> List[Structure | StructureWithInventory]:
-        """Same as get_all, but uses fast parsing and does not store in cache."""
-
-        objects = self.get_all_objects(config)
-
-        structures = []
-
-        for obj in objects.values():
-            if obj is None:
-                continue
-            structure = self._parse_single_structure_fast(obj)
-            structures.append(structure)
 
         return structures
 

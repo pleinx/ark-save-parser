@@ -71,11 +71,12 @@ class Alphas:
     alpha_rex = "/Game/PrimalEarth/Dinos/Rex/MegaRex_Character_BP.MegaRex_Character_BP_C"
     alpha_tuso = "/Game/PrimalEarth/Dinos/Tusoteuthis/Mega_Tusoteuthis_Character_BP.Mega_Tusoteuthis_Character_BP_C"
     alpha_leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Alpha_Leedsichthys_Character_BP.Alpha_Leedsichthys_Character_BP_C"
+    alpha_fire_wyvern = "/Game/ScorchedEarth/Dinos/Wyvern/MegaWyvern_Character_BP_Fire.MegaWyvern_Character_BP_Fire_C"
 
     all_bps = [
         alpha_reaper_king, alpha_karkinos, alpha_basilisk,
         alpha_carnotaurus, alpha_megalodon, alpha_mosasaurus, alpha_raptor, 
-        alpha_deathworm, alpha_rex, alpha_tuso, alpha_leedsichthys
+        alpha_deathworm, alpha_rex, alpha_tuso, alpha_leedsichthys, alpha_fire_wyvern
     ]
 
 class Flyers:
@@ -169,6 +170,12 @@ class Corrupted:
     all_bps = [ arthropluera, carno, chalicotherium, dilo, giganotosaurus,
                 reaper_king, paraceratherium, ptero, raptor, alpha_rex,
                 rex, rock_drake, spino, stego, trike, wyvern ]
+                
+class event:
+    dodo_rex = "/Game/PrimalEarth/Dinos/DodoRex/DodoRex_Character_BP.DodoRex_Character_BP_C"
+    dodo_wyvern = "/Game/ScorchedEarth/Dinos/DodoWyvern/DodoWyvern_Character_BP.DodoWyvern_Character_BP_C"
+
+    all_bps = [dodo_rex, dodo_wyvern]
 
 class NonTameable:
     lamprey = "/Game/Aberration/Dinos/Lamprey/Lamprey_Character.Lamprey_Character_C"
@@ -199,6 +206,7 @@ class NonTameable:
     yeti = "/Game/PrimalEarth/Dinos/Bigfoot/Yeti_Character_BP.Yeti_Character_BP_C"
     corrupted = Corrupted()
     alpha = Alphas()
+    event = event()
 
     all_bps = [
         lamprey, lightbug, meganeura, surface_reaper, surface_nameless

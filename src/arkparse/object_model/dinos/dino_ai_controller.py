@@ -10,7 +10,7 @@ class DinoAiController(ParsedObjectBase):
     def __init_props__(self):
         super().__init_props__()
 
-        self.targeting_team = self.object.get_property_value("TargetingTeam")
+        self.targeting_team = self.object.get_property_value("TargetingTeam", 0)
     
     def __init__(self, uuid: UUID = None, save: AsaSave = None):
         super().__init__(uuid, save=save)
