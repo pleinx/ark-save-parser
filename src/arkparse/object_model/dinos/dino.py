@@ -248,6 +248,14 @@ class Dino(ParsedObjectBase):
     def heal(self):
         self.stats.heal()
 
+    def disable_wandering(self):
+        """
+        Disables the wandering behavior of the dino.
+        """
+        if self.object.has_property("bEnableTamedWandering"):
+            self.binary.replace_boolean(self.object.find_property("bEnableTamedWandering"), False)
+            self.update_binary()
+
     def reidentify(self, new_uuid: UUID = None, update=True):
         new_id_1 = random.randint(0, 2**32 - 1)
         new_id_2 = random.randint(0, 2**32 - 1)
