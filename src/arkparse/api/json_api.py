@@ -289,7 +289,14 @@ class JsonApi:
         # Format players into JSON.
         all_players = []
         for player in player_api.players:
-            all_players.append(player.to_json_obj())
+            player_json_obj = player.to_json_obj()
+            found: bool = False
+            for p in player_api.tribe_to_player_map[player.tribe]:
+                if player.unique_id == p.unique_id:
+                    found = True
+                    break
+            player_json_obj["FoundOnMap"] = found
+            all_players.append(player_json_obj)
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)
