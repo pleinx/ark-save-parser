@@ -291,8 +291,9 @@ class JsonApi:
         for player in player_api.players:
             player_json_obj = player.to_json_obj()
             found: bool = False
-            for p in player_api.tribe_to_player_map[player.tribe]:
-                if player.unique_id == p.unique_id:
+            for p in player_api.pawns.values():
+                uniqueid = p.get_property_value("PlatformProfileID", None)
+                if uniqueid is not None and hasattr(uniqueid, "value") and player.unique_id == uniqueid.value:
                     found = True
                     break
             player_json_obj["FoundOnMap"] = found
@@ -328,7 +329,7 @@ class JsonApi:
                     player_json_obj = p.to_json_obj()
                 else:
                     player_json_obj = { "PlayerCharacterName": p.char_name, "PlayerDataID": p.id_ }
-                player_json_obj["FoundInPlayers"] = True
+                player_json_obj["IsActive"] = True
                 tribe_members.append(player_json_obj)
             for idx, p_id in enumerate(tribe.member_ids):
                 is_active = False
@@ -336,7 +337,7 @@ class JsonApi:
                     if pl.id_ == p_id:
                         is_active = True
                 if not is_active:
-                    tribe_members.append({ "PlayerCharacterName": tribe.members[idx], "PlayerDataID": p_id, "FoundInPlayers": False })
+                    tribe_members.append({ "PlayerCharacterName": tribe.members[idx], "PlayerDataID": p_id, "IsActive": False })
             tribe_json_obj["TribeMembers"] = tribe_members
             # Add to the tribes array
             all_tribes.append(tribe_json_obj)
