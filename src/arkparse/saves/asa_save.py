@@ -98,6 +98,12 @@ class AsaSave:
             self.save_context.actor_transform_positions = atp
         # print(f"Lenght of actor transforms: {len(self.save_context.actor_transforms)}")
 
+    def get_actor_transform(self, uuid: uuid.UUID):
+        if uuid in self.save_context.actor_transforms:
+            return self.save_context.actor_transforms[uuid]
+        ArkSaveLogger.error_log(f"Actor transform for {uuid} not found")
+        return None
+
     def read_header(self):
         header_data = self.get_custom_value("SaveHeader")
         ArkSaveLogger.set_file(header_data, "header.bin")
@@ -382,7 +388,7 @@ class AsaSave:
                 try:
                     class_name = byte_buffer.read_name()
                 except Exception as e:
-                    ArkSaveLogger.error_log("Error reading class name for object %s: %s", obj_uuid, e)
+                    ArkSaveLogger.error_log(f"Error reading class name for object {obj_uuid}: {e}")
                     class_name = "UnknownClass"
                 ArkSaveLogger.enter_struct(class_name)
 

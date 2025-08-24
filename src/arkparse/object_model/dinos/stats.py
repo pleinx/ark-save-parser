@@ -56,6 +56,12 @@ class StatPoints:
         return self.health + self.stamina + self.torpidity + self.oxygen + self.food + \
                self.water + self.temperature + self.weight + self.melee_damage + \
                self.movement_speed + self.fortitude + self.crafting_speed + (1 if self.type == "NumberOfLevelUpPointsApplied" else 0)
+    
+    def set_stat(self, stat: ArkStat, value: int):
+        if stat.value not in STAT_POSITION_MAP:
+            raise ValueError(f"Invalid stat: {stat}")
+
+        setattr(self, STAT_POSITION_MAP[stat.value], value)
 
     def __str__(self):
         stats = [
@@ -250,3 +256,58 @@ class DinoStats(ParsedObjectBase):
             self.binary.replace_boolean(prop, False)
 
             self.update_binary()
+
+    def heal(self):
+        prop = self.object.find_property("CurrentStatusValues", ArkStat.HEALTH.value)
+        if prop is not None:
+            # Set health to a hugely high value, effectively healing the dino since it is capped at max health which is not directly retrievable
+            self.binary.replace_float(prop, 999999999999999999999)
+            self.update_binary()
+
+    def set_levels(self, levels: int, stat: ArkStat):
+        prop = self.object.find_property("NumberOfLevelUpPointsApplied", stat.value)
+        if prop is not None:
+            self.binary.replace_byte_property(prop, levels)
+        else:
+            raise ValueError(f"Property 'NumberOfLevelUpPointsApplied' for stat {stat} not found in object {self.object.uuid}")
+
+        self.update_binary()
+
+    def set_tamed_levels(self, levels: int, stat: ArkStat):
+        self.added_stat_points.set_stat(stat, levels)
+
+        prop = self.object.find_property("NumberOfLevelUpPointsAppliedTamed", stat.value)
+        if prop is not None:
+            self.binary.replace_byte_property(prop, levels)
+        else:
+            first_index_before = None
+            first_index_after = None
+            for i in range(stat.value):
+                index = stat.value - i - 1
+                prop = self.object.find_property("NumberOfLevelUpPointsAppliedTamed", index)
+
+                if prop is not None:
+                    first_index_before = index
+                    break
+
+            for i in range(stat.value, 12):
+                index = i
+                prop = self.object.find_property("NumberOfLevelUpPointsAppliedTamed", index)
+
+                if prop is not None:
+                    first_index_after = index
+                    break
+
+            if first_index_before is None and first_index_after is None:
+                raise ValueError(f"Cannot insert if no other stats are present for stat {stat} in object {self.object.uuid}")
+            
+            if first_index_before is not None:
+                prop_before = self.object.find_property("NumberOfLevelUpPointsAppliedTamed", first_index_before)
+                self.binary.insert_byte_property(prop_before.value_position + 1 ,"NumberOfLevelUpPointsAppliedTamed", levels, stat.value)
+            elif first_index_after is not None:
+                prop_after = self.object.find_property("NumberOfLevelUpPointsAppliedTamed", first_index_after)
+                self.binary.insert_byte_property(prop_after.name_position, "NumberOfLevelUpPointsAppliedTamed", levels, stat.value)
+            
+            self.update_object()
+
+        self.update_binary()

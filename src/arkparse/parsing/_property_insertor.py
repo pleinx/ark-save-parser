@@ -1,5 +1,8 @@
 from ._base_value_validator import BaseValueValidator
-from typing import List
+from typing import List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from arkparse.saves.asa_save import AsaSave
 
 class PropertyInsertor(BaseValueValidator):
     def __init__(self, data: bytes, save_context=None):
@@ -37,6 +40,26 @@ class PropertyInsertor(BaseValueValidator):
             self.position = position
         value_bytes = value.to_bytes(4, byteorder="little")
         self.insert_bytes(value_bytes)
+
+    def insert_byte(self, value: int, position: int = None):
+        if position is not None:
+            self.position = position
+        value_bytes = value.to_bytes(1, byteorder="little")
+        self.insert_bytes(value_bytes)
+
+    def insert_byte_property(self, binary_position: int, name: str, value: int, prop_position: int):
+        self.position = binary_position
+        self.insert_name(name)
+        self.insert_name("ByteProperty")
+        self.insert_uint32(0)
+        self.insert_uint32(1)
+        if prop_position == 0:
+            self.insert_byte(0)
+        else:
+            self.insert_byte(1)
+            self.insert_uint32(prop_position)
+        self.insert_byte(value)
+
         
     def insert_array(self, array_name: str, property_type: str, item_bytes: List[bytes], nr_of_items: int, type_int: int, position: int = None):
         if self.save_context is None:
