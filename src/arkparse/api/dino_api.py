@@ -131,7 +131,7 @@ class DinoApi:
                                 continue
                             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
                             parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-                            cryopod = Cryopod(obj.uuid, parser)
+                            cryopod = Cryopod(obj.uuid, save=self.save)
                             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
                             ArkSaveLogger.error_log(f"Error parsing cryopod {obj.uuid}: {e}")
 
@@ -391,15 +391,15 @@ class DinoApi:
         return np.array(heatmap)
     
     
-    def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False, mutated_stat=False) -> (Dino, int, ArkStat):
+    def get_best_dino_for_stat(self, classes: List[str] = None, stat: ArkStat = None, only_tamed: bool = False, only_untamed: bool = False, base_stat: bool = False, mutated_stat=False, level_upper_bound=None) -> (Dino, int, ArkStat):
         if only_tamed and only_untamed:
             raise ValueError("Cannot specify both only_tamed and only_untamed")
         
         if mutated_stat and base_stat:
             raise ValueError("Cannot specify both base_stat and base_mutated_stat")
         
-        if classes is not None:
-            dinos = self.get_all_filtered(class_names=classes, include_cryopodded=True)
+        if classes is not None or level_upper_bound is not None:
+            dinos = self.get_all_filtered(class_names=classes, include_cryopodded=True, level_upper_bound=level_upper_bound)
         else:
             dinos = self.get_all()
 

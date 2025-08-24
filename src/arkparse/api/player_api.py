@@ -125,7 +125,7 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave, ignore_error: bool = False):
+    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False):
         self.players: List[ArkPlayer] = []
         self.tribes: List[ArkTribe] = []
         self.tribe_to_player_map: Dict[int, List[ArkPlayer]] = {}
@@ -141,7 +141,7 @@ class PlayerApi:
             ArkSaveLogger.api_log("Profile data not found in save, checking database")
             self.from_store = False
 
-        if self.save is not None:
+        if self.save is not None and not no_pawns:
             ArkSaveLogger.api_log(f"Retrieving player pawns")
             self.__init_pawns()
 
@@ -326,6 +326,12 @@ class PlayerApi:
                 dict[p.id_] = p.stats.experience
 
         return self.__calc_stat(xp, stat_type) if not as_dict else dict
+
+    def get_tribe(self, tribe_id: int):
+        for t in self.tribes:
+            if t.tribe_id == tribe_id:
+                return t
+        return None
     
     def get_player_with(self, stat: int, stat_type: int = StatType.HIGHEST):
         istat = self.__get_stat(stat)

@@ -45,6 +45,8 @@ class TamedDino(Dino):
             self.inv_uuid = UUID(inv_uuid.value)
 
     def __init__(self, uuid: UUID = None, save: AsaSave = None, bypass_inventory: bool = True):
+        self.inv_uuid = None
+        self._inventory = None
         super().__init__(uuid, save=save)
 
         if self.inv_uuid is not None and not bypass_inventory:

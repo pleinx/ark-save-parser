@@ -58,7 +58,12 @@ class Abberant:
            equus, manta, araneo, electrophorus, moschops, diplodocus, megalania, 
            ovis, paraceratherium, sarco, dimorphodon, fasolasuchus, gigantoraptor, 
            trilobite, sabertooth_salmon, meganeura]
-    
+
+class PaleoAlphas:
+    alpha_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Alpha/EVO_Alpha_Rex_Character_BP.EVO_Alpha_Rex_Character_BP_C"
+
+    all_bps = [alpha_rex]
+
 class Alphas:
     alpha_reaper_king = "/Game/Aberration/Dinos/Nameless/MegaXenomorph_Character_BP_Male_Surface.MegaXenomorph_Character_BP_Male_Surface_C"
     alpha_karkinos = "/Game/Aberration/Dinos/Crab/MegaCrab_Character_BP.MegaCrab_Character_BP_C"
@@ -73,11 +78,13 @@ class Alphas:
     alpha_leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Alpha_Leedsichthys_Character_BP.Alpha_Leedsichthys_Character_BP_C"
     alpha_fire_wyvern = "/Game/ScorchedEarth/Dinos/Wyvern/MegaWyvern_Character_BP_Fire.MegaWyvern_Character_BP_Fire_C"
 
+    paleo = PaleoAlphas()
+
     all_bps = [
         alpha_reaper_king, alpha_karkinos, alpha_basilisk,
         alpha_carnotaurus, alpha_megalodon, alpha_mosasaurus, alpha_raptor, 
         alpha_deathworm, alpha_rex, alpha_tuso, alpha_leedsichthys, alpha_fire_wyvern
-    ]
+    ] + paleo.all_bps
 
 class Flyers:
     class Wyverns:
@@ -174,7 +181,7 @@ class Corrupted:
 class event:
     dodo_rex = "/Game/PrimalEarth/Dinos/DodoRex/DodoRex_Character_BP.DodoRex_Character_BP_C"
     dodo_wyvern = "/Game/ScorchedEarth/Dinos/DodoWyvern/DodoWyvern_Character_BP.DodoWyvern_Character_BP_C"
-
+    
     all_bps = [dodo_rex, dodo_wyvern]
 
 class NonTameable:
@@ -215,7 +222,31 @@ class NonTameable:
         sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water,
         enforcer, scout, defence_unit, polar_bear, iceworm, tek_giga,
         leedsichthys, yeti
-    ] + corrupted.all_bps + alpha.all_bps
+    ] + corrupted.all_bps + alpha.all_bps + event.all_bps
+
+class Paleo:
+    yuti = "/PA_Ascension/Dinos/GreaterYuty/Paleo_Yutyrannus_Character_BP.Paleo_Yutyrannus_Character_BP_C"
+    fasola = "/PA_Ascension/Dinos/PaleoFasola/Paleo_Fasola_Character_BP.Paleo_Fasola_Character_BP_C"
+    gigantoraptor = "/PA_Ascension/Dinos/PaleoGigantoraptor/Paleo_Gigantoraptor_Character_BP.Paleo_Gigantoraptor_Character_BP_C"
+    kentro = "/PA_Ascension/Dinos/PaleoKentro/Paleo_Kentro_Character_BP.Paleo_Kentro_Character_BP_C"
+    megalosaur = "/PA_Ascension/Dinos/PaleoMegalosaur/Paleo_Megalosaurus_Character_BP.Paleo_Megalosaurus_Character_BP_C"
+    moschops = "/PA_Ascension/Dinos/PaleoMoschops/Paleo_Moschops_Character_BP.Paleo_Moschops_Character_BP_C"
+    purlovia = "/PA_Ascension/Dinos/PaleoPurlovia/Paleo_Purlovia_Character_BP.Paleo_Purlovia_Character_BP_C"
+    raptor = "/PA_Ascension/Dinos/PaleoRaptor/Paleo_Raptor_Character_BP.Paleo_Raptor_Character_BP_C"
+    sarco = "/PA_Ascension/Dinos/PaleoSarco/Paleo_Sarco_Character_BP.Paleo_Sarco_Character_BP_C"
+    spino = "/PA_Ascension/Dinos/PaleoSpino/Paleo_Spino_Character_BP.Paleo_Spino_Character_BP_C"
+    stego = "/PA_Ascension/Dinos/PaleoStego/Paleo_Stego_Character_BP.Paleo_Stego_Character_BP_C"
+    thyla = "/PA_Ascension/Dinos/PaleoThyla/Paleo_Thylacoleo_Character_BP.Paleo_Thylacoleo_Character_BP_C"
+    trike = "/PA_Ascension/Dinos/PaleoTrike/Paleo_Trike_Character_BP.Paleo_Trike_Character_BP_C"
+    giga = "/PA_EVO_Pack_01/Dinos/EVO_Giga/EVO_Giga_Character_BP.EVO_Giga_Character_BP_C"
+    rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/EVO_Rex_Character_BP.EVO_Rex_Character_BP_C"
+    legacy_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Legacy/EVO_Legacy_Rex_Character_BP.EVO_Legacy_Rex_Character_BP_C"
+    rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Paleo/EVO_Paleo_Rex_Character_BP.EVO_Paleo_Rex_Character_BP_C"
+    mosa = "/PA_EVO_Pack_02/Dinos/EVO_Mosa/Paleo/EVO_Paleo_Mosa_Character_BP.EVO_Paleo_Mosa_Character_BP_C"
+
+    all_bps = [yuti, fasola, gigantoraptor, kentro, megalosaur, moschops,
+               purlovia, raptor, sarco, spino, stego, thyla, trike,
+               giga, rex, legacy_rex, rex, mosa]
 
 class Dinos:
     # Aberrant Dinos
@@ -227,7 +258,7 @@ class Dinos:
     cosmo = "/Game/Packs/Steampunk/Dinos/JumpingSpider/JumpingSpider_Character_BP.JumpingSpider_Character_BP_C"
     karkinos = "/Game/Aberration/Dinos/Crab/Crab_Character_BP.Crab_Character_BP_C"
     yi_ling = "/Game/ASA/Dinos/YiLing/YiLing_Character_BP.YiLing_Character_BP_C"
-    stegosaurus_duplicate = "/Game/PrimalEarth/Dinos/Stego/Stego_Character_BP.Stego_Character_BP_C"
+    stegosaurus = "/Game/PrimalEarth/Dinos/Stego/Stego_Character_BP.Stego_Character_BP_C"
     giant_bison = "/Game/ASA/Dinos/Bison/Bison_Character_BP.Bison_Character_BP_C"
     ceratosaurus = "/Game/ASA/Dinos/Ceratosaurus/Dinos/Ceratosaurus_Character_BP_ASA.Ceratosaurus_Character_BP_ASA_C"
     deinosuchus = "/Game/ASA/Dinos/Deinosuchus/DeinosuchusASA_Character_BP.DeinosuchusASA_Character_BP_C"
@@ -334,6 +365,7 @@ class Dinos:
     rubble_golem = "/Game/ScorchedEarth/Dinos/RockGolem/RubbleGolem_Character_BP.RubbleGolem_Character_BP_C"
 
     abberant = Abberant()
+    paleo = Paleo()
     flyers = Flyers()
     dlc_dinos = DlcDinos()
     shoulder_pets = ShoulderPets()
@@ -341,7 +373,7 @@ class Dinos:
 
     all_bps = [
         roll_rat, rock_drake, basilisk, ravager, reaper_queen, cosmo,
-        karkinos, yi_ling, stegosaurus_duplicate, giant_bison, ceratosaurus,
+        karkinos, yi_ling, stegosaurus, giant_bison, ceratosaurus,
         deinosuchus, deinotherium, fasolasuchus, gigantoraptor, xiphactinus,
         tamed_reaper_king, achatina, allosaurus, anglerfish, ankylosaurus,
         arthropleura, baryonix, basilosaurus, onyc, castoroides,
@@ -367,4 +399,5 @@ class Dinos:
         velonosaur, yutyrannus, tek_parasaur, queen_bee,
         rubble_golem
     ]  + abberant.all_bps + flyers.all_bps + \
-        dlc_dinos.all_bps + shoulder_pets.all_bps + non_tameable.all_bps
+        dlc_dinos.all_bps + shoulder_pets.all_bps + non_tameable.all_bps + \
+        paleo.all_bps

@@ -2,7 +2,7 @@ from pathlib import Path
 from uuid import UUID
 from typing import Dict
 
-from arkparse import AsaSave
+from arkparse import AsaSave, Classes
 from arkparse.api import StructureApi
 from arkparse.ftp import ArkFtpClient
 from arkparse.enums import ArkMap
@@ -13,11 +13,12 @@ from arkparse.object_model.structures import Structure
 save_path = ArkFtpClient.from_config(Path("../../ftp_config.json"), ArkMap.RAGNAROK).download_save_file(Path.cwd())
 save = AsaSave(save_path)
 
-min_in_section = 3
+min_in_section = 5
 
 structure_api = StructureApi(save)
 all_structures: Dict[UUID, Structure] = structure_api.get_all()
+print(len(all_structures))
 heatmap = structure_api.create_heatmap(structures=all_structures, min_in_section=min_in_section, map=ArkMap.RAGNAROK)
-
+ 
 # draw the heatmap
 draw_heatmap(heatmap, ArkMap.RAGNAROK)
