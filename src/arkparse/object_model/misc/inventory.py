@@ -74,7 +74,6 @@ class Inventory(ParsedObjectBase):
             object_references.append(get_uuid_reference_bytes(item))
 
         self.binary.replace_array("InventoryItems", "ObjectProperty", object_references if len(object_references) > 0 else None)
-
         self.update_binary()
 
     def clear_items(self):

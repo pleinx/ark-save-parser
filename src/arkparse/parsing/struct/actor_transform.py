@@ -233,6 +233,10 @@ class MapCoords:
             return f"(in cryopod)"
         else:
             return f"({int(self.lat)}, {int(self.long)})"
+        
+    def round(self, digits: int = 2):
+        self.lat = round(self.lat, digits)
+        self.long = round(self.long, digits)
 
     def as_actor_transform(self, map) -> "ActorTransform":
 
@@ -309,6 +313,14 @@ class ActorTransform:
             return (self.get_distance_to(location) + tolerance) <= foundations * FOUNDATION_DISTANCE
         else:
             raise ValueError("Either distance or foundations must be provided")
+        
+    def round(self, digits: int = 2):
+        self.x = round(self.x, digits)
+        self.y = round(self.y, digits)
+        self.z = round(self.z, digits)
+        self.pitch = round(self.pitch, digits)
+        self.yaw = round(self.yaw, digits)
+        self.roll = round(self.roll, digits)
         
     def is_at_map_coordinate(self, map: ArkMap, coordinates: MapCoords, tolerance = 0.1) -> bool:
         if self.in_cryopod:

@@ -1,7 +1,7 @@
 from arkparse.enums import ArkMap
 from importlib.resources import files
 
-def draw_heatmap(heatmap, map: ArkMap):
+def draw_heatmap(heatmap, map: ArkMap, map_fade: float = 0.7):
     import matplotlib.pyplot as plt
     import matplotlib.image as mpimg
     import numpy as np
@@ -15,12 +15,14 @@ def draw_heatmap(heatmap, map: ArkMap):
     except FileNotFoundError:
         raise FileNotFoundError(f"Could not find the image file for the map '{map.name}', you can add it to the assets folder in the arkparse package.")
 
-    plt.imshow(img, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
+    # Darken the image by multiplying pixel values (assuming float dtype, range [0,1])
+    img_dark = img * map_fade
+    plt.imshow(img_dark, extent=[0, resolution, 0, resolution], aspect='auto', origin='lower')
     plt.colorbar()
 
     is_all_zero = np.all(heatmap == 0)
     
     if not is_all_zero:
-        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.7, vmin=0.1)
-        heatmap_display.set_alpha(np.where(mask, 0, 0.7))
+        heatmap_display = plt.imshow(heatmap, cmap='hot', interpolation='nearest', alpha=0.5, vmin=0.1)
+        heatmap_display.set_alpha(np.where(mask, 0, 0.9))
     plt.show()

@@ -113,7 +113,10 @@ maps = [
 ]
 
 
-base_path = Path("D:\\SteamLibrary\\steamapps\\common\\ARK Survival Ascended\\ShooterGame\\Saved\\SavedArksLocal")
+# base_path = Path("D:\\SteamLibrary\\steamapps\\common\\ARK Survival Ascended\\ShooterGame\\Saved\\SavedArksLocal")
 
-for map_name in maps:
-    categorize(base_path / f"{map_name.to_file_name()}_WP" / f"{map_name.to_file_name()}_WP.ark")
+# for map_name in maps:
+#     categorize(base_path / f"{map_name.to_file_name()}_WP" / f"{map_name.to_file_name()}_WP.ark")
+
+save_path = ArkFtpClient.from_config(Path("../../ftp_config.json"), ArkMap.RAGNAROK).download_save_file(Path.cwd())
+categorize(save_path)

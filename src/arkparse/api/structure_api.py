@@ -2,7 +2,7 @@ from typing import Dict, Union, List
 from uuid import UUID
 
 from arkparse.saves.asa_save import AsaSave
-from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
+from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.utils import TEMP_FILES_DIR
 
@@ -11,6 +11,7 @@ from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.object_model.structures import Structure, StructureWithInventory
 from arkparse.parsing.struct.actor_transform import MapCoords
 from arkparse.enums.ark_map import ArkMap
+from arkparse.logging import ArkSaveLogger
 
 class StructureApi:
     def __init__(self, save: AsaSave):
@@ -21,52 +22,42 @@ class StructureApi:
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         if config is None:
             reader_config = GameObjectReaderConfiguration(
-                blueprint_name_filter=lambda name: name is not None and "/Structures" in name and not "PrimalItemStructure_" in name
+                blueprint_name_filter=lambda name: name is not None \
+                                                   and "/Structures" in name \
+                                                   and not "PrimalItemStructure_" in name \
+                                                   and not "/Skins/" in name \
+                                                   and not "PrimalInventory" in name \
+                                                   and not "Tileset" in name \
+                                                   and not "PrimalItemStructureSkin" in name
+                                                   and not "PrimalItemResource" in name \
+                                                   and not "/TrainCarts/" in name \
             )
         else:
             reader_config = config
 
         objects = self.save.get_game_objects(reader_config)
 
-        # for key, obj in objects.items():
-        #     print(obj.blueprint)
-
         return objects
-    
-    def _parse_single_structure(self, obj: ArkGameObject) -> Union[Structure, StructureWithInventory]:
+
+    def _parse_single_structure(self, obj: ArkGameObject, bypass_inventory: bool = True) -> Union[Structure, StructureWithInventory]:
         if obj.uuid in self.parsed_structures.keys():
             return self.parsed_structures[obj.uuid]
         
         if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, self.save)
-        else:
-            structure = Structure(obj.uuid, self.save)
-
-        for key, loc in self.save.save_context.actor_transforms.items():
-            if key == obj.uuid:
-                structure.set_actor_transform(loc)
-                break
-
-        self.parsed_structures[obj.uuid] = structure
-
-        return structure
-
-    def _parse_single_structure_fast(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure | StructureWithInventory]:
-        """Same as _parse_single_structure, but does not parse Inventory and does not store in cache."""
-
-        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=True)
+            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=bypass_inventory)
         else:
             structure = Structure(obj.uuid, self.save)
 
         if obj.uuid in self.save.save_context.actor_transforms:
             structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
 
+        self.parsed_structures[obj.uuid] = structure
+
         return structure
 
-    def get_all(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+    def get_all(self, config: GameObjectReaderConfiguration = None, bypass_inventory: bool = True) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
 
-        if self.retrieved_all:
+        if self.retrieved_all and config is None:
             return self.parsed_structures
         
         objects = self.get_all_objects(config)
@@ -78,8 +69,12 @@ class StructureApi:
             if obj is None:
                 print(f"Object is None for {key}")
                 continue
+
+            if obj.get_property_value("StructureID") is None:
+                ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) is not a structure, skipping")
+                continue
             
-            structure = self._parse_single_structure(obj)
+            structure = self._parse_single_structure(obj, bypass_inventory)
 
             structures[obj.uuid] = structure
 
@@ -88,23 +83,10 @@ class StructureApi:
 
         return structures
 
-    def get_all_fast(self, config: GameObjectReaderConfiguration = None) -> List[Structure | StructureWithInventory]:
-        """Same as get_all, but uses fast parsing and does not store in cache."""
-
-        objects = self.get_all_objects(config)
-
-        structures = []
-
-        for obj in objects.values():
-            if obj is None:
-                continue
-            structure = self._parse_single_structure_fast(obj)
-            structures.append(structure)
-
-        return structures
-
     def get_by_id(self, id: UUID) -> Union[Structure, StructureWithInventory]:
         obj = self.save.get_game_object_by_id(id)
+        if obj is None:
+            return None
         return self._parse_single_structure(obj)
     
     def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, classes: List[str] = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
@@ -158,10 +140,15 @@ class StructureApi:
             blueprint_name_filter=lambda name: name in blueprints
         )
 
+        ArkSaveLogger.api_log(f"Getting structures by class filter: {blueprints}")
+
         structures = self.get_all(config)
 
         for key, obj in structures.items():
             result[key] = obj
+
+        # for key, obj in structures.items():
+        #     print(obj.blueprint)
 
         return result
     
@@ -193,16 +180,21 @@ class StructureApi:
     def get_connected_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]]) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = structures.copy()
         new_found = True
+        ignore = []
 
         while new_found:
             new_found = False
             new_result = result.copy()
-            for key, s in result.items():
+            for _, s in result.items():
                 for uuid in s.linked_structure_uuids:
-                    if uuid not in new_result.keys():
+                    if uuid not in new_result.keys() and uuid not in ignore:
                         new_found = True
                         obj = self.get_by_id(uuid)
-                        new_result[uuid] = obj
+                        if obj is not None:
+                            new_result[uuid] = obj
+                        else:
+                            ignore.append(uuid)
+                            ArkSaveLogger.api_log(f"Could not find linked structure {uuid}, ignoring")
             result = new_result
 
         return result
