@@ -388,11 +388,11 @@ class JsonApi:
             structure_api = StructureApi(self.save)
 
         # Get structures.
-        structures: list[Structure | StructureWithInventory] = structure_api.get_all_fast()
+        structures: dict[UUID, Structure | StructureWithInventory] = structure_api.get_all()
 
         # Format dinos into JSON.
         all_structures = []
-        for structure in structures:
+        for structure in structures.values():
             all_structures.append(structure.to_json_obj())
 
         # Create json exports folder if it does not exist.
