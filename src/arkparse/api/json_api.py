@@ -279,6 +279,81 @@ class JsonApi:
 
         ArkSaveLogger.api_log("Player pawns successfully exported.")
 
+    def export_players(self, player_api: PlayerApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
+        ArkSaveLogger.api_log("Exporting players...")
+
+        # Get player API if not provided.
+        if player_api is None:
+            player_api = PlayerApi(self.save, self.ignore_error)
+
+        # Format players into JSON.
+        all_players = []
+        for player in player_api.players:
+            player_json_obj = player.to_json_obj()
+            found: bool = False
+            for p in player_api.pawns.values():
+                uniqueid = p.get_property_value("PlatformProfileID", None)
+                if uniqueid is not None and hasattr(uniqueid, "value") and player.unique_id == uniqueid.value:
+                    found = True
+                    break
+            player_json_obj["FoundOnMap"] = found
+            all_players.append(player_json_obj)
+
+        # Create json exports folder if it does not exist.
+        path_obj = Path(export_folder_path)
+        if not (path_obj.exists() and path_obj.is_dir()):
+            path_obj.mkdir(parents=True, exist_ok=True)
+
+        # Write JSON.
+        with open(path_obj / "players.json", "w") as text_file:
+            text_file.write(json.dumps(all_players, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
+
+        ArkSaveLogger.api_log("Players successfully exported.")
+
+    def export_tribes(self, player_api: PlayerApi = None, export_folder_path: str = Path.cwd() / "json_exports", include_players_data: bool = False):
+        ArkSaveLogger.api_log("Exporting tribes...")
+
+        # Get player API if not provided.
+        if player_api is None:
+            player_api = PlayerApi(self.save, self.ignore_error)
+
+        # Format tribes into JSON.
+        all_tribes = []
+        for tribe in player_api.tribes:
+            # Grab the tribe json object
+            tribe_json_obj = tribe.to_json_obj()
+            # Grab tribe members as json objects if they exists
+            tribe_members = []
+            for p in player_api.tribe_to_player_map[tribe.tribe_id]:
+                if include_players_data:
+                    player_json_obj = p.to_json_obj()
+                else:
+                    player_json_obj = { "PlayerCharacterName": p.char_name, "PlayerDataID": p.id_ }
+                player_json_obj["IsActive"] = True
+                tribe_members.append(player_json_obj)
+            for idx, p_id in enumerate(tribe.member_ids):
+                is_active = False
+                for pl in player_api.tribe_to_player_map[tribe.tribe_id]:
+                    if pl.id_ == p_id:
+                        is_active = True
+                if not is_active:
+                    tribe_members.append({ "PlayerCharacterName": tribe.members[idx], "PlayerDataID": p_id, "IsActive": False })
+            tribe_json_obj["TribeMembers"] = tribe_members
+            # Add to the tribes array
+            all_tribes.append(tribe_json_obj)
+
+        # Create json exports folder if it does not exist.
+        path_obj = Path(export_folder_path)
+        if not (path_obj.exists() and path_obj.is_dir()):
+            path_obj.mkdir(parents=True, exist_ok=True)
+
+        # Write JSON.
+        with open(path_obj / "tribes.json", "w") as text_file:
+            text_file.write(
+                json.dumps(all_tribes, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
+
+        ArkSaveLogger.api_log("Tribes successfully exported.")
+
     def export_dinos(self, dino_api: DinoApi = None, export_folder_path: str = Path.cwd() / "json_exports"):
         ArkSaveLogger.api_log("Exporting dinos...")
 
@@ -313,11 +388,11 @@ class JsonApi:
             structure_api = StructureApi(self.save)
 
         # Get structures.
-        structures: list[Structure | StructureWithInventory] = structure_api.get_all_fast()
+        structures: dict[UUID, Structure | StructureWithInventory] = structure_api.get_all()
 
         # Format dinos into JSON.
         all_structures = []
-        for structure in structures:
+        for structure in structures.values():
             all_structures.append(structure.to_json_obj())
 
         # Create json exports folder if it does not exist.
@@ -373,12 +448,29 @@ class JsonApi:
 
         ArkSaveLogger.api_log("Items successfully exported.")
 
+    def export_save_file_info(self, export_folder_path: str = Path.cwd() / "json_exports"):
+        ArkSaveLogger.api_log("Exporting save file info...")
+
+        save_info = { "MapName": self.save.save_context.map_name, "GameTime": self.save.save_context.game_time }
+
+        # Create json exports folder if it does not exist.
+        path_obj = Path(export_folder_path)
+        if not (path_obj.exists() and path_obj.is_dir()):
+            path_obj.mkdir(parents=True, exist_ok=True)
+
+        # Write JSON.
+        with open(path_obj / "save_info.json", "w") as text_file:
+            text_file.write(json.dumps(save_info, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
+
+        ArkSaveLogger.api_log("Save file info successfully exported.")
+
     def export_all(self,
                    equipment_api: EquipmentApi = None,
                    player_api: PlayerApi = None,
                    dino_api: DinoApi = None,
                    structure_api: StructureApi = None,
                    export_folder_path: str = Path.cwd() / "json_exports"):
+        self.export_save_file_info(export_folder_path=export_folder_path)
         self.export_armors(equipment_api=equipment_api, export_folder_path=export_folder_path)
         self.export_weapons(equipment_api=equipment_api, export_folder_path=export_folder_path)
         self.export_shields(equipment_api=equipment_api, export_folder_path=export_folder_path)
@@ -387,3 +479,5 @@ class JsonApi:
         self.export_structures(structure_api=structure_api, export_folder_path=export_folder_path)
         self.export_dinos(dino_api=dino_api, export_folder_path=export_folder_path)
         self.export_player_pawns(player_api=player_api, export_folder_path=export_folder_path)
+        self.export_players(player_api=player_api, export_folder_path=export_folder_path)
+        self.export_tribes(player_api=player_api, export_folder_path=export_folder_path)
