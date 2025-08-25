@@ -121,7 +121,10 @@ class AsaSave:
             ArkSaveLogger.save_log(f"Unknown value: {self.save_context.unknown_value}")
 
         self.save_context.sections = self.read_locations(header_data)
-        
+
+        header_data.set_position(30)
+        self.save_context.map_name = header_data.read_string()
+
         # check_uint64(header_data, 0)
         header_data.set_position(name_table_offset)
         self.save_context.names = self.read_table(header_data)

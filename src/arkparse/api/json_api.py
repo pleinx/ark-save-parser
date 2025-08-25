@@ -448,12 +448,29 @@ class JsonApi:
 
         ArkSaveLogger.api_log("Items successfully exported.")
 
+    def export_save_file_info(self, export_folder_path: str = Path.cwd() / "json_exports"):
+        ArkSaveLogger.api_log("Exporting save file info...")
+
+        save_info = { "MapName": self.save.save_context.map_name, "GameTime": self.save.save_context.game_time }
+
+        # Create json exports folder if it does not exist.
+        path_obj = Path(export_folder_path)
+        if not (path_obj.exists() and path_obj.is_dir()):
+            path_obj.mkdir(parents=True, exist_ok=True)
+
+        # Write JSON.
+        with open(path_obj / "save_info.json", "w") as text_file:
+            text_file.write(json.dumps(save_info, default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder))
+
+        ArkSaveLogger.api_log("Save file info successfully exported.")
+
     def export_all(self,
                    equipment_api: EquipmentApi = None,
                    player_api: PlayerApi = None,
                    dino_api: DinoApi = None,
                    structure_api: StructureApi = None,
                    export_folder_path: str = Path.cwd() / "json_exports"):
+        self.export_save_file_info(export_folder_path=export_folder_path)
         self.export_armors(equipment_api=equipment_api, export_folder_path=export_folder_path)
         self.export_weapons(equipment_api=equipment_api, export_folder_path=export_folder_path)
         self.export_shields(equipment_api=equipment_api, export_folder_path=export_folder_path)

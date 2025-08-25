@@ -18,6 +18,7 @@ class SaveContext:
         self.actor_transform_positions: Dict[uuid.UUID, int] = {}
         self.save_version: int = 0
         self.game_time: float = 0.0
+        self.map_name: str = ""
         self.unknown_value: int = 0
         self.npc_zone_volumes: List["NpcZoneVolume"] = []
         self.all_uuids: List[uuid.UUID] = []
