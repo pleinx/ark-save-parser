@@ -189,7 +189,7 @@ class BaseApi(StructureApi):
             for structure in base.structures.values():
                 visited_structures.append(structure.uuid)
 
-            ArkSaveLogger.api_log(f"Parsed base at {"Unknown" if base.location is None else base.keystone.location.as_map_coords(self.map)} with {len(base.structures)} structures, owner: {base.owner}")
+            ArkSaveLogger.api_log(f"Parsed base at {'Unknown' if base.location is None else base.keystone.location.as_map_coords(self.map)} with {len(base.structures)} structures, owner: {base.owner}")
 
         return all_bases
 
