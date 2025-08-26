@@ -70,9 +70,6 @@ class TamedDino(Dino):
         d.cryopod = cryopod
         Dino.from_object(dino_obj, status_obj, d)
 
-        if d.inv_uuid is not None:
-            d.inventory = Inventory(d.inv_uuid, None)
-
         return d
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):

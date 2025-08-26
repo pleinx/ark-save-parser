@@ -130,7 +130,6 @@ class DinoApi:
                                 ArkSaveLogger.warning_log(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
                                 continue
                             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
-                            parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
                             cryopod = Cryopod(obj.uuid, save=self.save)
                             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
                             ArkSaveLogger.error_log(f"Error parsing cryopod {obj.uuid}: {e}")
