@@ -35,6 +35,10 @@ class SaveContext:
             return self.names[key]
         elif self.constant_name_table and key in self.constant_name_table:
             return self.constant_name_table[key]
+        elif self.generate_unknown:
+            unknown_name = f"Unknown_{key}"
+            self.names[key] = unknown_name
+            return unknown_name
         return None
 
     def use_constant_name_table(self, constant_name_table: Dict[int, str]):

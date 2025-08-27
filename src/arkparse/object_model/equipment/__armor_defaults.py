@@ -1,4 +1,5 @@
 from arkparse.classes.equipment import Armor as ArmorBps
+from arkparse.logging import ArkSaveLogger
 _LOGGED_WARNINGS = set()
 
 def _get_default_hypoT(bp: str):
@@ -67,7 +68,7 @@ def _get_default_hypoT(bp: str):
     else:
         if bp not in _LOGGED_WARNINGS:
             _LOGGED_WARNINGS.add(bp)
-            print(f"WARNING: No hypothermal insulation found for armor {bp}, using default value of 0")
+            ArkSaveLogger.warning_log(f"No hypothermal insulation found for armor {bp}, using default value of 0")
         return 0
 
 def _get_default_hyperT(bp: str):
@@ -136,5 +137,5 @@ def _get_default_hyperT(bp: str):
     else:
         if bp not in _LOGGED_WARNINGS:
             _LOGGED_WARNINGS.add(bp)
-            print(f"WARNING: No hyperthermal insulation found for armor {bp}, using default value of 0")
+            ArkSaveLogger.warning_log(f"No hyperthermal insulation found for armor {bp}, using default value of 0")
         return 0
