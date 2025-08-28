@@ -81,66 +81,69 @@ class DinoApi:
 
         ArkSaveLogger.api_log(f"Found {len(objects)} dinos, parsing them... (and retrieving inventories)")
         for key, obj in objects.items():
-            dino = None
-            if "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
-                is_tamed = obj.get_property_value("TamedTimeStamp") is not None
-                is_baby = obj.get_property_value("bIsBaby", False)
 
-                if obj.uuid in self.parsed_dinos:
-                    if is_tamed and include_tamed:
-                        if is_baby and include_babies:
-                            dino = self.parsed_dinos[obj.uuid]
-                        else:
-                            dino = self.parsed_dinos[obj.uuid]
-                    elif not is_tamed and include_wild:
-                        if is_baby and include_babies:
-                            dino = self.parsed_dinos[obj.uuid]
-                        else:
-                            dino = self.parsed_dinos[obj.uuid]
-                elif is_tamed and include_tamed:
-                    if is_baby and include_babies:
-                        dino = TamedBaby(obj.uuid, save=self.save)
-                    else:
-                        dino = TamedDino(obj.uuid, save=self.save)
-                    self.parsed_dinos[obj.uuid] = dino
-                elif include_wild and not is_tamed:
-                    if is_baby and include_babies:
-                        dino = Baby(obj.uuid, save=self.save)
-                    else:
-                        dino = Dino(obj.uuid, save=self.save)
-                    self.parsed_dinos[obj.uuid] = dino
+            try:
+                dino = None
+                if "Dinos/" in obj.blueprint and "_Character_" in obj.blueprint:
+                    is_tamed = obj.get_property_value("TamedTimeStamp") is not None
+                    is_baby = obj.get_property_value("bIsBaby", False)
 
-            elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos and include_tamed:
-                if not obj.get_property_value("bIsEngram", default=False):
-                    if obj.uuid in self.parsed_cryopods:
-                        is_baby = self.parsed_cryopods[obj.uuid].dino is not None and isinstance(self.parsed_cryopods[obj.uuid].dino, TamedBaby)
+                    if obj.uuid in self.parsed_dinos:
+                        if is_tamed and include_tamed:
+                            if is_baby and include_babies:
+                                dino = self.parsed_dinos[obj.uuid]
+                            else:
+                                dino = self.parsed_dinos[obj.uuid]
+                        elif not is_tamed and include_wild:
+                            if is_baby and include_babies:
+                                dino = self.parsed_dinos[obj.uuid]
+                            else:
+                                dino = self.parsed_dinos[obj.uuid]
+                    elif is_tamed and include_tamed:
                         if is_baby and include_babies:
-                            dino = self.parsed_cryopods[obj.uuid].dino
+                            dino = TamedBaby(obj.uuid, save=self.save)
                         else:
-                            dino = self.parsed_cryopods[obj.uuid].dino
-                    else:
-                        try:
-                            cryopod = Cryopod(obj.uuid, save=self.save)
-                            self.parsed_cryopods[obj.uuid] = cryopod
-                            if cryopod.dino is not None:
-                                dino = cryopod.dino
-                                dino.is_cryopodded = True
-                        except Exception as e:
-                            if "Unsupported embedded data version" in str(e):
-                                ArkSaveLogger.warning_log(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
-                                continue
-                            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
-                            parser = ArkBinaryParser(self.save.get_game_obj_binary(obj.uuid), self.save.save_context)
-                            cryopod = Cryopod(obj.uuid, save=self.save)
-                            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
-                            ArkSaveLogger.error_log(f"Error parsing cryopod {obj.uuid}: {e}")
+                            dino = TamedDino(obj.uuid, save=self.save)
+                        self.parsed_dinos[obj.uuid] = dino
+                    elif include_wild and not is_tamed:
+                        if is_baby and include_babies:
+                            dino = Baby(obj.uuid, save=self.save)
+                        else:
+                            dino = Dino(obj.uuid, save=self.save)
+                        self.parsed_dinos[obj.uuid] = dino
 
-                            if ArkSaveLogger._allow_invalid_objects:
-                                continue
-                            raise e
-            
-            if dino is not None:
-                dinos[key] = dino
+                elif "PrimalItem_WeaponEmptyCryopod_C" in obj.blueprint and include_cryos and include_tamed:
+                    if not obj.get_property_value("bIsEngram", default=False):
+                        if obj.uuid in self.parsed_cryopods:
+                            is_baby = self.parsed_cryopods[obj.uuid].dino is not None and isinstance(self.parsed_cryopods[obj.uuid].dino, TamedBaby)
+                            if is_baby and include_babies:
+                                dino = self.parsed_cryopods[obj.uuid].dino
+                            else:
+                                dino = self.parsed_cryopods[obj.uuid].dino
+                        else:
+                            try:
+                                cryopod = Cryopod(obj.uuid, save=self.save)
+                                self.parsed_cryopods[obj.uuid] = cryopod
+                                if cryopod.dino is not None:
+                                    dino = cryopod.dino
+                                    dino.is_cryopodded = True
+                            except Exception as e:
+                                if "Unsupported embedded data version" in str(e):
+                                    ArkSaveLogger.warning_log(f"Skipping cryopod {obj.uuid} due to unsupported embedded data version (pre Unreal 5.5)")
+                                    continue
+                                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
+                                cryopod = Cryopod(obj.uuid, save=self.save)
+                                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+                                ArkSaveLogger.error_log(f"Error parsing cryopod {obj.uuid}: {e}")
+                                raise e
+                
+                if dino is not None:
+                    dinos[key] = dino
+            except Exception as e:
+                if ArkSaveLogger._allow_invalid_objects:
+                    ArkSaveLogger.error_log(f"Failed to parse dino {obj.uuid}: {e}")
+                else:
+                    raise e
 
         ArkSaveLogger.api_log(f"Parsed {len(dinos)} dinos")
 

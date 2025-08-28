@@ -43,15 +43,21 @@ class StructureApi:
         if obj.uuid in self.parsed_structures.keys():
             return self.parsed_structures[obj.uuid]
         
-        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=bypass_inventory)
-        else:
-            structure = Structure(obj.uuid, self.save)
+        try:
+            if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
+                structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=bypass_inventory)
+            else:
+                structure = Structure(obj.uuid, self.save)
 
-        if obj.uuid in self.save.save_context.actor_transforms:
-            structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
+            if obj.uuid in self.save.save_context.actor_transforms:
+                structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
 
-        self.parsed_structures[obj.uuid] = structure
+            self.parsed_structures[obj.uuid] = structure
+        except Exception as e:
+            if ArkSaveLogger._allow_invalid_objects:
+                ArkSaveLogger.error_log(f"Failed to parse structure {obj.uuid}: {e}")
+            else:
+                raise e
 
         return structure
 

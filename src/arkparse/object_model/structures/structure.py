@@ -95,7 +95,7 @@ class Structure(ParsedObjectBase):
         self.update_binary()
 
     def reidentify(self, new_uuid: UUID = None, update=True):
-        new_id = random.randint(0, 2**32 - 1)
+        new_id = random.randint(0, 2**31 - 1)
         self.id_ = new_id
         self.binary.replace_u32(self.object.find_property("StructureID"), new_id)
         super().reidentify(new_uuid, update=update)

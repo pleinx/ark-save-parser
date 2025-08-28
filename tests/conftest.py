@@ -13,6 +13,7 @@ ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.INFO, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.DEBUG, True)
 ArkSaveLogger.allow_invalid_objects(False)
+CURENT_SET = "1"
 
 def file_directory(set: str) -> Path:
     """
@@ -20,7 +21,7 @@ def file_directory(set: str) -> Path:
     """
     return Path(__file__).parent / "test_data" / set
 
-def save_path(map: ArkMap, set: str = "set_1"):
+def save_path(map: ArkMap, set: str = "set_" + CURENT_SET):
     """
     Returns the path to the save file for the given map.
     """
@@ -76,21 +77,6 @@ def temp_file_folder(session_uuid):
         shutil.rmtree(path)
 
 @pytest.fixture(scope="session")
-def enabled_maps():
-    """
-    Returns a list of enabled ArkMaps.
-    """
-    return [
-        ArkMap.ABERRATION,
-        ArkMap.EXTINCTION,
-        ArkMap.RAGNAROK,
-        ArkMap.SCORCHED_EARTH,
-        ArkMap.THE_CENTER,
-        ArkMap.THE_ISLAND,
-        ArkMap.ASTRAEOS
-    ]
-
-@pytest.fixture(scope="session")
 def enabled_maps(profile):
     if profile == "simple":
         return [ArkMap.RAGNAROK]
@@ -106,8 +92,10 @@ def enabled_maps(profile):
         ]
     
 @pytest.fixture(scope="session")
-def ragnarok_save():
+def ragnarok_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.RAGNAROK not in enabled_maps:
+        pytest.skip("Ragnarok map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.RAGNAROK))
     yield resource
 
@@ -118,37 +106,49 @@ def rag_limited():
     yield resource
 
 @pytest.fixture(scope="session")
-def aberration_save():
+def aberration_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.ABERRATION not in enabled_maps:
+        pytest.skip("Aberration map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.ABERRATION))
     yield resource
 
 @pytest.fixture(scope="session")
-def extinction_save():
+def extinction_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.EXTINCTION not in enabled_maps:
+        pytest.skip("Extinction map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.EXTINCTION))
     yield resource
 
 @pytest.fixture(scope="session")
-def astraeos_save():
+def astraeos_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.ASTRAEOS not in enabled_maps:
+        pytest.skip("Astraeos map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.ASTRAEOS))
     yield resource
 
 @pytest.fixture(scope="session")
-def scorched_earth_save():
+def scorched_earth_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.SCORCHED_EARTH not in enabled_maps:
+        pytest.skip("Scorched Earth map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.SCORCHED_EARTH))
     yield resource
 
 @pytest.fixture(scope="session")
-def the_island_save():
+def the_island_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.THE_ISLAND not in enabled_maps:
+        pytest.skip("The Island map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.THE_ISLAND))
     yield resource
 
 @pytest.fixture(scope="session")
-def the_center_save():
+def the_center_save(enabled_maps):
     # setup (runs once, at first use)
+    if ArkMap.THE_CENTER not in enabled_maps:
+        pytest.skip("The Center map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.THE_CENTER))
     yield resource

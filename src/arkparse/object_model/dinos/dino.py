@@ -257,8 +257,8 @@ class Dino(ParsedObjectBase):
             self.update_binary()
 
     def reidentify(self, new_uuid: UUID = None, update=True):
-        new_id_1 = random.randint(0, 2**32 - 1)
-        new_id_2 = random.randint(0, 2**32 - 1)
+        new_id_1 = random.randint(0, 2**31 - 1)
+        new_id_2 = random.randint(0, 2**31 - 1)
         self.id1 = new_id_1
         self.id2 = new_id_2
         self.binary.replace_u32(self.object.find_property("DinoID1"), new_id_1)

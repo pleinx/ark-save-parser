@@ -59,7 +59,7 @@ class EquipmentWithArmor(EquipmentWithDurability):
         else:
             if bp not in _LOGGED_WARNINGS:
                 _LOGGED_WARNINGS.add(bp)
-                print(f"WARNING: No armor found for {bp}, using default value of 1")
+                ArkSaveLogger.warning_log(f"No armor found for {bp}, using default value of 1")
             return 1
 
     def __init_props__(self):

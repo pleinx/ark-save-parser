@@ -415,27 +415,33 @@ class JsonApi:
         with self.save.connection as conn:
             cursor = conn.execute(query)
             for row in cursor:
-                obj_uuid = self.save.byte_array_to_uuid(row[0])
-                byte_buffer = ArkBinaryParser(row[1], self.save.save_context)
-                class_name = byte_buffer.read_name()
+                try:
+                    obj_uuid = self.save.byte_array_to_uuid(row[0])
+                    byte_buffer = ArkBinaryParser(row[1], self.save.save_context)
+                    class_name = byte_buffer.read_name()
 
-                if "/PrimalItemArmor_" not in class_name and \
-                        "/PrimalItem_" not in class_name and \
-                        "/PrimalItemAmmo_" not in class_name and \
-                        "/PrimalItemC4Ammo" not in class_name and \
-                        "/PrimalItemResource_" not in class_name and \
-                        "/DroppedItemGeneric_" not in class_name and \
-                        "/PrimalItemConsumable_" not in class_name:
-                    continue
-
-                obj = self.save.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
-                if obj is not None:
-                    is_engram = False
-                    if obj.has_property("bIsEngram"):
-                        is_engram = obj.get_property_value("bIsEngram", False)
-                    if is_engram and not include_engrams:
+                    if "/PrimalItemArmor_" not in class_name and \
+                            "/PrimalItem_" not in class_name and \
+                            "/PrimalItemAmmo_" not in class_name and \
+                            "/PrimalItemC4Ammo" not in class_name and \
+                            "/PrimalItemResource_" not in class_name and \
+                            "/DroppedItemGeneric_" not in class_name and \
+                            "/PrimalItemConsumable_" not in class_name:
                         continue
-                    all_items.append(JsonApi.primal_item_to_json_obj(obj))
+
+                    obj = self.save.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
+                    if obj is not None:
+                        is_engram = False
+                        if obj.has_property("bIsEngram"):
+                            is_engram = obj.get_property_value("bIsEngram", False)
+                        if is_engram and not include_engrams:
+                            continue
+                        all_items.append(JsonApi.primal_item_to_json_obj(obj))
+                except Exception as e:
+                    if ArkSaveLogger._allow_invalid_objects:
+                        ArkSaveLogger.error_log(f"Failed to parse item {UUID(row[0])}: {e}")
+                    else:
+                        raise e
 
         # Create json exports folder if it does not exist.
         path_obj = Path(export_folder_path)
