@@ -57,6 +57,7 @@ class AsaSave:
         self.read_header()
         self.read_actor_locations()
         self.profile_data_in_db = self.profile_data_in_saves()
+        self._get_game_time_params()
 
     def __del__(self):
         self.close()
@@ -88,6 +89,27 @@ class AsaSave:
             cursor = conn.execute(query)
             for row in cursor:
                 ArkSaveLogger.save_log(f"Custom key: {row[0]}")
+
+    def _get_game_time_params(self):
+        config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()
+        config.blueprint_name_filter = lambda name: name is not None and "daycycle" in name.lower()
+
+        objs = self.get_game_objects(config)
+
+        current_time = 0
+        current_day = 0
+
+        for _, obj in objs.items():
+            day_id = obj.get_property_value("theDayNumberToMakeSerilizationWork", None)
+            if day_id is not None:
+                current_day = day_id
+                current_time = obj.get_property_value("CurrentTime", 0)
+                break
+
+        self.save_context.current_time = current_time
+        self.save_context.current_day = current_day
+
+        ArkSaveLogger.save_log(f"Current time: {self.save_context.current_time}, current day: {self.save_context.current_day}")
 
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")

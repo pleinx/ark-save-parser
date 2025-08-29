@@ -23,6 +23,8 @@ class SaveContext:
         self.npc_zone_volumes: List["NpcZoneVolume"] = []
         self.all_uuids: List[uuid.UUID] = []
         self.generate_unknown: bool = False
+        self.current_time = 0
+        self.current_day = 0
 
     def get_actor_transform(self, uuid_: uuid.UUID) -> Optional[ActorTransform]:
         return self.actor_transforms.get(uuid_)

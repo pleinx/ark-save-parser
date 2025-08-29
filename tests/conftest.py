@@ -1,3 +1,4 @@
+from typing import List
 import pytest
 from pathlib import Path
 import shutil
@@ -152,3 +153,22 @@ def the_center_save(enabled_maps):
         pytest.skip("The Center map is not enabled in the test configuration.")
     resource = AsaSave(save_path(ArkMap.THE_CENTER))
     yield resource
+
+@pytest.fixture(scope="session")
+def enabled_map_objects(enabled_maps):
+    enabled: List[AsaSave] = []
+    if ArkMap.RAGNAROK in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.RAGNAROK)))
+    if ArkMap.ABERRATION in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.ABERRATION)))
+    if ArkMap.EXTINCTION in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.EXTINCTION)))
+    if ArkMap.ASTRAEOS in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.ASTRAEOS)))
+    if ArkMap.SCORCHED_EARTH in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.SCORCHED_EARTH)))
+    if ArkMap.THE_ISLAND in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.THE_ISLAND)))
+    if ArkMap.THE_CENTER in enabled_maps:
+        enabled.append(AsaSave(save_path(ArkMap.THE_CENTER)))
+    yield enabled

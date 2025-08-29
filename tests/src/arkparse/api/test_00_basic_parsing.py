@@ -171,4 +171,14 @@ def test_retrieving_the_center_object_through_api(the_center_save: AsaSave, obje
     if not ArkMap.THE_CENTER in enabled_maps:
         pytest.skip("The Center map is not enabled in the test configuration.")
     retrieve_with_api(the_center_save, ArkMap.THE_CENTER, objects_per_map)
-    
+
+def test_game_time_retrieval(enabled_map_objects):
+    """
+    Test to retrieve game time information from all enabled map saves.
+    """
+    print("\nGame Time Retrieval:")
+    for save in enabled_map_objects:
+        save: AsaSave
+        assert save.save_context.current_time != 0, f"Game time for {save.save_context.map_name} is 0"
+        assert save.save_context.current_day != 0, f"Game day for {save.save_context.map_name} is 0"
+        print(f"Map: {save.save_context.map_name}, Current Time: {save.save_context.current_time}, Current Day: {save.save_context.current_day}")
