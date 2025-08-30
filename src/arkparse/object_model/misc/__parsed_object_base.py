@@ -118,6 +118,17 @@ class ParsedObjectBase:
         else:
             ArkSaveLogger.error_log("Parsed objects should have a save attached")
 
+    def update_object(self):
+        if self.object is None:
+            ArkSaveLogger.error_log("This object has no ArkGameObject associated with it, cannot update object")
+            return
+        if self.binary is None:
+            ArkSaveLogger.error_log("This object has no binary associated with it, cannot update object")
+            return
+
+        self.object = ArkGameObject(uuid=self.object.uuid, blueprint=self.object.blueprint, binary_reader=self.binary)
+        self.__init_props__()
+
     def get_short_name(self):
         to_strip_end = [
             "_C",

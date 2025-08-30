@@ -22,6 +22,7 @@ class Dino(ParsedObjectBase):
 
     is_female: bool = False
     is_cryopodded: bool = False
+    is_dead: bool = False
 
     ai_controller: DinoAiController = None
 
@@ -38,6 +39,7 @@ class Dino(ParsedObjectBase):
         self.id1 = self.object.get_property_value("DinoID1")
         self.id2 = self.object.get_property_value("DinoID2")
         self.gene_traits = self.object.get_array_property_value("GeneTraits")
+        self.is_dead = self.object.get_property_value("bIsDead", False)
         self.location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
     
     def __init__(self, uuid: UUID = None, save: AsaSave = None):
@@ -48,8 +50,9 @@ class Dino(ParsedObjectBase):
             self.stats = DinoStats(UUID(stat_uuid), save=save)
 
         if save is not None and self.object.get_property_value("Owner") is not None:
-            ai_uuid = self.object.get_property_value("Owner").value
-            self.ai_controller = DinoAiController(UUID(ai_uuid), save=save)
+            if self.save.is_in_db(UUID(self.object.get_property_value("Owner").value)):
+                ai_uuid = self.object.get_property_value("Owner").value
+                self.ai_controller = DinoAiController(UUID(ai_uuid), save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)
@@ -223,7 +226,8 @@ class Dino(ParsedObjectBase):
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False):
         loc_name = name if name is not None else str(self.object.uuid)
         self.stats.store_binary(path, name, prefix="status_", no_suffix=no_suffix)
-        self.ai_controller.store_binary(path, name, prefix="ai_", no_suffix=no_suffix)
+        if self.ai_controller is not None:
+            self.ai_controller.store_binary(path, name, prefix="ai_", no_suffix=no_suffix)
         self.location.store_json(path, loc_name)
         return super().store_binary(path, name, prefix=prefix, no_suffix=no_suffix)
 
@@ -241,9 +245,20 @@ class Dino(ParsedObjectBase):
         self.update_binary()
         self.location = location
 
+    def heal(self):
+        self.stats.heal()
+
+    def disable_wandering(self):
+        """
+        Disables the wandering behavior of the dino.
+        """
+        if self.object.has_property("bEnableTamedWandering"):
+            self.binary.replace_boolean(self.object.find_property("bEnableTamedWandering"), False)
+            self.update_binary()
+
     def reidentify(self, new_uuid: UUID = None, update=True):
-        new_id_1 = random.randint(0, 2**32 - 1)
-        new_id_2 = random.randint(0, 2**32 - 1)
+        new_id_1 = random.randint(0, 2**31 - 1)
+        new_id_2 = random.randint(0, 2**31 - 1)
         self.id1 = new_id_1
         self.id2 = new_id_2
         self.binary.replace_u32(self.object.find_property("DinoID1"), new_id_1)

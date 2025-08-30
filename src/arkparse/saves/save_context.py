@@ -18,10 +18,13 @@ class SaveContext:
         self.actor_transform_positions: Dict[uuid.UUID, int] = {}
         self.save_version: int = 0
         self.game_time: float = 0.0
+        self.map_name: str = ""
         self.unknown_value: int = 0
         self.npc_zone_volumes: List["NpcZoneVolume"] = []
         self.all_uuids: List[uuid.UUID] = []
         self.generate_unknown: bool = False
+        self.current_time = 0
+        self.current_day = 0
 
     def get_actor_transform(self, uuid_: uuid.UUID) -> Optional[ActorTransform]:
         return self.actor_transforms.get(uuid_)
@@ -34,6 +37,10 @@ class SaveContext:
             return self.names[key]
         elif self.constant_name_table and key in self.constant_name_table:
             return self.constant_name_table[key]
+        elif self.generate_unknown:
+            unknown_name = f"Unknown_{key}"
+            self.names[key] = unknown_name
+            return unknown_name
         return None
 
     def use_constant_name_table(self, constant_name_table: Dict[int, str]):

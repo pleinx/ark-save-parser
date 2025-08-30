@@ -201,7 +201,7 @@ class EquipmentApi(GeneralApi):
             elif random_value > range_max*1.5:
                 random_value = int(range_max*1.5)
 
-            ArkSaveLogger.api_log(f"Setting {stat} to {random_value} for {equipment.class_name} {"(used normal distribution)" if normal_distribution else "(used uniform distribution)"}")
+            ArkSaveLogger.api_log(f"Setting {stat} to {random_value} for {equipment.class_name} {'(used normal distribution)' if normal_distribution else '(used uniform distribution)'}")
             equipment.set_stat(stat, equipment.get_actual_value(stat, random_value))
 
         equipment.auto_rate()

@@ -30,9 +30,9 @@ class ArkItemNetId:
 
     def replace(self, byte_buffer: "ArkBinaryParser", new_id1: int = None, new_id2: int = None):
         if new_id1 is None:
-            new_id1 = random.randint(0, 2**32 - 1)
+            new_id1 = random.randint(0, 2**31 - 1)
         if new_id2 is None:
-            new_id2 = random.randint(0, 2**32 - 1)
+            new_id2 = random.randint(0, 2**31 - 1)
 
         byte_buffer.set_property_position("ItemID1")
         byte_buffer.validate_name("ItemID1")

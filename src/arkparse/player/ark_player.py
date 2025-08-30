@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import List, Dict
 from uuid import UUID
@@ -18,6 +19,8 @@ from arkparse.parsing.struct import ArkVectorBoolPair, ArkTrackedActorIdCategory
 
 from .ark_character_config import ArkCharacterConfig
 from .ark_character_stats import ArkCharacterStats
+from ..utils.json_utils import DefaultJsonEncoder
+
 
 class ArkPlayer:
     """
@@ -53,7 +56,7 @@ class ArkPlayer:
     persistent_buff_data = ArkMyPersistentBuffDatas
 
     def __init_player_data(self, props: ArkPropertyContainer):
-        self_version = props.get_property_value("SavedPlayerDataVersion")
+        self.player_data_version = props.get_property_value("SavedPlayerDataVersion")
 
         my_data: ArkPropertyContainer = props.get_property_value("MyData")
         if not my_data:
@@ -131,3 +134,32 @@ class ArkPlayer:
             f"  Stats: {self.stats}"
         ]
         return "\n".join(parts)
+
+    def to_json_obj(self):
+        # Grab already set properties
+        json_obj = { "SavedPlayerDataVersion": self.player_data_version,
+                     "PlayerName": self.name,
+                     "PlayerCharacterName": self.char_name,
+                     "UniqueID": self.unique_id,
+                     "TribeID": self.tribe,
+                     "NumOfDeaths": self.nr_of_deaths,
+                     "PlayerDataID": self.id_,
+                     "SavedNetworkAddress": self.ip_address,
+                     "bFirstSpawned": self.first_spawned,
+                     "LastTimeDiedToEnemyTeam": self.last_time_died,
+                     "LoginTime": self.login_time,
+                     "Config": self.config.to_json_obj() if self.config is not None else None,
+                     "Stats": self.stats.to_json_obj() if self.stats is not None else None,
+                     "MyPersistentBuffDatas": self.persistent_buff_data.to_json_obj() if self.persistent_buff_data is not None else None,
+                     "PrimalBuffPersistentData": self.persistent_buffs }
+
+        # Grab location if it exists
+        if self.location is not None:
+            json_obj["ActorTransformX"] = self.location.x
+            json_obj["ActorTransformY"] = self.location.y
+            json_obj["ActorTransformZ"] = self.location.z
+
+        return json_obj
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

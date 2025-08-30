@@ -15,6 +15,7 @@ from arkparse.parsing.struct import ActorTransform
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model import ArkGameObject
 from arkparse.utils import ImportFile
+from arkparse.logging import ArkSaveLogger
 
 class BaseApi(StructureApi):
     def __init__(self, save, map: ArkMap):
@@ -33,8 +34,8 @@ class BaseApi(StructureApi):
                 closest_dist = dist
 
         return closest
-
-    def get_base_at(self, coords: MapCoords, radius: float = 0.3, owner_tribe_id = None) -> Base:
+    
+    def get_base_at(self, coords: MapCoords, radius: float = 0.3, owner_tribe_id = None, keystone: Structure = None) -> Base:
         structures = self.get_at_location(self.map, coords, radius)
         if structures is None or len(structures) == 0:
             return None
@@ -50,10 +51,9 @@ class BaseApi(StructureApi):
         if owner_tribe_id is not None:
             all_structures = {k: v for k, v in all_structures.items() if v.owner.tribe_id == owner_tribe_id}
 
-        keystone = self.__get_closest_to(all_structures, coords)
-
+        if keystone is None:
+            keystone = self.__get_closest_to(all_structures, coords)
         keystone_owner = keystone.owner if keystone is not None else None
-
         filtered_structures = {k: v for k, v in all_structures.items() if v.owner == keystone_owner}
 
         return Base(keystone.object.uuid, filtered_structures) if keystone is not None else None
@@ -168,6 +168,30 @@ class BaseApi(StructureApi):
             base.move_to(location, self.save)
 
         return base
+    
+    def get_all_bases(self, only_connected: bool = False, radius: float = 0.3) -> List[Base]:
+        all_bases: List[Base] = []
+        all_structures: Dict[UUID, Structure] = super().get_all()
+        visited_structures: List[UUID] = []
+
+        for key, structure in all_structures.items():
+            base = None
+            if key in visited_structures:
+                continue
+    
+            if only_connected:
+                connected = self.get_connected_structures({key: structure})
+                base = Base(structure.uuid, connected)
+                all_bases.append(base)
+            else:
+                base = self.get_base_at(structure.location.as_map_coords(self.map), radius, structure.owner.tribe_id, structure)
+
+            for structure in base.structures.values():
+                visited_structures.append(structure.uuid)
+
+            ArkSaveLogger.api_log(f"Parsed base at {'Unknown' if base.location is None else base.keystone.location.as_map_coords(self.map)} with {len(base.structures)} structures, owner: {base.owner}")
+
+        return all_bases
 
                 
 

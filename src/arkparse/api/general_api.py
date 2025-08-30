@@ -1,6 +1,7 @@
 from typing import Dict
 from uuid import UUID
 
+from arkparse.logging.ark_save_logger import ArkSaveLogger
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from arkparse.saves.asa_save import AsaSave
@@ -39,11 +40,17 @@ class GeneralApi:
             if valid_filter and not valid_filter(obj):
                 continue
 
-            if key in self.parsed_objects:
-                parsed[key] = self.parsed_objects[key]
-            else:
-                parsed[key] = constructor(obj.uuid, self.save)
-                self.parsed_objects[key] = parsed[key]
+            try:
+                if key in self.parsed_objects:
+                    parsed[key] = self.parsed_objects[key]
+                else:
+                    parsed[key] = constructor(obj.uuid, self.save)
+                    self.parsed_objects[key] = parsed[key]
+            except Exception as e:
+                if ArkSaveLogger._allow_invalid_objects:
+                    ArkSaveLogger.error_log(f"Failed to parse object {obj.uuid}: {e}")
+                else:
+                    raise e
 
         return parsed
     
