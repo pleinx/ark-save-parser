@@ -11,21 +11,26 @@ class StructureWithInventory(Structure):
     item_count: int
     max_item_count: int
 
-    inventory: Inventory
+    _inventory: Inventory
 
     def __init__(self, uuid: UUID, save: AsaSave, bypass_inventory: bool = False):
+        self._inventory = None
         super().__init__(uuid, save=save)
         self.save = save
-
+        
         inv_uuid = self.object.get_property_value("MyInventoryComponent")
         self.inventory_uuid = UUID(inv_uuid.value) if inv_uuid is not None else None
         self.item_count = self.object.get_property_value("CurrentItemCount", default=0)
         self.max_item_count = self.object.get_property_value("MaxItemCount")
 
         if self.inventory_uuid is not None and not bypass_inventory:
-            self.inventory = Inventory(self.inventory_uuid, save=self.save)
-        else:
-            self.inventory = None
+            self._inventory = Inventory(self.inventory_uuid, save=self.save)
+
+    @property
+    def inventory(self) -> Inventory:
+        if self._inventory is None and self.inventory_uuid is not None:
+            self._inventory = Inventory(self.inventory_uuid, save=self.save)
+        return self._inventory
 
     def set_item_quantity(self, quantity: int):
         if self.item_count != None:
@@ -42,6 +47,7 @@ class StructureWithInventory(Structure):
             
         self.set_item_quantity(self.item_count + 1)
         self.inventory.add_item(item)
+        self.update_binary()
         return True
     
     def update_binary(self):
@@ -56,7 +62,6 @@ class StructureWithInventory(Structure):
         self.set_item_quantity(self.item_count - 1)
         self.inventory.remove_item(item)
         self.update_binary()
-        self.inventory.update_binary()
         self.save.remove_obj_from_db(item)
 
     def remove_from_save(self, save: AsaSave):

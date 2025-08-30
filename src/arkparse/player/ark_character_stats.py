@@ -1,9 +1,12 @@
+import json
 from typing import List
 from dataclasses import dataclass, field
 
 from arkparse.parsing import ArkProperty
 from arkparse.parsing import ArkPropertyContainer
 from arkparse.parsing.struct import ObjectReference
+from arkparse.utils.json_utils import DefaultJsonEncoder
+
 
 @dataclass
 class ArkStatPoints:
@@ -61,6 +64,23 @@ class ArkStatPoints:
         ]
         return f"ArkStatPoints(points added)([{', '.join(stats)}])"
 
+    def to_json_obj(self):
+        return { "Health": self.health,
+                 "Stamina": self.stamina,
+                 "Torpidity": self.torpidity,
+                 "Oxygen": self.oxygen,
+                 "Food": self.food,
+                 "Water": self.water,
+                 "Temperature": self.temperature,
+                 "Weight": self.weight,
+                 "MeleeDamage": self.melee_damage,
+                 "MovementSpeed": self.movement_speed,
+                 "Fortitude": self.fortitude,
+                 "CraftingSpeed": self.crafting_speed }
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)
+
 
 @dataclass
 class ArkCharacterStats:
@@ -117,3 +137,15 @@ class ArkCharacterStats:
             f"  Stats: {self.stats}"
         ]
         return "\n".join(parts)
+
+    def to_json_obj(self):
+        return { "CharacterStatusComponent_ExtraCharacterLevel": self.level,
+                 "CharacterStatusComponent_ExperiencePoints": self.experience,
+                 "PlayerState_TotalEngramPoints": self.engram_points,
+                 "PerMapExplorerNoteUnlocks": self.explorer_notes,
+                 "EmoteUnlocks": self.emotes,
+                 "PlayerState_EngramBlueprints": self.engrams,
+                 "CharacterStatusComponent_NumberOfLevelUpPointsApplied": self.stats.to_json_obj() if self.stats is not None else None }
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

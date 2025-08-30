@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class TamedDino(Dino):
     owner: DinoOwner
     inv_uuid: UUID
-    inventory: Inventory
+    _inventory: Inventory
     tamed_name: str
     percentage_imprinted: float
     cryopod: "Cryopod"
@@ -30,6 +30,7 @@ class TamedDino(Dino):
         return self.stats._percentage_imprinted
     
     def __init_props__(self):
+        self._inventory = None
         super().__init_props__()
 
         self.cryopod = None
@@ -39,17 +40,23 @@ class TamedDino(Dino):
 
         if inv_uuid is None:
             self.inv_uuid = None
-            self.inventory = None
+            self._inventory = None
         else:
             self.inv_uuid = UUID(inv_uuid.value)
 
-    def __init__(self, uuid: UUID = None, save: AsaSave = None):
-        super().__init__(uuid, save=save)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None, bypass_inventory: bool = True):
         self.inv_uuid = None
-        self.inventory = None
+        self._inventory = None
+        super().__init__(uuid, save=save)
 
-        if self.inv_uuid is not None:
-            self.inventory = Inventory(self.inv_uuid, save=save)
+        if self.inv_uuid is not None and not bypass_inventory:
+            self._inventory = Inventory(self.inv_uuid, save=save)
+
+    @property
+    def inventory(self) -> Inventory:
+        if self._inventory is None and self.inv_uuid is not None:
+            self._inventory = Inventory(self.inv_uuid, save=self.save)
+        return self._inventory
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner))
@@ -63,16 +70,15 @@ class TamedDino(Dino):
         d.cryopod = cryopod
         Dino.from_object(dino_obj, status_obj, d)
 
-        if d.inv_uuid is not None:
-            d.inventory = Inventory(d.inv_uuid, None)
-
         return d
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):
         if self.inventory is None and force_inventory:
             raise ValueError("Cannot store TamedDino without inventory.")
+        print(self.inventory)
         if self.inventory is not None:
             self.inventory.store_binary(path, name, no_suffix=no_suffix)
+        print(f"Storing TamedDino {self.object.uuid} at {path}")
         return super().store_binary(path, name, prefix, no_suffix)
 
     def to_json_obj(self):
@@ -80,6 +86,28 @@ class TamedDino(Dino):
         if self.cryopod is not None and self.cryopod.object is not None and self.cryopod.object.uuid is not None:
             json_obj["CryopodUUID"] = self.cryopod.object.uuid.__str__()
         return json_obj
+    
+    def set_owner(self, owner: DinoOwner):
+        self.owner.replace_with(owner, self.binary)
+        self.update_binary()
+
+    def set_name(self, name: str):
+        if self.tamed_name is not None:
+            self.binary.replace_string(self.object.find_property("TamedName"), name)
+            self.tamed_name = name
+            self.update_binary()
+            self.update_object()
+
+    def add_item(self, item: UUID):        
+        if self.inventory is None:
+            raise ValueError("Cannot add item to TamedDino without inventory!")
+        self.inventory.add_item(item)
+        return True
+    
+    def remove_item(self, item: UUID):
+        self.inventory.remove_item(item)
+        self.update_binary()
+        self.save.remove_obj_from_db(item)
 
     def to_json_str(self):
         return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

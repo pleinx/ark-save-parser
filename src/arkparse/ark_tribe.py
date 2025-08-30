@@ -1,8 +1,11 @@
+import json
 from typing import List
 from pathlib import Path
 from dataclasses import dataclass
 from arkparse.parsing import ArkPropertyContainer
 from arkparse.parsing.ark_archive import ArkArchive
+from arkparse.utils.json_utils import DefaultJsonEncoder
+
 
 @dataclass
 class ArkTribe:
@@ -122,3 +125,16 @@ class ArkTribe:
         print(f"Tribe Log for {self.name}:")
         for entry in self.tribe_log:
             print('    - ' + entry)
+
+    def to_json_obj(self):
+        return { "TribeName": self.name,
+                 "OwnerPlayerDataId": self.owner_id,
+                 "TribeID": self.tribe_id,
+                 "MembersPlayerName": self.members,
+                 "MembersPlayerDataID": self.member_ids,
+                 "TribeLog": self.tribe_log,
+                 "LogIndex": self.log_index,
+                 "NumTribeDinos": self.nr_of_dinos }
+
+    def to_json_str(self):
+        return json.dumps(self.to_json_obj(), default=lambda o: o.to_json_obj() if hasattr(o, 'to_json_obj') else None, indent=4, cls=DefaultJsonEncoder)

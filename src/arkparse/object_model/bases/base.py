@@ -46,6 +46,9 @@ class Base:
         average_z = 0
 
         for _, structure in self.structures.items():
+            if structure.location is None:
+                ArkSaveLogger.warning_log(f"Structure {structure.uuid} has no location: {structure.location}")
+                continue
             average_x += structure.location.x
             average_y += structure.location.y
             average_z += structure.location.z

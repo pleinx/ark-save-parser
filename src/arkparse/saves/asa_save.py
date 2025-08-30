@@ -57,6 +57,7 @@ class AsaSave:
         self.read_header()
         self.read_actor_locations()
         self.profile_data_in_db = self.profile_data_in_saves()
+        self._get_game_time_params()
 
     def __del__(self):
         self.close()
@@ -89,6 +90,27 @@ class AsaSave:
             for row in cursor:
                 ArkSaveLogger.save_log(f"Custom key: {row[0]}")
 
+    def _get_game_time_params(self):
+        config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()
+        config.blueprint_name_filter = lambda name: name is not None and "daycycle" in name.lower()
+
+        objs = self.get_game_objects(config)
+
+        current_time = 0
+        current_day = 0
+
+        for _, obj in objs.items():
+            day_id = obj.get_property_value("theDayNumberToMakeSerilizationWork", None)
+            if day_id is not None:
+                current_day = day_id
+                current_time = obj.get_property_value("CurrentTime", 0)
+                break
+
+        self.save_context.current_time = current_time
+        self.save_context.current_day = current_day
+
+        ArkSaveLogger.save_log(f"Current time: {self.save_context.current_time}, current day: {self.save_context.current_day}")
+
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")
         ArkSaveLogger.save_log("Actor transforms table retrieved")
@@ -97,6 +119,12 @@ class AsaSave:
             self.save_context.actor_transforms = at
             self.save_context.actor_transform_positions = atp
         # print(f"Lenght of actor transforms: {len(self.save_context.actor_transforms)}")
+
+    def get_actor_transform(self, uuid: uuid.UUID):
+        if uuid in self.save_context.actor_transforms:
+            return self.save_context.actor_transforms[uuid]
+        ArkSaveLogger.error_log(f"Actor transform for {uuid} not found")
+        return None
 
     def read_header(self):
         header_data = self.get_custom_value("SaveHeader")
@@ -121,7 +149,10 @@ class AsaSave:
             ArkSaveLogger.save_log(f"Unknown value: {self.save_context.unknown_value}")
 
         self.save_context.sections = self.read_locations(header_data)
-        
+
+        header_data.set_position(30)
+        self.save_context.map_name = header_data.read_string()
+
         # check_uint64(header_data, 0)
         header_data.set_position(name_table_offset)
         self.save_context.names = self.read_table(header_data)
@@ -382,7 +413,7 @@ class AsaSave:
                 try:
                     class_name = byte_buffer.read_name()
                 except Exception as e:
-                    ArkSaveLogger.error_log("Error reading class name for object %s: %s")
+                    ArkSaveLogger.error_log(f"Error reading class name for object {obj_uuid}: {e}")
                     class_name = "UnknownClass"
                 ArkSaveLogger.enter_struct(class_name)
 
