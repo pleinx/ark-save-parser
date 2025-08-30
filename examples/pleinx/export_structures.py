@@ -75,7 +75,7 @@ def get_base_name(name: str) -> str:
 
 jsonData = []
 ctn=0
-for structure in structure_api.get_all_fast():
+for structure in structure_api.get_all().values():
     owner_name = structure.object.get_property_value("OwnerName")
     if(owner_name == None):
         continue
