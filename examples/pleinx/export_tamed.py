@@ -1,26 +1,28 @@
+from pprint import pprint
+import re
 import json
+import os
+import ast
+import argparse
+from pathlib import Path
 from time import time
+from datetime import datetime
+from tempfile import NamedTemporaryFile
+
 from arkparse.api.dino_api import DinoApi, TamedDino, TamedBaby
 from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
-from pprint import pprint
-import argparse
-from pathlib import Path
-import os
-import ast
-from datetime import datetime
-import re
 from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
 
 start_time = time()
 
-# Args
-parser = argparse.ArgumentParser(description="")
-parser.add_argument("--savegame", type=str, required=True, help="MapName e.g. Aberration_WP")
-parser.add_argument("--output", type=str, required=True, help="MapName e.g. Aberration_WP")
+# ---------- CLI ----------
+parser = argparse.ArgumentParser(description="Export ASA tamed dinos to JSON.")
+parser.add_argument("--savegame", type=str, required=True, help="Pfad zur .ark (z.B. C:/.../Aberration_WP.ark)")
+parser.add_argument("--output", type=str, required=True, help="Ausgabeverzeichnis")
 args = parser.parse_args()
 
-# Mapping for custom JSON stat keys
+# ---------- CONSTANTS ----------
 STAT_NAME_MAP = {
     "hp": "health",
     "stam": "stamina",
@@ -29,7 +31,7 @@ STAT_NAME_MAP = {
     "speed": "movement_speed",
     "food": "food",
     "oxy": "oxygen",
-    "craft": "crafting_speed"
+    "craft": "crafting_speed",
 }
 
 MAP_NAME_MAPPING = {
@@ -42,12 +44,38 @@ MAP_NAME_MAPPING = {
     "Astraeos_WP": ArkMap.ASTRAEOS,
 }
 
-# HELPER FUNCTIONS
-def extract_owner_attr(dino, dino_json_data, attr_name):
-    val = getattr(dino.cryopod.dino.owner, attr_name, None) if dino.is_cryopodded else (
-        getattr(dino.owner, attr_name, None) if dino.owner else None
-    )
-    return val if val else dino_json_data.get(attr_name, None)
+ADDED_KEY_MAP = {
+    "health": "hp-a",
+    "stamina": "stam-a",
+    "melee_damage": "melee-a",
+    "weight": "weight-a",          # TODO: scheint oft 0.0
+    "movement_speed": "speed-a",
+    "food": "food-a",
+    "oxygen": "oxy-a",
+}
+
+# ---------- HELPERS ----------
+def safe_owner_field(dino, field: str):
+    """
+    Holt Owner-Feld robust – bevorzugt aktiven Dino, sonst Cryo, sonst None.
+    """
+    try:
+        if not getattr(dino, "is_cryopodded", False) and getattr(dino, "owner", None):
+            return getattr(dino.owner, field, None)
+        cryo_owner = getattr(getattr(getattr(dino, "cryopod", None), "dino", None), "owner", None)
+        return getattr(cryo_owner, field, None) if cryo_owner else None
+    except Exception:
+        return None
+
+# TODO dinos in cryopod have no real coords, you need to grap them of the player inventory/structures inventory etc. not implemented right now
+def safe_location(dino):
+    """
+    Gibt ein Location-Objekt zurück – entweder vom aktiven Dino oder aus dem Cryopod.
+    """
+    if not getattr(dino, "is_cryopodded", False) and getattr(dino, "location", None):
+        return dino.location
+    cryo_dino = getattr(getattr(dino, "cryopod", None), "dino", None)
+    return getattr(cryo_dino, "location", None)
 
 def convert_tamed_time(timestamp_str):
     try:
@@ -55,180 +83,130 @@ def convert_tamed_time(timestamp_str):
     except (ValueError, TypeError):
         return None
 
-def extract_added_stat_values(stat_string):
+def extract_added_stat_values(stat_string: str):
     if not stat_string:
         return {}
+    matches = dict((k, v) for k, v in re.findall(r'(\w+)=([\d.]+)', stat_string))
+    # map nur die Felder, die wir kennen
+    return {ADDED_KEY_MAP[src]: matches[src] for src in ADDED_KEY_MAP if src in matches}
 
-    key_map = {
-        "health": "hp-a",
-        "stamina": "stam-a",
-        "melee_damage": "melee-a",
-        "weight": "weight-a",   # TODO is missing always 0.0
-        "movement_speed": "speed-a",
-        "food": "food-a",
-        "oxygen": "oxy-a"
-    }
+def pad_colors(color_indices, length=6):
+    # erwartet Liste/iterable, aber akzeptiert auch String-Input
+    if isinstance(color_indices, str):
+        try:
+            color_indices = ast.literal_eval(color_indices)
+        except (ValueError, SyntaxError):
+            color_indices = []
+    if not isinstance(color_indices, (list, tuple)):
+        color_indices = []
+    return list(color_indices[:length]) + [None] * max(0, length - len(color_indices))
 
-    matches = re.findall(r'(\w+)=([\d.]+)', stat_string)
-
-    return {
-        key_map[k]: v
-        for k, v in matches
-        if k in key_map
-    }
-
-
-# Load ASA save
-save_path = Path(f"{args.savegame}")
+# ---------- LOAD SAVE ----------
+save_path = Path(args.savegame)
 if not save_path.exists():
-    raise FileNotFoundError(f"Save file not found at: {save_path}")
+    raise FileNotFoundError(f"Save file not found: {save_path}")
 
 save = AsaSave(save_path)
 
-# Extract map name
 map_folder = save_path.parent.name
-# Extract map name from file
-map_name = save_path.stem  # e.g 'Aberration_WP'
+map_name = save_path.stem  # e.g. 'Aberration_WP'
+ark_map = MAP_NAME_MAPPING.get(map_name)
+if ark_map is None:
+    raise ValueError(f"Unknown map name '{map_name}'. Known: {', '.join(MAP_NAME_MAPPING)}")
 
-export_folder = Path(f"{args.output}/{map_folder}")
+export_folder = Path(args.output) / map_folder
 export_folder.mkdir(parents=True, exist_ok=True)
 json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
+# ---------- PROCESS ----------
 dino_api = DinoApi(save)
-
 tamed_dinos = []
+
 for dino_id, dino in dino_api.get_all_tamed().items():
     if not isinstance(dino, (TamedDino, TamedBaby)):
         continue
 
-    dino_json_data = dino.to_json_obj()
+    dino_json = dino.to_json_obj()
 
-    lat, lon = (0.0, 0.0)
-    ccc = ""
-    if not dino.is_cryopodded and dino.location:
-        ccc = f"{dino.location.x:.2f} {dino.location.y:.2f} {dino.location.z:.2f}"
-        coords = dino.location.as_map_coords(MAP_NAME_MAPPING.get(map_name))
-        if(coords):
-            lat = coords.lat
-            lon = coords.long
+    # Location & coords
+    if not dino.is_cryopodded:
+        loc = safe_location(dino)
+        ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
+        coords = loc.as_map_coords(ark_map)
+        lat = getattr(coords, "lat", 0.0) if coords else 0.0
+        lon = getattr(coords, "long", 0.0) if coords else 0.0
+    else:
+        ccc, lat, lon = "", 0.0, 0.0
 
-    tribe_id = dino.cryopod.dino.owner.tamer_tribe_id if dino.is_cryopodded else (
-        dino.owner.tamer_tribe_id if dino.owner else None
-    )
+    # Tribe / Tamer
+    tribe_id = safe_owner_field(dino, "tamer_tribe_id")
+    tamer_name = safe_owner_field(dino, "tamer_string")
 
-    tamer_name = dino.cryopod.dino.owner.tamer_string if dino.is_cryopodded else (
-        dino.owner.tamer_string if dino.owner else None
-    )
+    # Sonderfall: Baby claimed oder nachträglich gecryopoddet → TargetingTeam fallback
+    if (tribe_id == 2000000000 and dino_json.get("TargetingTeam")) or tribe_id is None:
+        tribe_id = dino_json.get("TargetingTeam")
 
-    # extract dino stats
+    # Base/Added/Mutated Stats kompakt aufbauen
     stats_entry = {}
     for prefix, field in STAT_NAME_MAP.items():
-        stats_entry[f"{prefix}-w"] = getattr(dino.stats.base_stat_points, field, 0)
-        stats_entry[f"{prefix}-t"] = getattr(dino.stats.added_stat_points, field, 0)
-        stats_entry[f"{prefix}-m"] = getattr(dino.stats.mutated_stat_points, field, 0)
+        base = getattr(getattr(dino.stats, "base_stat_points", None), field, 0) if getattr(dino, "stats", None) else 0
+        add = getattr(getattr(dino.stats, "added_stat_points", None), field, 0) if getattr(dino, "stats", None) else 0
+        mut = getattr(getattr(dino.stats, "mutated_stat_points", None), field, 0) if getattr(dino, "stats", None) else 0
+        stats_entry[f"{prefix}-w"] = base
+        stats_entry[f"{prefix}-t"] = add
+        stats_entry[f"{prefix}-m"] = mut
 
-#     if(str(dino_id) == "baf0e32e-541c-f541-aec3-705f9d371580"):
-#         public_attrs = [attr for attr in dir(dino.cryopod.dino.owner) if not attr.startswith('_')]
-#         if(public_attrs is not []):
-#             pprint(dino.cryopod.dino.owner.imprinter)
-#             pprint(dino.cryopod.dino.owner.player)
-#             pprint(dino.cryopod.dino.owner.tamer_string)
-#             pprint(dino.cryopod.dino.owner.tamer_tribe_id)
-#             pprint(dino.cryopod.dino.owner.target_team)
-#             pprint(dino.cryopod.dino.owner.tribe)
-
-    # if baby but claimed OR if dino is in crypopod after get tamed
-    if(tribe_id==2000000000 and dino_json_data.get("TargetingTeam", None) or tribe_id == None):
-         tribe_id=dino_json_data.get("TargetingTeam", None)
+    # Farben (c0..c5)
+    c0, c1, c2, c3, c4, c5 = pad_colors(dino_json.get("ColorSetIndices", "[]"))
 
     entry = {
         "id": str(dino_id),
-        # "_test_id": dino_json_data.get("DinoID1", None),
         "tribeid": tribe_id,
-        "tribe": dino_json_data.get("TribeName", None),
+        "tribe": dino_json.get("TribeName"),
         "tamer": tamer_name,
-        "imprinter": extract_owner_attr(dino, dino_json_data, "imprinter"),
-        "imprint": int(dino.percentage_imprinted),
-        "creature": dino.get_short_name() + "_C",
-        "name": dino.tamed_name if dino.tamed_name else "",
-        "sex": "Female" if dino.is_female else "Male",
-        "base": dino.stats.base_level if dino.stats else None,
-        "lvl": dino.stats.current_level if dino.stats else None,
+        "imprinter": safe_owner_field(dino, "imprinter"),
+        "imprint": int(getattr(dino, "percentage_imprinted", 0)),
+        "creature": f"{dino.get_short_name()}_C",
+        "name": dino.tamed_name or "",
+        "sex": "Female" if getattr(dino, "is_female", False) else "Male",
+        "base": getattr(getattr(dino, "stats", None), "base_level", None),
+        "lvl": getattr(getattr(dino, "stats", None), "current_level", None),
         "lat": lat,
         "lon": lon,
-        "hp-w": stats_entry["hp-w"],
-        "stam-w": stats_entry["stam-w"],
-        "melee-w": stats_entry["melee-w"],
-        "weight-w": stats_entry["weight-w"],
-        "speed-w": stats_entry["speed-w"],
-        "food-w": stats_entry["food-w"],
-        "oxy-w": stats_entry["oxy-w"],
-        "craft-w": stats_entry["craft-w"],
-        "hp-m": stats_entry["hp-m"],
-        "stam-m": stats_entry["stam-m"],
-        "melee-m": stats_entry["melee-m"],
-        "weight-m": stats_entry["weight-m"],
-        "speed-m": stats_entry["speed-m"],
-        "food-m": stats_entry["food-m"],
-        "oxy-m": stats_entry["oxy-m"],
-        "craft-m": stats_entry["craft-m"],
-        "hp-t": stats_entry["hp-t"],
-        "stam-t": stats_entry["stam-t"],
-        "melee-t": stats_entry["melee-t"],
-        "weight-t": stats_entry["weight-t"],
-        "speed-t": stats_entry["speed-t"],
-        "food-t": stats_entry["food-t"],
-        "oxy-t": stats_entry["oxy-t"],
-        "craft-t": stats_entry["craft-t"],
-        "mut-f": dino_json_data.get("RandomMutationsFemale", None),
-        "mut-m": dino_json_data.get("RandomMutationsMale", None),
-        "cryo": dino.is_cryopodded,
+        "cryo": getattr(dino, "is_cryopodded", False),
         "ccc": ccc,
         "dinoid": str(dino_id),
-        "isMating": False,          # TODO
-        "isNeutered": False,        # TODO
-        "isClone": False,           # TODO
-        #"tamedServer": dino.get_uploaded_from_server_name(),      # TODO NOT IN USED
-        #"uploadedServer": dino.get_uploaded_from_server_name(),   # TODO NOT IN USED
-        "maturation": float(dino.percentage_matured) if isinstance(dino, TamedBaby) else "100",
-        "traits": [],               # TODO
-        "inventory": [],            # TODO
-        "is_wild_tamed": True if is_wild_tamed(dino) else False,
-        "tamedAtTime": convert_tamed_time(dino_json_data.get("TamedTimeStamp"))
+        "isMating": False,   # TODO
+        "isNeutered": False, # TODO
+        "isClone": False,    # TODO
+        "maturation": float(getattr(dino, "percentage_matured", 100.0)) if isinstance(dino, TamedBaby) else "100",
+        "traits": [],        # TODO
+        "inventory": [],     # TODO
+        "is_wild_tamed": bool(is_wild_tamed(dino)),
+        "tamedAtTime": convert_tamed_time(dino_json.get("TamedTimeStamp")),
+        "mut-f": dino_json.get("RandomMutationsFemale"),
+        "mut-m": dino_json.get("RandomMutationsMale"),
+        "c0": c0, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5,
     }
 
-    # Adding Dino Colors
-    color_indices_str = dino_json_data.get("ColorSetIndices", "[]")
-    try:
-        color_indices = ast.literal_eval(color_indices_str)
-    except (ValueError, SyntaxError):
-        color_indices = [None] * 6
+    # Stats (-w/-t/-m) hinzufügen
+    entry.update(stats_entry)
 
-    entry["c0"] = color_indices[0] if len(color_indices) > 0 else None
-    entry["c1"] = color_indices[1] if len(color_indices) > 1 else None
-    entry["c2"] = color_indices[2] if len(color_indices) > 2 else None
-    entry["c3"] = color_indices[3] if len(color_indices) > 3 else None
-    entry["c4"] = color_indices[4] if len(color_indices) > 4 else None
-    entry["c5"] = color_indices[5] if len(color_indices) > 5 else None
-    entry.update(extract_added_stat_values(dino_json_data.get("StatValues", "")))
+    # Added Stat Values aus String anhängen (hp-a, stam-a, ...)
+    stat_values = dino_json.get("StatValues", "")
+    if stat_values:
+        entry.update(extract_added_stat_values(stat_values))
 
     tamed_dinos.append(entry)
 
-# CONTINUE WITH JSON EXPORT
-json_data = {
-    "map": map_folder,
-    "data": tamed_dinos
-}
+# ---------- WRITE JSON (atomar) ----------
+payload = {"map": map_folder, "data": tamed_dinos}
 
-if os.path.exists(json_output_path):
-    os.remove(json_output_path)
+with NamedTemporaryFile("w", delete=False, encoding="utf-8", dir=str(export_folder), suffix=".tmp") as tf:
+    json.dump(payload, tf, ensure_ascii=False, separators=(",", ":"))
+    tmp_name = tf.name
 
-# TODO: json format only on my machine
-with open(json_output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False, separators=(',', ':'))
+os.replace(tmp_name, json_output_path)
 
-# DONE, OUTPUT
 print(f"Saved {len(tamed_dinos)} tamed dinos to {json_output_path}")
-
-elapsed = time() - start_time
-print(f"Script runtime: {elapsed:.2f} seconds")
+print(f"Script runtime: {time() - start_time:.2f} seconds")
