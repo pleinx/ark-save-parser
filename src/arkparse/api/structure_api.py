@@ -27,7 +27,7 @@ class StructureApi:
                                                    and not "PrimalItemStructure_" in name \
                                                    and not "/Skins/" in name \
                                                    and not "PrimalInventory" in name \
-                                                   and not "Tileset" in name \
+                                                #    and not "Tileset" in name \
                                                    and not "PrimalItemStructureSkin" in name
                                                    and not "PrimalItemResource" in name \
                                                    and not "/TrainCarts/" in name \
