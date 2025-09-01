@@ -88,10 +88,13 @@ def safe_location(dino: Any) -> Optional[Any]:
 
 
 def convert_tamed_time(timestamp_str: Optional[str]) -> Optional[str]:
-    """Convert 'YYYY.MM.DD-HH.MM.SS' into 'YYYY-MM-DD HH:MM:SS'."""
+    """Convert 'YYYY.MM.DD-HH.MM.SS' into MySQL datetime 'YYYY-MM-DD HH:MM:SS'."""
+    if not timestamp_str:
+        return None
     try:
-        return datetime.strptime(timestamp_str, "%Y.%m.%d-%H.%M.%S").strftime("%Y-%m-%d %H:%M:%S")
-    except (ValueError, TypeError):
+        dt = datetime.strptime(timestamp_str, "%Y.%m.%d-%H.%M.%S")
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
         return None
 
 

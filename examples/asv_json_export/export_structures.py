@@ -67,12 +67,12 @@ def resolve_coords(structure: Any, ark_map: Optional[ArkMap]) -> Tuple[Tuple[flo
 
 
 def parse_created(ts: Optional[str]) -> Optional[str]:
-    """Parse ASA timestamp 'YYYY.MM.DD-HH.MM.SS' to 'DD.MM.YYYY HH:MM:SS'."""
+    """Parse ASA timestamp 'YYYY.MM.DD-HH.MM.SS' to MySQL datetime 'YYYY-MM-DD HH:MM:SS'."""
     if not ts:
         return None
     try:
         dt = datetime.strptime(ts, "%Y.%m.%d-%H.%M.%S")
-        return dt.strftime("%d.%m.%Y %H:%M:%S")
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
     except ValueError:
         return None
 
