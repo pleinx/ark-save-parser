@@ -205,9 +205,7 @@ json_api.export_items() # exports items to JSON
 ---
 
 #### f. **JSON API: Export parsed data as JSON like ASV (ported)**
-Check out the readme of ASV export port
-
-```examples/asv_json_export/README.md```
+Check out the [README](https://github.com/VincentHenauGithub/ark-save-parser/blob/main/examples/asv_json_export/README.md) of [ASV](https://github.com/miragedmuk/ASV) export port, to find out how to export your ASA savegame like ASV it does before UE5.5.
 
 ## Contributing
 
