@@ -7,25 +7,27 @@ The port is not yet complete and still has some **open TODOs**, but you’re wel
 
 ### Exporting Structures
 ```cmd
-py examples/asv_json_export/export_structures.py --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
+py examples/asv_json_export/export_structures.py --serverkey="ragnarok_1" --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
 ```
 
 ### Exporting Wild Dinos (tamables only)
 ```cmd
-py examples/asv_json_export/export_wild.py --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
+py examples/asv_json_export/export_wild.py --serverkey="ragnarok_1" --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
 ```
 
 ### Exporting Tamed Dinos
 ```cmd
-py examples/asv_json_export/export_tamed.py --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
+py examples/asv_json_export/export_tamed.py --serverkey="ragnarok_1" --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
 ```
 
-# Good2Know
-The exporter will create an output folder like this `json_exports/{MAP_NAME}_Structures.json`.
-You want to customize it? I'll add this soon!
+# ServerKey Parameter
+This is new. Some clusters have multiple server instances of a map. If you use this:
+```cmd
+py examples/asv_json_export/export_tamed.py --serverkey="ragnarok_1" --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
+```
+The output will be here `json_export/ragnarok_1/Tamed.json`
 
 # Open Todos
-
 ### Structures
 - Missing Inventory
 

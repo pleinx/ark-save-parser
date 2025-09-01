@@ -1,37 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Expected Output from ASV
-#     {
-#       "id": 433686362306623672,
-#       "creature": "Achatina_Character_BP_Aberrant_C",
-#       "sex": "Female",
-#       "lvl": 55,
-#       "lat": 51.422012,
-#       "lon": 67.36273,
-#       "hp": 9,
-#       "stam": 12,
-#       "melee": 12,
-#       "weight": 9,
-#       "speed": 0,
-#       "food": 12,
-#       "oxy": 0,
-#       "craft": 0,
-#       "c0": 49,
-#       "c1": 34,
-#       "c2": 0,
-#       "c3": 25,
-#       "c4": 23,
-#       "c5": 33,
-#       "ccc": "138901,88 11376,108 18292,477",
-#       "dinoid": "433686362306623672",
-#       "tameable": true,
-#       "trait": "Giantslaying (1)"
-#     },
+# ASV-style export of **wild tamable** dinos
+# Output path requirement:
+#   <output>/<serverkey>/WildDinos.json
+# Example:
+#   python export_wild.py --serverkey="extinction_a" \
+#       --savegame="../temp/extinction_a/.../Extinction_WP.ark" \
+#       --output=../output
+#   => ../output/extinction_a/WildDinos.json
 
 import argparse
 import json
 import os
+from uuid import UUID
 from pathlib import Path
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -40,6 +22,8 @@ from tempfile import NamedTemporaryFile
 from arkparse.api.dino_api import DinoApi, Dino
 from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
+
+# ---------- CONSTANTS ----------
 
 STAT_NAME_MAP = {
     "hp": "health",
@@ -62,25 +46,23 @@ MAP_NAME_MAPPING = {
     "Astraeos_WP": ArkMap.ASTRAEOS,
 }
 
+# ---------- ARGS ----------
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Export wild tamable dinos from ASA savegame as JSON."
-    )
-    parser.add_argument("--savegame", type=Path, required=True, help="Path to .ark savegame file")
-    parser.add_argument("--output", type=Path, required=True, help="Output directory for JSON export")
-    parser.add_argument("--max-level", type=int, default=150, help="Max level for non-bionic dinos")
-    parser.add_argument("--max-level-bionic", type=int, default=180, help="Max level for bionic dinos")
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description="Export ASA wild tamable dinos to JSON.")
+    p.add_argument("--savegame", type=Path, required=True, help="Path to .ark savegame file")
+    p.add_argument("--output", type=Path, required=True, help="Base output directory (root). Final JSON will be <output>/<serverkey>/WildDinos.json")
+    p.add_argument("--serverkey", type=str, required=True, help="Server key used to build output folder name (e.g. extinction_a)")
+    p.add_argument("--max-level", type=int, default=150, help="Max level for non-bionic dinos")
+    p.add_argument("--max-level-bionic", type=int, default=180, help="Max level for bionic dinos")
+    return p.parse_args()
 
+# ---------- HELPERS ----------
 
 def is_bionic(class_name: str) -> bool:
-    """Check if dino class is considered bionic/tek."""
-    return "Bionic" in class_name or "Tek" in class_name or "TEK" in class_name
-
+    return ("Bionic" in class_name) or ("Tek" in class_name) or ("TEK" in class_name)
 
 def safe_color_indices(raw: Any) -> List[Optional[int]]:
-    """Parse dino color indices safely into a list of 6 elements."""
     if raw is None:
         return [None] * 6
     if isinstance(raw, list):
@@ -105,26 +87,41 @@ def safe_color_indices(raw: Any) -> List[Optional[int]]:
                 return [None] * 6
     return [None] * 6
 
-
-def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
-    """Extract map folder and map key from savegame path."""
-    return save_path.parent.name, save_path.stem
-
+def get_server_and_map_key(save_path: Path) -> Tuple[str, str]:
+    map_key = save_path.stem
+    server_folder = None
+    for p in save_path.parents:
+        name = p.name
+        if name.endswith("_a"):
+            server_folder = name
+            break
+    if server_folder is None:
+        # Fallback: best effort
+        try:
+            server_folder = save_path.parents[5].name
+        except Exception:
+            server_folder = save_path.parent.name
+    return server_folder, map_key
 
 def get_base_stat(stats: Any, stat_field: str) -> int:
-    """Safely return a base stat value, fallback 0 if missing."""
     try:
         return int(getattr(stats.base_stat_points, stat_field, 0) or 0)
     except Exception:
         return 0
 
-
 def within_level_cap(class_name: str, level: Optional[int], cap_normal: int, cap_bionic: int) -> bool:
-    """Check if dino level is within the allowed cap."""
     if level is None:
         return False
     return level <= (cap_bionic if is_bionic(class_name) else cap_normal)
 
+def _safe_int_id(value: Any) -> Optional[int]:
+    try:
+        i = int(str(value))
+        if -(2**63) <= i < 2**63:
+            return i
+        return None
+    except Exception:
+        return None
 
 def build_entry(
     dino_id: Any,
@@ -133,15 +130,14 @@ def build_entry(
     coords: Tuple[float, float],
     ccc: str,
 ) -> Dict[str, Any]:
-    """Build a JSON entry for one dino."""
     lat, lon = coords
     dino_class = f"{dino.get_short_name()}_C"
     s = dino.stats
-
     colors = safe_color_indices(dino_json.get("ColorSetIndices"))
+    int_id = _safe_int_id(dino_id)
 
     return {
-        "id": str(dino_id),
+        "id": int_id if int_id is not None else str(dino_id),
         "creature": dino_class,
         "sex": "Female" if dino.is_female else "Male",
         "lvl": (s.base_level if s else None),
@@ -164,12 +160,10 @@ def build_entry(
         "ccc": ccc,
         "dinoid": str(dino_id),
         "tameable": True,
-        "trait": dino_json.get("GeneTraits", "") or "",
+        "trait": str(dino_json.get("GeneTraits", "") or ""),
     }
 
-
 def resolve_coords(dino: Dino, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str]:
-    """Return (lat, lon) and ccc string for a dino."""
     if dino.is_cryopodded or not dino.location:
         return (0.0, 0.0), ""
     ccc = f"{dino.location.x:.2f} {dino.location.y:.2f} {dino.location.z:.2f}"
@@ -180,22 +174,29 @@ def resolve_coords(dino: Dino, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, 
         if coords is not None:
             return (coords.lat, coords.long), ccc
     except Exception:
-        return (0.0, 0.0), ccc
+        pass
     return (0.0, 0.0), ccc
 
+def _json_default(o: Any):
+    if isinstance(o, (UUID, Path)):
+        return str(o)
+    return str(o)
+
 # ---------- PROCESS ----------
+
 start_time = time()
 args = parse_args()
 
 if not args.savegame.exists():
     raise FileNotFoundError(f"Save file not found at: {args.savegame}")
 
-map_folder, map_name_key = get_map_key_from_savepath(args.savegame)
-ark_map = MAP_NAME_MAPPING.get(map_name_key)
+server_folder, map_key = get_server_and_map_key(args.savegame)
+ark_map = MAP_NAME_MAPPING.get(map_key)
 
-export_folder = Path(args.output) / map_folder
+# NEW: respect --serverkey, final path is <output>/<serverkey>/WildDinos.json
+export_folder = Path(args.output) / args.serverkey
 export_folder.mkdir(parents=True, exist_ok=True)
-json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
+json_output_path = export_folder / "WildDinos.json"
 
 save = AsaSave(args.savegame)
 dino_api = DinoApi(save)
@@ -220,13 +221,13 @@ for dino_id, dino in dino_api.get_all_wild_tamables().items():
     out_data.append(entry)
 
 # ---------- WRITE JSON (atomic) ----------
-payload = {"map": map_folder, "data": out_data}
+payload = {"map": server_folder, "data": out_data}
 
 with NamedTemporaryFile("w", delete=False, encoding="utf-8", dir=str(export_folder), suffix=".tmp") as tf:
-    json.dump(payload, tf, ensure_ascii=False, separators=(",", ":"))
+    json.dump(payload, tf, ensure_ascii=False, separators=(",", ":"), default=_json_default)
     tmp_name = tf.name
 
 os.replace(tmp_name, json_output_path)
 
-print(f"Saved {len(out_data)} tamed dinos to {json_output_path}")
+print(f"Saved {len(out_data)} wild tamables to {json_output_path}")
 print(f"Script runtime: {time() - start_time:.2f} seconds")

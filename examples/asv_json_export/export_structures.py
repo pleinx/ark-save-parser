@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Expected Output from ASV
-#     {
-#       "tribeid": 713052979,
-#       "tribe": "Tribe of Survivor",
-#       "struct": "StructureBP_Roof_Corner_Right_Inverted_Wood_C",
-#       "name": "",
-#       "lat": 60.857887,
-#       "lon": 58.53211,
-#       "ccc": "68256,87 86863,1 -20322,7",
-#       "created": "19.03.2025 12:09:57",
-#       "inventory": []
-#     },
+# Export of ASA structures to JSON
+# Output path requirement:
+#   <output>/<serverkey>/Structures.json
+# Example:
+#   python export_structures.py --serverkey="extinction_a" \
+#       --savegame="../temp/extinction_a/.../Extinction_WP.ark" \
+#       --output=../output
+#   => ../output/extinction_a/Structures.json
 
 import argparse
 import json
@@ -32,7 +28,8 @@ start_time = time()
 # ---------- CLI ----------
 parser = argparse.ArgumentParser(description="Export ASA structures to JSON.")
 parser.add_argument("--savegame", type=Path, required=True, help="Path to .ark savegame file")
-parser.add_argument("--output", type=Path, required=True, help="Output directory")
+parser.add_argument("--output", type=Path, required=True, help="Base output directory. Final JSON will be <output>/<serverkey>/Structures.json")
+parser.add_argument("--serverkey", type=str, required=True, help="Server key used to build output folder name (e.g. extinction_a)")
 args = parser.parse_args()
 
 # ---------- CONSTANTS ----------
@@ -88,9 +85,10 @@ if not save_path.exists():
 map_folder, map_name_key = get_map_key_from_savepath(save_path)
 ark_map = MAP_NAME_MAPPING.get(map_name_key)
 
-export_folder = args.output / map_folder
+# NEW: Output path uses --serverkey
+export_folder = args.output / args.serverkey
 export_folder.mkdir(parents=True, exist_ok=True)
-json_output_path = export_folder / f"{map_folder}_Structures.json"
+json_output_path = export_folder / "Structures.json"
 
 save = AsaSave(save_path)
 structure_api = StructureApi(save)
@@ -132,5 +130,5 @@ with NamedTemporaryFile("w", delete=False, encoding="utf-8", dir=str(export_fold
 
 os.replace(tmp_name, json_output_path)
 
-print(f"Saved {len(out_data)} data to {json_output_path}")
+print(f"Saved {len(out_data)} structures to {json_output_path}")
 print(f"Script runtime: {time() - start_time:.2f} seconds")

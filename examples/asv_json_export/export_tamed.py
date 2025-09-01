@@ -1,69 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Expected Output from ASV
-#     {
-#       "id": -340042379413954608,
-#       "tribeid": 1330327593,
-#       "tribe": "",
-#       "tamer": "",
-#       "imprinter": "",
-#       "imprint": 0.0,
-#       "creature": "Angler_Character_BP_Aberrant_C",
-#       "name": "",
-#       "sex": "Female",
-#       "base": 97,
-#       "lvl": 106,
-#       "lat": 20.483356,
-#       "lon": 32.922558,
-#       "hp-w": 19,
-#       "stam-w": 20,
-#       "melee-w": 24,
-#       "weight-w": 19,
-#       "speed-w": 0,
-#       "food-w": 14,
-#       "oxy-w": 0,
-#       "craft-w": 0,
-#       "hp-m": 0,
-#       "stam-m": 0,
-#       "melee-m": 0,
-#       "weight-m": 0,
-#       "speed-m": 0,
-#       "food-m": 0,
-#       "oxy-m": 0,
-#       "craft-m": 0,
-#       "hp-t": 6,
-#       "stam-t": 0,
-#       "melee-t": 3,
-#       "weight-t": 0,
-#       "speed-t": 0,
-#       "food-t": 0,
-#       "oxy-t": 0,
-#       "craft-t": 0,
-#       "c0": 21,
-#       "c1": 0,
-#       "c2": 0,
-#       "c3": 0,
-#       "c4": 31,
-#       "c5": 28,
-#       "mut-f": 0,
-#       "mut-m": 0,
-#       "cryo": true,
-#       "ccc": "-136619,53 -236133,14 47136,4",
-#       "dinoid": "340042379413954608",
-#       "isMating": false,
-#       "isNeutered": false,
-#       "isClone": false,
-#       "tamedServer": "4 | PvE Official Plus | pix-gaming.de seit 2020",
-#       "uploadedServer": "\n4 | PvE Official Plus | pix-gaming.de seit 2020",
-#       "maturation": "100",
-#       "traits": [
-#         {
-#           "trait": "HealthRobust (1)"
-#         }
-#       ],
-#       "inventory": []
-#     },
+# Export ASA **tamed** dinos to JSON
+# Output path requirement:
+#   <output>/<serverkey>/TamedDinos.json
+# Example:
+#   python export_tamed.py --serverkey="extinction_a" \
+#       --savegame="../temp/extinction_a/.../Extinction_WP.ark" \
+#       --output=../output
+#   => ../output/extinction_a/TamedDinos.json
 
 import re
 import json
@@ -85,8 +30,9 @@ start_time = time()
 
 # ---------- CLI ----------
 parser = argparse.ArgumentParser(description="Export ASA tamed dinos to JSON.")
-parser.add_argument("--savegame", type=str, required=True, help="Path to .ark savegame file")
-parser.add_argument("--output", type=str, required=True, help="Output directory")
+parser.add_argument("--savegame", type=Path, required=True, help="Path to .ark savegame file")
+parser.add_argument("--output", type=Path, required=True, help="Base output directory. Final JSON will be <output>/<serverkey>/TamedDinos.json")
+parser.add_argument("--serverkey", type=str, required=True, help="Server key used to build output folder name (e.g. extinction_a)")
 args = parser.parse_args()
 
 # ---------- CONSTANTS ----------
@@ -158,7 +104,6 @@ def extract_added_stat_values(stat_string: str) -> Dict[str, int]:
     for src_key, dst_key in ADDED_KEY_MAP.items():
         if src_key in matches:
             try:
-                # Prefer integer if possible; fall back to rounded int from float.
                 num = float(matches[src_key])
                 result[dst_key] = int(num) if num.is_integer() else int(round(num))
             except ValueError:
@@ -186,7 +131,7 @@ def pad_colors(color_indices: Any, length: int = 6) -> List[Optional[int]]:
 
 
 # ---------- LOAD SAVE ----------
-save_path = Path(args.savegame)
+save_path: Path = args.savegame
 if not save_path.exists():
     raise FileNotFoundError(f"Save file not found: {save_path}")
 
@@ -198,9 +143,10 @@ ark_map = MAP_NAME_MAPPING.get(map_name)
 if ark_map is None:
     raise ValueError(f"Unknown map name '{map_name}'. Known: {', '.join(MAP_NAME_MAPPING)}")
 
-export_folder = Path(args.output) / map_folder
+# NEW: Output path uses --serverkey
+export_folder = Path(args.output) / args.serverkey
 export_folder.mkdir(parents=True, exist_ok=True)
-json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
+json_output_path = export_folder / "TamedDinos.json"
 
 # ---------- PROCESS ----------
 dino_api = DinoApi(save)
