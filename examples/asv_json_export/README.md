@@ -23,7 +23,7 @@ py examples/asv_json_export/export_tamed.py --serverkey="ragnarok_1" --savegame=
 # ServerKey Parameter
 This is new. Some clusters have multiple server instances of a map. If you use this:
 ```cmd
-py examples/asv_json_export/export_tamed.py --serverkey="ragnarok_1" --savegame="temp/Ragnarok1/Ragnarok_WP.ark" --output="json_exports"
+py examples/asv_json_export/export_tamed.py --serverkey="ragnarok_1" --savegame="temp/Ragnarok1/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
 ```
 The output will be here `json_export/ragnarok_1/Tamed.json`
 
