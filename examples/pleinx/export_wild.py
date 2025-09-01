@@ -1,27 +1,44 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# Expected Output from ASV
+#     {
+#       "id": 433686362306623672,
+#       "creature": "Achatina_Character_BP_Aberrant_C",
+#       "sex": "Female",
+#       "lvl": 55,
+#       "lat": 51.422012,
+#       "lon": 67.36273,
+#       "hp": 9,
+#       "stam": 12,
+#       "melee": 12,
+#       "weight": 9,
+#       "speed": 0,
+#       "food": 12,
+#       "oxy": 0,
+#       "craft": 0,
+#       "c0": 49,
+#       "c1": 34,
+#       "c2": 0,
+#       "c3": 25,
+#       "c4": 23,
+#       "c5": 33,
+#       "ccc": "138901,88 11376,108 18292,477",
+#       "dinoid": "433686362306623672",
+#       "tameable": true,
+#       "trait": "Giantslaying (1)"
+#     },
+
+import argparse
 import json
+from pathlib import Path
 from time import time
+from typing import Any, Dict, List, Optional, Tuple
+
 from arkparse.api.dino_api import DinoApi, Dino
 from arkparse.enums import ArkMap
 from arkparse.saves.asa_save import AsaSave
-from pprint import pprint
-import argparse
-from pathlib import Path
-import os
-import ast
-from datetime import datetime
-import re
 
-start_time = time()
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Args
-parser = argparse.ArgumentParser(description="")
-parser.add_argument("--savegame", type=str, required=True, help="MapName e.g. Aberration_WP")
-parser.add_argument("--output", type=str, required=True, help="MapName e.g. Aberration_WP")
-args = parser.parse_args()
-
-# Mapping for custom JSON stat keys
 STAT_NAME_MAP = {
     "hp": "health",
     "stam": "stamina",
@@ -30,7 +47,7 @@ STAT_NAME_MAP = {
     "speed": "movement_speed",
     "food": "food",
     "oxy": "oxygen",
-    "craft": "crafting_speed"
+    "craft": "crafting_speed",
 }
 
 MAP_NAME_MAPPING = {
@@ -43,155 +60,170 @@ MAP_NAME_MAPPING = {
     "Astraeos_WP": ArkMap.ASTRAEOS,
 }
 
-# HELPER FUNCTIONS
-def extract_owner_attr(dino, dino_json_data, attr_name):
-    val = getattr(dino.cryopod.dino.owner, attr_name, None) if dino.is_cryopodded else (
-        getattr(dino.owner, attr_name, None) if dino.owner else None
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Export wild tamable dinos from ASA savegame as JSON."
     )
-    return val if val else dino_json_data.get(attr_name, None)
+    parser.add_argument("--savegame", type=Path, required=True, help="Path to .ark savegame file")
+    parser.add_argument("--output", type=Path, required=True, help="Output directory for JSON export")
+    parser.add_argument("--max-level", type=int, default=150, help="Max level for non-bionic dinos")
+    parser.add_argument("--max-level-bionic", type=int, default=180, help="Max level for bionic dinos")
+    return parser.parse_args()
 
-def convert_tamed_time(timestamp_str):
+
+def is_bionic(class_name: str) -> bool:
+    """Check if dino class is considered bionic/tek."""
+    return "Bionic" in class_name or "Tek" in class_name or "TEK" in class_name
+
+
+def safe_color_indices(raw: Any) -> List[Optional[int]]:
+    """Parse dino color indices safely into a list of 6 elements."""
+    if raw is None:
+        return [None] * 6
+    if isinstance(raw, list):
+        vals = raw[:6]
+        return [int(v) if isinstance(v, (int, float)) else None for v in vals] + [None] * (6 - len(vals))
+    if isinstance(raw, str):
+        s = raw.strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                inner = s[1:-1].strip()
+                if not inner:
+                    return [None] * 6
+                parts = [p.strip() for p in inner.split(",")]
+                vals: List[Optional[int]] = []
+                for p in parts[:6]:
+                    try:
+                        vals.append(int(float(p)))
+                    except ValueError:
+                        vals.append(None)
+                return vals + [None] * (6 - len(vals))
+            except Exception:
+                return [None] * 6
+    return [None] * 6
+
+
+def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
+    """Extract map folder and map key from savegame path."""
+    return save_path.parent.name, save_path.stem
+
+
+def get_base_stat(stats: Any, stat_field: str) -> int:
+    """Safely return a base stat value, fallback 0 if missing."""
     try:
-        return datetime.strptime(timestamp_str, "%Y.%m.%d-%H.%M.%S").strftime("%Y-%m-%d %H:%M:%S")
-    except (ValueError, TypeError):
-        return None
+        return int(getattr(stats.base_stat_points, stat_field, 0) or 0)
+    except Exception:
+        return 0
 
-def extract_added_stat_values(stat_string):
-    if not stat_string:
-        return {}
 
-    key_map = {
-        "health": "hp-a",
-        "stamina": "stam-a",
-        "melee_damage": "melee-a",
-        "weight": "weight-a",   # TODO is missing always 0.0
-        "movement_speed": "speed-a",
-        "food": "food-a",
-        "oxygen": "oxy-a"
-    }
+def within_level_cap(class_name: str, level: Optional[int], cap_normal: int, cap_bionic: int) -> bool:
+    """Check if dino level is within the allowed cap."""
+    if level is None:
+        return False
+    return level <= (cap_bionic if is_bionic(class_name) else cap_normal)
 
-    matches = re.findall(r'(\w+)=([\d.]+)', stat_string)
+
+def build_entry(
+    dino_id: Any,
+    dino: Dino,
+    dino_json: Dict[str, Any],
+    coords: Tuple[float, float],
+    ccc: str,
+) -> Dict[str, Any]:
+    """Build a JSON entry for one dino."""
+    lat, lon = coords
+    dino_class = f"{dino.get_short_name()}_C"
+    s = dino.stats
+
+    colors = safe_color_indices(dino_json.get("ColorSetIndices"))
 
     return {
-        key_map[k]: v
-        for k, v in matches
-        if k in key_map
-    }
-
-def load_tamable_classnames(filepath: str) -> set:
-    with open(filepath, "r", encoding="utf-8") as f:
-        return set(line.strip() for line in f if line.strip())
-
-# Load ASA save
-save_path = Path(f"{args.savegame}")
-if not save_path.exists():
-    raise FileNotFoundError(f"Save file not found at: {save_path}")
-
-tamable_path = os.path.join(BASE_DIR, "..", "..", "wip", "classes", "uncategorized", "tamable_dinos.txt")
-TAMABLE_CLASSNAMES = load_tamable_classnames(tamable_path)
-
-save = AsaSave(save_path)
-
-# Extract map name
-map_folder = save_path.parent.name
-# Extract map name from file
-map_name = save_path.stem  # e.g 'Aberration_WP'
-
-export_folder = Path(f"{args.output}/{map_folder}")
-export_folder.mkdir(parents=True, exist_ok=True)
-json_output_path = export_folder / f"{map_folder}_WildDinos.json"
-
-dino_api = DinoApi(save)
-
-# TODO: json format only on my machine
-
-dinos = []
-for dino_id, dino in dino_api.get_all_wild_tamables().items():
-    if not isinstance(dino, Dino):
-        continue
-
-    dino_json_data = dino.to_json_obj()
-    dino_class = dino.get_short_name() + "_C"
-    lvl = dino.stats.base_level if dino.stats else None
-
-    # Corrupt dinos are not tamable
-    if "_Corrupt" in dino_class:
-        continue
-
-    # Bionic (TEK) dinos max level check
-    if "Bionic" in dino_class and lvl > 180:
-        continue
-
-    # Non-TEK dinos max level check
-    if "Bionic" not in dino_class and lvl > 150:
-        continue
-
-    lat, lon = (0.0, 0.0)
-    ccc = ""
-    if not dino.is_cryopodded and dino.location:
-        ccc = f"{dino.location.x:.2f} {dino.location.y:.2f} {dino.location.z:.2f}"
-        coords = dino.location.as_map_coords(MAP_NAME_MAPPING.get(map_name))
-        if(coords):
-            lat = coords.lat
-            lon = coords.long
-
-    # extract dino stats
-    stats_entry = {}
-    for prefix, field in STAT_NAME_MAP.items():
-        stats_entry[f"{prefix}-w"] = getattr(dino.stats.base_stat_points, field, 0)
-        stats_entry[f"{prefix}-t"] = getattr(dino.stats.added_stat_points, field, 0)
-        stats_entry[f"{prefix}-m"] = getattr(dino.stats.mutated_stat_points, field, 0)
-
-    entry = {
         "id": str(dino_id),
         "creature": dino_class,
         "sex": "Female" if dino.is_female else "Male",
-        "lvl": lvl,
+        "lvl": (s.base_level if s else None),
         "lat": lat,
         "lon": lon,
-        "hp": stats_entry["hp-w"],
-        "stam": stats_entry["stam-w"],
-        "melee": stats_entry["melee-w"],
-        "weight": stats_entry["weight-w"],
-        "speed": stats_entry["speed-w"],
-        "food": stats_entry["food-w"],
-        "oxy": stats_entry["oxy-w"],
-        "craft": stats_entry["craft-w"],
+        "hp": get_base_stat(s, STAT_NAME_MAP["hp"]),
+        "stam": get_base_stat(s, STAT_NAME_MAP["stam"]),
+        "melee": get_base_stat(s, STAT_NAME_MAP["melee"]),
+        "weight": get_base_stat(s, STAT_NAME_MAP["weight"]),
+        "speed": get_base_stat(s, STAT_NAME_MAP["speed"]),
+        "food": get_base_stat(s, STAT_NAME_MAP["food"]),
+        "oxy": get_base_stat(s, STAT_NAME_MAP["oxy"]),
+        "craft": get_base_stat(s, STAT_NAME_MAP["craft"]),
+        "c0": colors[0],
+        "c1": colors[1],
+        "c2": colors[2],
+        "c3": colors[3],
+        "c4": colors[4],
+        "c5": colors[5],
+        "ccc": ccc,
         "dinoid": str(dino_id),
-        "tameable": "true",
-        "trait": dino_json_data.get("GeneTraits", None) if dino_json_data.get("GeneTraits", None) else ""
+        "tameable": True,
+        "trait": dino_json.get("GeneTraits", "") or "",
     }
 
-    # Adding Dino Colors
-    color_indices_str = dino_json_data.get("ColorSetIndices", "[]")
+
+def resolve_coords(dino: Dino, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str]:
+    """Return (lat, lon) and ccc string for a dino."""
+    if dino.is_cryopodded or not dino.location:
+        return (0.0, 0.0), ""
+    ccc = f"{dino.location.x:.2f} {dino.location.y:.2f} {dino.location.z:.2f}"
+    if ark_map is None:
+        return (0.0, 0.0), ccc
     try:
-        color_indices = ast.literal_eval(color_indices_str)
-    except (ValueError, SyntaxError):
-        color_indices = [None] * 6
+        coords = dino.location.as_map_coords(ark_map)
+        if coords is not None:
+            return (coords.lat, coords.long), ccc
+    except Exception:
+        return (0.0, 0.0), ccc
+    return (0.0, 0.0), ccc
 
-    entry["c0"] = color_indices[0] if len(color_indices) > 0 else None
-    entry["c1"] = color_indices[1] if len(color_indices) > 1 else None
-    entry["c2"] = color_indices[2] if len(color_indices) > 2 else None
-    entry["c3"] = color_indices[3] if len(color_indices) > 3 else None
-    entry["c4"] = color_indices[4] if len(color_indices) > 4 else None
-    entry["c5"] = color_indices[5] if len(color_indices) > 5 else None
 
-    dinos.append(entry)
+def main() -> None:
+    start = time()
+    args = parse_args()
 
-# CONTINUE WITH JSON EXPORT
-json_data = {
-    "map": map_folder,
-    "data": dinos
-}
+    if not args.savegame.exists():
+        raise FileNotFoundError(f"Save file not found at: {args.savegame}")
 
-if os.path.exists(json_output_path):
-    os.remove(json_output_path)
+    map_folder, map_name_key = get_map_key_from_savepath(args.savegame)
+    ark_map = MAP_NAME_MAPPING.get(map_name_key)
 
-with open(json_output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False, separators=(',', ':'))
+    json_output_path = args.output / map_folder / f"{map_folder}_WildDinos.json"
+    json_output_path.parent.mkdir(parents=True, exist_ok=True)
 
-# DONE, OUTPUT
-print(f"Saved {len(dinos)} dinos to {json_output_path}")
+    save = AsaSave(args.savegame)
+    dino_api = DinoApi(save)
 
-elapsed = time() - start_time
-print(f"Script runtime: {elapsed:.2f} seconds")
+    dinos_out: List[Dict[str, Any]] = []
+
+    for dino_id, dino in dino_api.get_all_wild_tamables().items():
+        if not isinstance(dino, Dino):
+            continue
+
+        dino_class = f"{dino.get_short_name()}_C"
+        lvl = (dino.stats.base_level if dino.stats else None)
+
+        if "_Corrupt" in dino_class:
+            continue
+        if not within_level_cap(dino_class, lvl, args.max_level, args.max_level_bionic):
+            continue
+
+        dino_json = dino.to_json_obj()
+        (lat, lon), ccc = resolve_coords(dino, ark_map)
+        entry = build_entry(dino_id, dino, dino_json, (lat, lon), ccc)
+        dinos_out.append(entry)
+
+    out_payload = {"map": map_folder, "data": dinos_out}
+    with json_output_path.open("w", encoding="utf-8") as f:
+        json.dump(out_payload, f, ensure_ascii=False, separators=(",", ":"))
+
+    print(f"Saved {len(dinos_out)} dinos to {json_output_path}")
+    print(f"Script runtime: {time() - start:.2f} seconds")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,40 +1,39 @@
-from uuid import UUID
-import json
-from time import time
-from arkparse.api import StructureApi
-from arkparse.enums import ArkMap, ArkStat
-from arkparse.saves.asa_save import AsaSave
-from arkparse.api.player_api import PlayerApi
-from pprint import pprint
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# Expected Output from ASV
+#     {
+#       "tribeid": 713052979,
+#       "tribe": "Tribe of Survivor",
+#       "struct": "StructureBP_Roof_Corner_Right_Inverted_Wood_C",
+#       "name": "",
+#       "lat": 60.857887,
+#       "lon": 58.53211,
+#       "ccc": "68256,87 86863,1 -20322,7",
+#       "created": "19.03.2025 12:09:57",
+#       "inventory": []
+#     },
+
 import argparse
+import json
 from pathlib import Path
-import os
-import ast
-from datetime import datetime, timedelta
-import re
+from time import time
+from typing import Any, Dict, List, Optional, Tuple
+
+from arkparse.api import StructureApi
+from arkparse.enums import ArkMap
+from arkparse.saves.asa_save import AsaSave
+from datetime import datetime
 
 start_time = time()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# Args
-parser = argparse.ArgumentParser(description="")
-parser.add_argument("--savegame", type=str, required=True, help="MapName e.g. Aberration_WP")
-parser.add_argument("--output", type=str, required=True, help="MapName e.g. Aberration_WP")
+# ---------- CLI ----------
+parser = argparse.ArgumentParser(description="Export ASA structures to JSON.")
+parser.add_argument("--savegame", type=Path, required=True, help="Path to .ark savegame file")
+parser.add_argument("--output", type=Path, required=True, help="Output directory")
 args = parser.parse_args()
 
-# Mapping for custom JSON stat keys
-STAT_NAME_MAP = {
-    "hp": "health",
-    "stam": "stamina",
-    "melee": "melee_damage",
-    "weight": "weight",
-    "speed": "movement_speed",
-    "food": "food",
-    "oxy": "oxygen",
-    "craft": "crafting_speed"
-}
-
+# ---------- CONSTANTS ----------
 MAP_NAME_MAPPING = {
     "Aberration_WP": ArkMap.ABERRATION,
     "Extinction_WP": ArkMap.EXTINCTION,
@@ -45,100 +44,87 @@ MAP_NAME_MAPPING = {
     "Astraeos_WP": ArkMap.ASTRAEOS,
 }
 
-# Load ASA save
-save_path = Path(f"{args.savegame}")
+# ---------- HELPERS ----------
+def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
+    """Extract map folder and map key from savegame path."""
+    return save_path.parent.name, save_path.stem
+
+
+def resolve_coords(structure: Any, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str]:
+    """Return (lat, lon) and ccc string for a structure."""
+    if not getattr(structure, "location", None):
+        return (0.0, 0.0), ""
+    loc = structure.location
+    ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
+    if ark_map is None:
+        return (0.0, 0.0), ccc
+    try:
+        coords = loc.as_map_coords(ark_map)
+        if coords is not None:
+            return (coords.lat, coords.long), ccc
+    except Exception:
+        return (0.0, 0.0), ccc
+    return (0.0, 0.0), ccc
+
+
+def parse_created(ts: Optional[str]) -> Optional[str]:
+    """Parse ASA timestamp 'YYYY.MM.DD-HH.MM.SS' to 'DD.MM.YYYY HH:MM:SS'."""
+    if not ts:
+        return None
+    try:
+        dt = datetime.strptime(ts, "%Y.%m.%d-%H.%M.%S")
+        return dt.strftime("%d.%m.%Y %H:%M:%S")
+    except ValueError:
+        return None
+
+
+# ---------- LOAD SAVE ----------
+save_path: Path = args.savegame
 if not save_path.exists():
     raise FileNotFoundError(f"Save file not found at: {save_path}")
 
-save = AsaSave(save_path)
+map_folder, map_name_key = get_map_key_from_savepath(save_path)
+ark_map = MAP_NAME_MAPPING.get(map_name_key)
 
-# Extract map name
-map_folder = save_path.parent.name
-# Extract map name from file
-map_name = save_path.stem  # e.g 'Aberration_WP'
-
-export_folder = Path(f"{args.output}/{map_folder}")
+export_folder = args.output / map_folder
 export_folder.mkdir(parents=True, exist_ok=True)
 json_output_path = export_folder / f"{map_folder}_Structures.json"
+
+save = AsaSave(save_path)
 structure_api = StructureApi(save)
 
+# ---------- PROCESS ----------
+out_data: List[Dict[str, Any]] = []
 
-def get_property_value(structure_json, property_name, default=None):
-    return next(
-        (prop.get("value") for prop in structure_json.get("properties", []) if prop.get("name") == property_name),
-        default
-    )
-
-def get_base_name(name: str) -> str:
-    return "_".join(name.split("_")[:-1])
-
-
-jsonData = []
-ctn=0
 for structure in structure_api.get_all().values():
     owner_name = structure.object.get_property_value("OwnerName")
-    if(owner_name == None):
+    if owner_name is None:
         continue
 
-    placed_ts = structure.object.get_property_value("OriginalPlacedTimeStamp", 0)
-    if placed_ts:
-        placed_ts = datetime.strptime(placed_ts, "%Y.%m.%d-%H.%M.%S")
-        created = placed_ts.strftime("%Y-%m-%d %H:%M:%S")
-    else:
-        created = None
+    tribe_id = structure.object.get_property_value("TargetingTeam")
+    if tribe_id is None:
+        continue
 
-    lat, lon = (0.0, 0.0)
-    ccc = ""
-    if structure.location:
-        ccc = f"{structure.location.x:.2f} {structure.location.y:.2f} {structure.location.z:.2f}"
-        coords = structure.location.as_map_coords(MAP_NAME_MAPPING.get(map_name))
-        if(coords):
-            lat = coords.lat
-            lon = coords.long
+    created = parse_created(structure.object.get_property_value("OriginalPlacedTimeStamp", 0))
+    (lat, lon), ccc = resolve_coords(structure, ark_map)
 
     entry = {
-        "tribeid": structure.object.get_property_value("TargetingTeam"),
+        "tribeid": tribe_id,
         "tribe": owner_name,
-        "struct": structure.get_short_name() + "_C",
+        "struct": f"{structure.get_short_name()}_C",
         "name": structure.object.get_property_value("BoxName"),
         "lat": lat,
         "lon": lon,
         "ccc": ccc,
-        "created":  created,
-        "inventory": []
+        "created": created,
+        "inventory": [],
     }
+    out_data.append(entry)
 
-    jsonData.append(entry)
+# ---------- WRITE JSON ----------
+payload = {"map": map_folder, "data": out_data}
+with json_output_path.open("w", encoding="utf-8") as f:
+    json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
 
-
-# CONTINUE WITH JSON EXPORT
-json_data = {
-    "map": map_folder,
-    "data": jsonData
-}
-
-if os.path.exists(json_output_path):
-    os.remove(json_output_path)
-
-with open(json_output_path, "w", encoding="utf-8") as f:
-    json.dump(json_data, f, ensure_ascii=False, separators=(',', ':'))
-
-# DONE, OUTPUT
-print(f"Saved {len(jsonData)} data to {json_output_path}")
-
-elapsed = time() - start_time
-print(f"Script runtime: {elapsed:.2f} seconds")
-
-
-# Expected Output
-#     {
-#       "tribeid": 713052979,
-#       "tribe": "Tribe of M0ix",
-#       "struct": "StructureBP_Roof_Corner_Right_Inverted_Wood_C",
-#       "name": "",
-#       "lat": 60.857887,
-#       "lon": 58.53211,
-#       "ccc": "68256,87 86863,1 -20322,7",
-#       "created": "19.03.2025 12:09:57",
-#       "inventory": []
-#     },
+print(f"Saved {len(out_data)} data to {json_output_path}")
+print(f"Script runtime: {time() - start_time:.2f} seconds")
