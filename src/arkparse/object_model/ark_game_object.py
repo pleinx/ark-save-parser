@@ -204,19 +204,29 @@ class ArkGameObject(ArkPropertyContainer):
     def get_short_name(self) -> str:
         to_strip_end = [
             "_C",
+            "_BP"
         ]
 
         to_strip_start = [
             "PrimalItemResource_",
             "PrimalItemAmmo_",
+            "BP_"
         ]
 
         to_replace = {
             "_Character_BP": "",
-            "_ASA_C": ""
+            "_ASA_C": "",
+            "StructureBP_": "",
+            "PrimalItemStructure_": "",
+            "PrimalItem_": "",
+            "PrimalItem": "",
+            "DinoCharacterStatus_BP": "Status",
         }
 
         short = self.blueprint.split('/')[-1].split('.')[0]
+
+        for old, new in to_replace.items():
+            short = short.replace(old, new)
 
         for strip in to_strip_end:
             if short.endswith(strip):
@@ -225,8 +235,5 @@ class ArkGameObject(ArkPropertyContainer):
         for strip in to_strip_start:
             if short.startswith(strip):
                 short = short[len(strip):]
-
-        for old, new in to_replace.items():
-            short = short.replace(old, new)
 
         return short

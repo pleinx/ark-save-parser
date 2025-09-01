@@ -12,7 +12,8 @@ save = AsaSave(save_path)
 
 config = GameObjectReaderConfiguration(
     property_names= [
-        "TamerString"
+        "TamerString",
+        "Health"
     ]  # Create filter
 )
 # Create list of generic Ark objects
