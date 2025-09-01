@@ -23,6 +23,6 @@ def ex_02b_tamed_dino_heatmap(save_path: Path, map: ArkMap) -> None:
     draw_heatmap(heatmap, map)                # draw the heatmap for the Aberration map
 
 if __name__ == "__main__":
-    save_path = Path("D:\\ARK servers\\Ascended\\arkparse\\APExamples\\temp\\ASV\\Ragnarok_WP\\Ragnarok_WP.ark")
+    save_path = ArkFtpClient.from_config('../../ftp_config.json', ArkMap.ABERRATION).download_save_file(Path.cwd())
     ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.WARNING, False)
     ex_02b_tamed_dino_heatmap(save_path, ArkMap.RAGNAROK)  # run the example

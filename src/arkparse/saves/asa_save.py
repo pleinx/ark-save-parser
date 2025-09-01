@@ -2,7 +2,7 @@ import logging
 import math
 import sqlite3
 from pathlib import Path
-from typing import Dict, Optional, Collection
+from typing import Dict, Optional, Collection, List
 import uuid
 
 from arkparse.logging import ArkSaveLogger
@@ -397,6 +397,13 @@ class AsaSave:
         if result and result[0]:
             return result[0]
         return 0
+    
+    def get_objects_with_property(self, property_names: List[str]) -> Dict[uuid.UUID, 'ArkGameObject']:
+        id_bytes = []
+        for prop in property_names:
+            id_ = self.save_context.get_name_id(prop)
+            if id_ is not None:
+                id_bytes.append(id_.to_bytes(4, byteorder="little") + b'\x00\x00\x00\x00')
 
     def get_game_objects(self, reader_config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()) -> Dict[uuid.UUID, 'ArkGameObject']:
         query = "SELECT key, value FROM game"
@@ -404,6 +411,12 @@ class AsaSave:
         row_index = 0
         objects = []
         self.faulty_objects = 0
+        prop_ids = []
+
+        for prop in reader_config.property_names:
+            id_ = self.save_context.get_name_id(prop)
+            if id_ is not None:
+                prop_ids.append(id_.to_bytes(4, byteorder="little") + b'\x00\x00\x00\x00')
 
         ArkSaveLogger.enter_struct("GameObjects")
 
@@ -439,13 +452,26 @@ class AsaSave:
                     objects.append(class_name)
                 
                 if obj_uuid not in self.parsed_objects.keys():
-                    ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
-                    
+                    ark_game_object = None
+                    found = False
+                    for pid in prop_ids:
+                        if byte_buffer.find_byte_sequence(pid, adjust_offset=0):
+                            found = True
+
+                    if found or len(prop_ids) == 0:
+                        ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
+
                     if ark_game_object:
                         game_objects[obj_uuid] = ark_game_object
                         self.parsed_objects[obj_uuid] = ark_game_object
                 else:
-                    game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
+                    found = False or (len(prop_ids) == 0)
+                    for prop in reader_config.property_names:
+                        if self.parsed_objects[obj_uuid].has_property(prop):
+                            found = True
+
+                    if found:
+                        game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
 
 
         for o in self.var_objects:
