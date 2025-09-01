@@ -43,6 +43,7 @@ I just hope it's usefull for someone!
 - **Base API**: Export and import entire bases for custom scenarios.
 - **Stackable API**: Simple API for parsing basic resources, ammo, structure items and such...
 - **Json API**: Simple API for exporting data as JSON.
+- **Json API (ASV)**: Simple example how to export data as JSON like ASV.
 - **General Tools**: Create custom save file content or perform bulk modifications.
 
 ---
@@ -200,6 +201,13 @@ json_api = JsonApi(save) # initializes the JSON API
 
 json_api.export_items() # exports items to JSON
 ```
+
+---
+
+#### f. **JSON API: Export parsed data as JSON like ASV (ported)**
+Check out the readme of ASV export port
+
+```examples/asv_json_export/README.md```
 
 ## Contributing
 
