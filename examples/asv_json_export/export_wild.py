@@ -31,9 +31,11 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
+from tempfile import NamedTemporaryFile
 
 from arkparse.api.dino_api import DinoApi, Dino
 from arkparse.enums import ArkMap
@@ -181,49 +183,50 @@ def resolve_coords(dino: Dino, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, 
         return (0.0, 0.0), ccc
     return (0.0, 0.0), ccc
 
+# ---------- PROCESS ----------
+start_time = time()
+args = parse_args()
 
-def main() -> None:
-    start = time()
-    args = parse_args()
+if not args.savegame.exists():
+    raise FileNotFoundError(f"Save file not found at: {args.savegame}")
 
-    if not args.savegame.exists():
-        raise FileNotFoundError(f"Save file not found at: {args.savegame}")
+map_folder, map_name_key = get_map_key_from_savepath(args.savegame)
+ark_map = MAP_NAME_MAPPING.get(map_name_key)
 
-    map_folder, map_name_key = get_map_key_from_savepath(args.savegame)
-    ark_map = MAP_NAME_MAPPING.get(map_name_key)
+export_folder = Path(args.output) / map_folder
+export_folder.mkdir(parents=True, exist_ok=True)
+json_output_path = export_folder / f"{map_folder}_TamedDinos.json"
 
-    json_output_path = args.output / map_folder / f"{map_folder}_WildDinos.json"
-    json_output_path.parent.mkdir(parents=True, exist_ok=True)
+save = AsaSave(args.savegame)
+dino_api = DinoApi(save)
 
-    save = AsaSave(args.savegame)
-    dino_api = DinoApi(save)
+out_data: List[Dict[str, Any]] = []
 
-    dinos_out: List[Dict[str, Any]] = []
+for dino_id, dino in dino_api.get_all_wild_tamables().items():
+    if not isinstance(dino, Dino):
+        continue
 
-    for dino_id, dino in dino_api.get_all_wild_tamables().items():
-        if not isinstance(dino, Dino):
-            continue
+    dino_class = f"{dino.get_short_name()}_C"
+    lvl = (dino.stats.base_level if dino.stats else None)
 
-        dino_class = f"{dino.get_short_name()}_C"
-        lvl = (dino.stats.base_level if dino.stats else None)
+    if "_Corrupt" in dino_class:
+        continue
+    if not within_level_cap(dino_class, lvl, args.max_level, args.max_level_bionic):
+        continue
 
-        if "_Corrupt" in dino_class:
-            continue
-        if not within_level_cap(dino_class, lvl, args.max_level, args.max_level_bionic):
-            continue
+    dino_json = dino.to_json_obj()
+    (lat, lon), ccc = resolve_coords(dino, ark_map)
+    entry = build_entry(dino_id, dino, dino_json, (lat, lon), ccc)
+    out_data.append(entry)
 
-        dino_json = dino.to_json_obj()
-        (lat, lon), ccc = resolve_coords(dino, ark_map)
-        entry = build_entry(dino_id, dino, dino_json, (lat, lon), ccc)
-        dinos_out.append(entry)
+# ---------- WRITE JSON (atomic) ----------
+payload = {"map": map_folder, "data": out_data}
 
-    out_payload = {"map": map_folder, "data": dinos_out}
-    with json_output_path.open("w", encoding="utf-8") as f:
-        json.dump(out_payload, f, ensure_ascii=False, separators=(",", ":"))
+with NamedTemporaryFile("w", delete=False, encoding="utf-8", dir=str(export_folder), suffix=".tmp") as tf:
+    json.dump(payload, tf, ensure_ascii=False, separators=(",", ":"))
+    tmp_name = tf.name
 
-    print(f"Saved {len(dinos_out)} dinos to {json_output_path}")
-    print(f"Script runtime: {time() - start:.2f} seconds")
+os.replace(tmp_name, json_output_path)
 
-
-if __name__ == "__main__":
-    main()
+print(f"Saved {len(out_data)} tamed dinos to {json_output_path}")
+print(f"Script runtime: {time() - start_time:.2f} seconds")

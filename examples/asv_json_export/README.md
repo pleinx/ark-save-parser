@@ -12,7 +12,7 @@ py examples/asv_json_export/export_structures.py --savegame="temp/Ragnarok_WP/Ra
 
 ### Exporting Wild Dinos (tamables only)
 ```cmd
-py examples/asv_json_export/export_wild_tamables.py --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
+py examples/asv_json_export/export_wild.py --savegame="temp/Ragnarok_WP/Ragnarok_WP.ark" --output="json_exports"
 ```
 
 ### Exporting Tamed Dinos

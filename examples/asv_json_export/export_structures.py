@@ -16,9 +16,11 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 from time import time
 from typing import Any, Dict, List, Optional, Tuple
+from tempfile import NamedTemporaryFile
 
 from arkparse.api import StructureApi
 from arkparse.enums import ArkMap
@@ -121,10 +123,14 @@ for structure in structure_api.get_all_fast():
     }
     out_data.append(entry)
 
-# ---------- WRITE JSON ----------
+# ---------- WRITE JSON (atomic) ----------
 payload = {"map": map_folder, "data": out_data}
-with json_output_path.open("w", encoding="utf-8") as f:
-    json.dump(payload, f, ensure_ascii=False, separators=(",", ":"))
+
+with NamedTemporaryFile("w", delete=False, encoding="utf-8", dir=str(export_folder), suffix=".tmp") as tf:
+    json.dump(payload, tf, ensure_ascii=False, separators=(",", ":"))
+    tmp_name = tf.name
+
+os.replace(tmp_name, json_output_path)
 
 print(f"Saved {len(out_data)} data to {json_output_path}")
 print(f"Script runtime: {time() - start_time:.2f} seconds")
