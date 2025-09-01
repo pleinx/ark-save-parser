@@ -2,7 +2,7 @@ from typing import Dict, Union, List
 from uuid import UUID
 
 from arkparse.saves.asa_save import AsaSave
-from arkparse.parsing import GameObjectReaderConfiguration
+from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
 from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.utils import TEMP_FILES_DIR
 
@@ -94,7 +94,35 @@ class StructureApi:
         if obj is None:
             return None
         return self._parse_single_structure(obj)
-    
+
+    def _parse_single_structure_fast(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure | StructureWithInventory]:
+        """Same as _parse_single_structure, but does not parse Inventory and does not store in cache."""
+
+        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
+            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=True)
+        else:
+            structure = Structure(obj.uuid, self.save)
+
+        if obj.uuid in self.save.save_context.actor_transforms:
+            structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
+
+        return structure
+
+    def get_all_fast(self, config: GameObjectReaderConfiguration = None) -> List[Structure | StructureWithInventory]:
+        """Same as get_all, but uses fast parsing and does not store in cache."""
+
+        objects = self.get_all_objects(config)
+
+        structures = []
+
+        for obj in objects.values():
+            if obj is None:
+                continue
+            structure = self._parse_single_structure_fast(obj)
+            structures.append(structure)
+
+        return structures
+
     def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, classes: List[str] = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         if classes is not None:
             config = GameObjectReaderConfiguration(

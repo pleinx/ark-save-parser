@@ -96,7 +96,7 @@ structure_api = StructureApi(save)
 # ---------- PROCESS ----------
 out_data: List[Dict[str, Any]] = []
 
-for structure in structure_api.get_all().values():
+for structure in structure_api.get_all_fast():
     owner_name = structure.object.get_property_value("OwnerName")
     if owner_name is None:
         continue
