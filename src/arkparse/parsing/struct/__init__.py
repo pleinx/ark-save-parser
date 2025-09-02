@@ -15,4 +15,5 @@ from .object_reference import ObjectReference, get_uuid_reference_bytes
 from .unknown_struct import UnknownStruct
 from .ark_custom_item_data import ArkCustomItemData
 from .ark_key_value_pair import ArkKeyValuePair
+from .ark_painting_key_value import ArkPaintingKeyValue
 

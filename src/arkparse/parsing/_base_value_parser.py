@@ -170,9 +170,9 @@ class BaseValueParser(BinaryReaderBase):
 
         always_zero = self.read_int()
 
-        no_prints = ["DontDoMaterialSpawning", "CorruptSpawnInValue", "LadderSocket"]
-        if always_zero != 0 and name not in no_prints:
-            ArkSaveLogger.warning_log(f"Always zero is not zero: {always_zero}, for name {name} at position {pos}")
+        # no_prints = ["DontDoMaterialSpawning", "CorruptSpawnInValue", "LadderSocket", "Splus_SourceInclude", "Splus_SourceExclude"]
+        # if always_zero != 0 and name not in no_prints:
+        #     ArkSaveLogger.warning_log(f"Always zero is not zero: {always_zero}, for name {name} at position {pos}")
         
         return name
     

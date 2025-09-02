@@ -58,7 +58,7 @@ class AsaSave:
         self.read_header()
         self.read_actor_locations()
         self.profile_data_in_db = self.profile_data_in_saves()
-        self._get_game_time_params()
+        # self._get_game_time_params()
 
     def __del__(self):
         self.close()
@@ -539,22 +539,6 @@ class AsaSave:
 
         if self.nr_parsed % 2500 == 0:
             ArkSaveLogger.save_log(f"Nr parsed: {self.nr_parsed}")
-
-        skip_list = [
-            "/Game/PrimalEarth/CoreBlueprints/Items/Notes/PrimalItem_StartingNote.PrimalItem_StartingNote_C",
-            "/Script/ShooterGame.StructurePaintingComponent",
-            "/Game/Packs/Frontier/Structures/TreasureCache/TreasureMap/PrimalItem_TreasureMap_WildSupplyDrop.PrimalItem_TreasureMap_WildSupplyDrop_C",
-            "/Game/PrimalEarth/Structures/Wooden/CropPlotLarge_SM.CropPlotLarge_SM_C",
-            "/Game/PrimalEarth/Structures/Pipes/WaterPipe_Stone_Intake.WaterPipe_Stone_Intake_C",
-            "/Game/PrimalEarth/Structures/BuildingBases/WaterTank_Metal.WaterTank_Metal_C",
-            "/Game/PrimalEarth/Structures/WaterTap_Metal.WaterTap_Metal_C"
-        ]
-
-        if class_name in skip_list:
-            return None
-        
-        # if not class_name.startswith("/Game/"):
-        #     return None
 
         try:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)

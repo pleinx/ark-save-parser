@@ -21,6 +21,7 @@ from .ark_primal_saddle_structure import ArkPrimalSaddleStructure
 from .ark_gene_trait_struct import ArkGeneTraitStruct
 from .ark_gacha_resource_struct import ArkGachaResourceStruct
 from .ark_gigantoraptor_bonded_struct import ArkGigantoraptorBondedStruct
+from .ark_painting_key_value import ArkPaintingKeyValue
 
 class ArkStructType(Enum):
     LinearColor = "LinearColor"
@@ -43,6 +44,7 @@ class ArkStructType(Enum):
     ArkGeneTraitStruct = "GeneTraitStruct"
     GachaResourceStruct = "Gacha_ResourceStruct"
     GigantoraptorBondedStruct = "GigantoraptorBonded_Struct"
+    ArkPaintingKeyValue = "PaintingKeyValue"
 
     # Static constructor mapping for ArkStructType
     
@@ -77,6 +79,7 @@ class ArkStructType(Enum):
             "GeneTraitStruct": lambda data: ArkGeneTraitStruct(data),
             "Gacha_ResourceStruct": lambda data: ArkGachaResourceStruct(data),
             "GigantoraptorBonded_Struct": lambda data: ArkGigantoraptorBondedStruct(data),
+            "PaintingKeyValue": lambda data: ArkPaintingKeyValue(data),
         }
         self.constructor = _constructors.get(type_name)
 

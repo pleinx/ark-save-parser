@@ -29,6 +29,7 @@ from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing.struct.ark_struct_type import ArkStructType
 from arkparse.parsing.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
 from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
+from arkparse.parsing.struct.ark_painting_key_value import ArkPaintingKeyValue
 
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.ark_set import ArkSet
@@ -86,6 +87,7 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.ArkGeneTraitStruct: lambda bb, ds: ArkGeneTraitStruct(bb),
     ArkStructType.GachaResourceStruct: lambda bb, ds: ArkGachaResourceStruct(bb),
     ArkStructType.GigantoraptorBondedStruct: lambda bb, ds: ArkGigantoraptorBondedStruct(bb),
+    ArkStructType.ArkPaintingKeyValue: lambda bb, ds: ArkPaintingKeyValue(bb),
 }
 
 # Flags driving how a primitive value is read
