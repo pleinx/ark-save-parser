@@ -1,10 +1,9 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 from pathlib import Path
 import os
 
 from arkparse.object_model.cryopods.cryopod import Cryopod
-from arkparse.object_model.dinos import dino
 from arkparse.object_model.dinos.dino import Dino, DinoStats
 from arkparse.object_model.dinos.tamed_baby import TamedBaby
 from arkparse.object_model.dinos.dino_ai_controller import DinoAiController
@@ -42,7 +41,7 @@ class DinoApi:
             config = GameObjectReaderConfiguration(
                 blueprint_name_filter=lambda name: \
                     name is not None and \
-                        (("Dinos/" in name and "_Character_" in name) or \
+                        (("Dinos/" in name and "_Character_" in name) or
                         ("PrimalItem_WeaponEmptyCryopod_C" in name)))
 
         objects = self.save.get_game_objects(config)
@@ -52,7 +51,7 @@ class DinoApi:
 
         return objects
     
-    def get_by_uuid(self, uuid: UUID) -> Dino:
+    def get_by_uuid(self, uuid: UUID) -> Optional[Dino]:
         object = self.save.get_game_object_by_id(uuid)
 
         if object is None:
@@ -444,7 +443,7 @@ class DinoApi:
 
         return None
     
-    def __get_all_files_from_dir_recursive(self, dir_path: Path) -> Dict[str, bytes]:
+    def __get_all_files_from_dir_recursive(self, dir_path: Path) -> list[ImportFile]:
         out = []
         base_file = None
         for root, _, files in os.walk(dir_path):

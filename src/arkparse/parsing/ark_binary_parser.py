@@ -259,9 +259,9 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             raise ValueError(f"Unknown value type {key_type_name} at position {position}")
         return key_type
 
-    def read_actor_transforms(self) -> Dict[UUID, ActorTransform]:
-        actor_transforms = {}
-        actor_transform_positions = {}
+    def read_actor_transforms(self) -> tuple[Dict[UUID, ActorTransform], Dict[UUID, int]]:
+        actor_transforms: Dict[UUID, ActorTransform] = {}
+        actor_transform_positions: Dict[UUID, int] = {}
         termination_uuid = UUID("00000000-0000-0000-0000-000000000000")
         position = self.get_position()
         uuid = self.read_uuid()
