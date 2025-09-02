@@ -236,11 +236,12 @@ class PlayerApi:
                 raise e
             new_players[parsed_player.id_] = parsed_player
 
-        for player in new_players.values():
-            for pawn in self.pawns.values():
-                if player.id_ == pawn.get_property_value("LinkedPlayerDataID"):
-                    player.get_location_and_inventory(self.save, pawn, bypass_inventory)
-                    break
+        if not self.pawns is None:
+            for player in new_players.values():
+                for pawn in self.pawns.values():
+                    if player.id_ == pawn.get_property_value("LinkedPlayerDataID"):
+                        player.get_location_and_inventory(self.save, pawn, bypass_inventory)
+                        break
 
         for tribe_uuid, tribe_data in self.data.tribes_data.items():
             try:
