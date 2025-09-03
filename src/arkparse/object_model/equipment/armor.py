@@ -120,7 +120,7 @@ class Armor(EquipmentWithArmor):
         return armor
     
     def __str__(self):
-        return f"Armor: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} - BP: {self.is_bp} - Crafted: {self.is_crafted()} - Quality: {self.quality} - Rating: {self.rating}"
+        return f"Armor: {self.get_short_name()} - HypoT: {self.hypothermal_insulation} - HyperT: {self.hyperthermal_insulation} -" + super().__str__()
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()

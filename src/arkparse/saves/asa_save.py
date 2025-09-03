@@ -49,6 +49,7 @@ class AsaSave:
         self.var_objects = {}
         self.var_objects["placed_structs"] = {}
         self.var_objects["g_placed_structs"] = {}
+        self.containers = None
         
 
         conn_str = f"file:{temp_save_path}?mode={'ro' if read_only else 'rw'}"
@@ -58,7 +59,7 @@ class AsaSave:
         self.read_header()
         self.read_actor_locations()
         self.profile_data_in_db = self.profile_data_in_saves()
-        # self._get_game_time_params()
+        self._get_game_time_params()
 
     def __del__(self):
         self.close()
@@ -73,7 +74,20 @@ class AsaSave:
             ArkSaveLogger.save_log("GameModeCustomBytes is too short, profile data not in saves")
             return False
         return True
-    
+
+    def get_container_of_inventory(self, inv_uuid: uuid.UUID) -> ArkGameObject:
+        if self.containers is None:
+            ArkSaveLogger.save_log("Fetching all containers with MyInventoryComponent property")
+            config = GameObjectReaderConfiguration()
+            config.property_names = ["MyInventoryComponent"]
+            self.containers = self.get_game_objects(config)
+
+        for _, container in self.containers.items():
+            # print(container.get_short_name())
+            if container.get_property_value("MyInventoryComponent") is not None and uuid.UUID(container.get_property_value("MyInventoryComponent").value) == inv_uuid:
+                return container
+        return None
+
     def list_all_items_in_db(self):
         query = "SELECT key, value FROM game"
         with self.connection as conn:
@@ -397,13 +411,6 @@ class AsaSave:
         if result and result[0]:
             return result[0]
         return 0
-    
-    def get_objects_with_property(self, property_names: List[str]) -> Dict[uuid.UUID, 'ArkGameObject']:
-        id_bytes = []
-        for prop in property_names:
-            id_ = self.save_context.get_name_id(prop)
-            if id_ is not None:
-                id_bytes.append(id_.to_bytes(4, byteorder="little") + b'\x00\x00\x00\x00')
 
     def get_game_objects(self, reader_config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()) -> Dict[uuid.UUID, 'ArkGameObject']:
         query = "SELECT key, value FROM game"

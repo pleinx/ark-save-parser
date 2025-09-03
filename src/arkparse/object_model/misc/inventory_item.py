@@ -67,12 +67,12 @@ class InventoryItem(ParsedObjectBase):
 
         self.update_binary()
 
-    def get_inventory(self, save: AsaSave):
+    def get_inventory(self):
         if self.owner_inv_uuid is None:
             ArkSaveLogger.error_log(f"InventoryItem {self.object.uuid} has no owner inventory UUID")
             return None
         from .inventory import Inventory # placed here to avoid circular import
-        return Inventory(self.owner_inv_uuid, save=save)
+        return Inventory(self.owner_inv_uuid, save=self.save)
 
     # def get_owner(self, save: AsaSave):
     #     from .inventory import Inventory # placed here to avoid circular import
