@@ -351,7 +351,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #     self.set_position(original_position)
     #     return found
 
-    def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1) -> List[int]:
+    def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1, print_findings: bool = False) -> List[int]:
         # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
         original_position = self.get_position()
         max_prints = 20
@@ -365,7 +365,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             if pos == -1:
                 break
             found.append(pos + cur_offset + adjust_offset)
-            if prints < max_prints:
+            if print_findings and prints < max_prints:
                 ArkSaveLogger.parser_log(
                     f"Found byte sequence at {pos + cur_offset + adjust_offset}"
                 )
