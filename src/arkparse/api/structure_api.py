@@ -113,18 +113,18 @@ class StructureApi:
 
         return result
     
-    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None):
+    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None, owner_tribe_name: str = None):
         structures = self.get_at_location(map, coords, radius)
 
         for _, obj in structures.items():
-            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id:
+            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id or obj.owner.tribe_name == owner_tribe_name:
                 obj.remove_from_save(self.save)
-    
-    def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+
+    def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None, owner_tribe_name: str = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
-        
-        if owner is None and owner_tribe_id is None:
-            raise ValueError("Either owner or owner_tribe_id must be provided")
+
+        if owner is None and owner_tribe_id is None and owner_tribe_name is None:
+            raise ValueError("Either owner, owner_tribe_id or owner_tribe_name must be provided")
 
         structures = self.get_all()
         
@@ -132,6 +132,8 @@ class StructureApi:
             if owner is not None and obj.is_owned_by(owner):
                 result[key] = obj
             elif owner_tribe_id is not None and obj.owner.tribe_id == owner_tribe_id:
+                result[key] = obj
+            elif owner_tribe_name is not None and obj.owner.tribe_name == owner_tribe_name:
                 result[key] = obj
 
         return result

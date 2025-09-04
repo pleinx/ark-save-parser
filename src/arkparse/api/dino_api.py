@@ -135,7 +135,9 @@ class DinoApi:
                                 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
                                 ArkSaveLogger.error_log(f"Error parsing cryopod {obj.uuid}: {e}")
                                 raise e
-                
+                            finally:
+                                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+
                 if dino is not None:
                     dinos[key] = dino
             except Exception as e:
@@ -180,8 +182,11 @@ class DinoApi:
         return babies
     
     def get_all_in_cryopod(self) -> Dict[UUID, TamedDino]:
-        return self.get_all(include_cryos=True, include_wild=False, include_tamed=False)
-    
+        tamed = self.get_all_tamed(include_cryopodded=True)
+        cryod = {key: dino for key, dino in tamed.items() if dino.cryopod is not None}
+
+        return cryod
+
     def get_all_by_class(self, class_names: List[str]) -> Dict[UUID, Dino]:
         config = GameObjectReaderConfiguration(
             blueprint_name_filter=lambda name: name is not None and name in class_names

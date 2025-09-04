@@ -66,7 +66,8 @@ class Inventory(ParsedObjectBase):
         if len(self.items) == 0:
             return
 
-        self.items.pop(item)
+        if item in self.items:
+            self.items.pop(item)
         self.binary.set_property_position("InventoryItems")
 
         object_references = []

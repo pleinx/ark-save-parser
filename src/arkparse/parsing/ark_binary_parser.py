@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, TYPE_CHECKING
 from uuid import UUID
 from io import BytesIO
@@ -297,8 +298,12 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     def read_uuids(self) -> List[UUID]:
         uuid_count = self.read_int()
         return [self.read_uuid() for _ in range(uuid_count)]
-
     
+    def store(self, folder: Path, uuid: UUID):
+        folder.mkdir(parents=True, exist_ok=True)
+        with open(folder / f"{uuid}.bin", "wb") as f:
+            f.write(self.byte_buffer)
+
     def find_names(self, no_print=False, type=0):
         if not self.save_context.has_name_table():
             return []
