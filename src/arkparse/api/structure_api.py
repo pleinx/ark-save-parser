@@ -3,8 +3,6 @@ from uuid import UUID
 
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.utils import TEMP_FILES_DIR
-
 from arkparse.object_model import ArkGameObject
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.object_model.structures import Structure, StructureWithInventory
