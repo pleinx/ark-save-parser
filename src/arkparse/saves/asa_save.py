@@ -34,6 +34,7 @@ class AsaSave:
         self.all_classes: Optional['list[str]'] = None
 
         self.profile_data_in_db = False
+        self.save_dir = path.parent if path is not None else None
         self.save_connection = None
         if use_connection:
             self.save_connection = SaveConnection(save_context=self.save_context, path=path, contents=contents, read_only=read_only)
