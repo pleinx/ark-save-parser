@@ -12,7 +12,6 @@ from arkparse.object_model.dinos.baby import Baby
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.object_model.misc.dino_owner import DinoOwner
-from arkparse.ftp.ark_ftp_client import ArkFtpClient
 
 from arkparse.parsing import ArkBinaryParser
 from arkparse.saves.asa_save import AsaSave
@@ -354,17 +353,11 @@ class DinoApi:
 
         return cryopodded
     
-    def modify_dinos(self, dinos: Dict[UUID, TamedDino], new_owner: DinoOwner = None, ftp_client: ArkFtpClient = None):
+    def modify_dinos(self, dinos: Dict[UUID, TamedDino], new_owner: DinoOwner = None):
         for key, dino in dinos.items():
             if new_owner is not None:
                 dino.owner.replace_with(new_owner, dino.binary)
                 dino.update_binary()
-
-        if ftp_client is not None:
-            self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.connect()
-            ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.close()
 
     def create_heatmap(self, map: ArkMap, resolution: int = 100, dinos: Dict[UUID, TamedDino] = None, classes: List[str] = None, owner: DinoOwner = None, only_tamed: bool = False):
         import math

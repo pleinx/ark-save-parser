@@ -3,7 +3,6 @@ from uuid import UUID
 
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
-from arkparse.ftp.ark_ftp_client import ArkFtpClient
 from arkparse.utils import TEMP_FILES_DIR
 
 from arkparse.object_model import ArkGameObject
@@ -205,7 +204,7 @@ class StructureApi:
 
         return result
      
-    def modify_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None, ftp_client: ArkFtpClient = None):
+    def modify_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None):
         for key, obj in structures.items():
             for uuid in obj.linked_structure_uuids:
                 if uuid not in structures.keys():
@@ -218,12 +217,6 @@ class StructureApi:
                 obj.owner.replace_self_with(new_owner, binary=obj.binary)
 
             obj.update_binary()
-
-        if ftp_client is not None:
-            self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.connect()
-            ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.close()
 
     def create_heatmap(self, map: ArkMap, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None, min_in_section: int = 1):
         import math
