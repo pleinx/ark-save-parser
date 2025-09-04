@@ -65,7 +65,6 @@ class EmbeddedCryopodData:
         except Exception as e:
             if "Unsupported embedded data version" not in str(e):
                 logging.error(f"Error unembedding item {item}: {e}")
-                parser.structured_print()
             raise e
     
     def get_dino_obj(self):

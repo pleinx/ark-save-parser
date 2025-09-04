@@ -550,24 +550,30 @@ class AsaSave:
         try:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)
         except Exception as e:
+            reraise = False
             if "/Game/" in class_name or "/Script/" in class_name:
                 if ArkSaveLogger._allow_invalid_objects is False:
                     byte_buffer.find_names(type=2)
                     byte_buffer.structured_print(to_default_file=True)
                     ArkSaveLogger.error_log(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
-                    ArkSaveLogger.error_log("Reparsing with logging:")
-                    ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
-                    try:
-                        ArkGameObject(obj_uuid, class_name, byte_buffer)
-                    except Exception as _:
-                        ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
-                        ArkSaveLogger.open_hex_view(True)
-
-                    raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                    reraise = True
+                    
                 self.faulty_objects += 1
                 ArkSaveLogger.warning_log(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
+                byte_buffer.structured_print(to_default_file=True)
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
+            
+            ArkSaveLogger.error_log("Reparsing with logging:")
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
+            try:
+                ArkGameObject(obj_uuid, class_name, byte_buffer)
+            except Exception as _:
+                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
+                ArkSaveLogger.open_hex_view(True)
 
+            if reraise:
+                raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+            
         return None
         

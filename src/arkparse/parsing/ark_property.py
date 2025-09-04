@@ -184,9 +184,10 @@ class ArkProperty:
         elif value_type == ArkValueType.Byte:
             prop, value_position = ArkProperty._read_byte_property(key, position, data_size, byte_buffer)
         elif value_type == ArkValueType.Struct:
-            byte_buffer.set_position(byte_buffer.get_position() - 4)  # V14 fix
+            byte_buffer.set_position(byte_buffer.get_position() - 8)  # V14 fix
+            nr_of_names = byte_buffer.read_uint32()
             struct_type = byte_buffer.read_name()
-            val, value_position = ArkProperty.read_struct_property(byte_buffer, data_size, struct_type, in_array)
+            val, value_position = ArkProperty.read_struct_property(byte_buffer, data_size, struct_type, in_array, nr_of_names=nr_of_names)
             prop = ArkProperty(key, value_type.name, position, 0, val)
         elif value_type == ArkValueType.Array:
             prop = ArkProperty.read_array_property(key, value_type.name, position, byte_buffer, data_size)
@@ -433,27 +434,35 @@ class ArkProperty:
     @staticmethod
     def __read_struct_header(bb: "ArkBinaryParser", position: int = 0, in_array: bool = False, in_map: bool = False, nr_of_struct_names: int = 1) -> Tuple[int, int, bool]:
         bb.validate_uint32(1)  # V14 marker
-        for _ in range(nr_of_struct_names):
-            _new_name = bb.read_name()
-            bb.validate_uint32(0)
-        data_size = bb.read_uint32()
-        size_byte = bb.read_byte()  # V14 unknown byte
+        with log_block("StructHeader"):
+            if nr_of_struct_names > 10:
+                ArkSaveLogger.warning_log(f"Too many struct names: {nr_of_struct_names}; reverting to reading one name")
+                nr_of_struct_names = 1
+            ArkSaveLogger.parser_log(f"reading {nr_of_struct_names} names")
+            for i in range(nr_of_struct_names):
+                _new_name = bb.read_name()
+                ArkSaveLogger.parser_log(f"name {i}: {_new_name}")
+                bb.validate_uint32(0)
+            data_size = bb.read_uint32()
+            size_byte = bb.read_byte()  # V14 unknown byte
 
-        no_pos_values = [0, 8]
-        if in_array or in_map:
-            no_pos_values = []
+            no_pos_values = [0, 8]
+            if in_array or in_map:
+                no_pos_values = []
 
-        read_pos = (size_byte not in no_pos_values)
-        if read_pos:
-            position = bb.read_uint32()
+            read_pos = (size_byte not in no_pos_values)
+            if read_pos:
+                position = bb.read_uint32()
+
+            ArkSaveLogger.parser_log(f"pos byte={size_byte}, pos read={read_pos}, position={position}, data size={data_size}")
 
         return data_size, position, read_pos, size_byte
 
     @staticmethod
-    def read_struct_property(bb: "ArkBinaryParser", data_size: int, struct_type: str, in_array: bool) -> Any:
+    def read_struct_property(bb: "ArkBinaryParser", data_size: int, struct_type: str, in_array: bool, nr_of_names: int = 1) -> Any:
         if not in_array:
-            with log_block(f"S({struct_type})"):
-                data_size, _, _, _ = ArkProperty.__read_struct_header(bb)
+            with log_block(f"S({struct_type})"):            
+                data_size, _, _, _ = ArkProperty.__read_struct_header(bb, nr_of_struct_names=nr_of_names)
                 value_position = bb.get_position()
                 return ArkProperty._read_struct_body(bb, data_size, struct_type, in_array), value_position
         else:
@@ -527,9 +536,9 @@ class ArkProperty:
             return _SIMPLE_SPECS[value_type].reader(bb)
         if value_type == ArkValueType.Byte:
             return bb.read_unsigned_byte()
-        if value_type == ArkValueType.Struct:
-            prop, _ = ArkProperty.read_struct_property(bb, bb.read_int(), True)
-            return prop
+        # if value_type == ArkValueType.Struct:
+        #     prop, _ = ArkProperty.read_struct_property(bb, bb.read_int(), True)
+        #     return prop
         raise RuntimeError(f"Cannot read value type: {value_type} at position {bb.get_position()}")
 
     @staticmethod

@@ -13,6 +13,7 @@ ArkSaveLogger.disable_all_logs()
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.INFO, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.DEBUG, True)
+ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.WARNING, True)
 ArkSaveLogger.allow_invalid_objects(False)
 CURENT_SET = "1"
 
