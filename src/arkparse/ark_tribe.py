@@ -21,8 +21,8 @@ class ArkTribe:
     log_index: int
     nr_of_dinos: int
 
-    def __init__(self, file: Path, from_store: bool):
-        self._archive = ArkArchive(file, from_store)
+    def __init__(self, archive_data: bytes, from_store: bool):
+        self._archive = ArkArchive(archive_data, from_store)
 
         self.properties = self._archive.get_object_by_class("/Script/ShooterGame.PrimalTribeData")
         if not self.properties:

@@ -88,8 +88,8 @@ class ArkPlayer:
         self.config = ArkCharacterConfig(props)
         self.stats = ArkCharacterStats(props)
     
-    def __init__(self, file: Path, from_store: bool):
-        _archive = ArkArchive(file, from_store)
+    def __init__(self, archive_data: bytes, from_store: bool):
+        _archive = ArkArchive(archive_data, from_store)
         
         self.player_data = _archive.get_object_by_class("/Game/PrimalEarth/CoreBlueprints/PrimalPlayerDataBP.PrimalPlayerDataBP_C")
         self.__init_player_data(self.player_data)
@@ -101,10 +101,11 @@ class ArkPlayer:
         self._archive = _archive
         self.inventory = {}
 
-    def get_location_and_inventory(self, save: AsaSave, pawn: ArkGameObject):
+    def get_location_and_inventory(self, save: AsaSave, pawn: ArkGameObject, bypass_inventory: bool = False):
         self.location = ActorTransform(vector = pawn.get_property_value("SavedBaseWorldLocation"))
         inv_uuid = UUID(pawn.get_property_value("MyInventoryComponent").value)
-        self.inventory = Inventory(inv_uuid, save=save)
+        if not bypass_inventory:
+            self.inventory = Inventory(inv_uuid, save=save)
 
     def __str__(self):
         return f"ArkPlayer: {self.char_name} (platform name=\'{self.name}\') in tribe {self.tribe} (ue5 id {self.unique_id}, ark id {self.id_})"

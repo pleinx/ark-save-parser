@@ -1,4 +1,5 @@
-from typing import List, Dict, Set, Optional
+import uuid
+from typing import List, Dict, Optional
 from pathlib import Path
 from uuid import UUID
 
@@ -38,8 +39,10 @@ class _TribeAndPlayerData:
     def __init__(self, store_data: ArkBinaryParser):
         self.data = store_data
         
-        self.tribe_data_pointers: List[int] = []
-        self.player_data_pointers: List[int] = []
+        self.tribe_data_pointers: Dict[uuid.UUID, list] = {}
+        self.player_data_pointers: Dict[uuid.UUID, list] = {}
+        self.tribes_data: Dict[uuid.UUID, bytes] = {}
+        self.players_data: Dict[uuid.UUID, bytes] = {}
         ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
         self.initialize_data()
         ArkSaveLogger.api_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
@@ -59,11 +62,12 @@ class _TribeAndPlayerData:
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
             uuid_pos = self.data.find_byte_sequence(uuid_bytes)
-            # TODO: already only take latest of UUID here
+            tribe_uuid = AsaSave.byte_array_to_uuid(uuid_bytes)
+
             ArkSaveLogger.api_log(f"Found tribe UUID at position: {uuid_pos[0]}, second UUID position: {uuid_pos[1]}")
             offset = pos - 36
             size = uuid_pos[1] - offset
-            self.tribe_data_pointers.append([uuid_bytes, offset+1, size])
+            self.tribe_data_pointers[tribe_uuid] = [uuid_bytes, offset+1, size]
 
     def _get_player_offsets(self) -> None:
         positions = self.data.find_byte_sequence(self.PLAYER_DATA_NAME)
@@ -73,6 +77,7 @@ class _TribeAndPlayerData:
             # Get ID
             self.data.set_position(pos - 20)
             uuid_bytes = self.data.read_bytes(16)
+            player_uuid = AsaSave.byte_array_to_uuid(uuid_bytes)
             offset = pos - 36
 
             next_player_data = positions[i + 1] if i + 1 < len(positions) else None
@@ -81,9 +86,7 @@ class _TribeAndPlayerData:
             size = end_pos - offset
             ArkSaveLogger.api_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
 
-            # TODO: already only take latest of UUID here
-
-            self.player_data_pointers.append([uuid_bytes, offset, size+1])
+            self.player_data_pointers[player_uuid] = [uuid_bytes, offset, size+1]
 
     def get_last_none_before(self, nones: List[int], pos: int = None):
         if pos is None:
@@ -95,14 +98,14 @@ class _TribeAndPlayerData:
         return None
 
 
-    def get_ark_tribe_raw_data(self, index: int) -> Optional[bytes]:
+    def get_ark_tribe_raw_data(self, index: uuid.UUID) -> Optional[bytes]:
         pointer = self.tribe_data_pointers[index]
         if not pointer:
             return None
         self.data.set_position(pointer[1])
         return self.data.read_bytes(pointer[2])
 
-    def get_ark_profile_raw_data(self, index: int) -> Optional[bytes]:
+    def get_ark_profile_raw_data(self, index: uuid.UUID) -> Optional[bytes]:
         pointer = self.player_data_pointers[index]
         if not pointer:
             return None
@@ -125,15 +128,15 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False):
+    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False):
         self.players: List[ArkPlayer] = []
         self.tribes: List[ArkTribe] = []
         self.tribe_to_player_map: Dict[int, List[ArkPlayer]] = {}
         self.save: AsaSave = save
-        self.pawns: Dict[UUID, ArkGameObject] = None
+        self.pawns: Optional[Dict[UUID, ArkGameObject]] = None
 
-        self.profile_paths: Set[Path] = set()
-        self.tribe_paths: Set[Path] = set()
+        self.profile_paths: List[Path] = []
+        self.tribe_paths: List[Path] = []
         self.ignore_error = ignore_error
 
         self.from_store = True
@@ -156,7 +159,7 @@ class PlayerApi:
             ArkSaveLogger.api_log(f"Found {len(self.profile_paths)} profile files and {len(self.tribe_paths)} tribe files in the save directory")
 
         ArkSaveLogger.api_log("Parsing player and tribe data from files")
-        self.__update_files()
+        self.__update_files(bypass_inventory)
 
     def __del__(self):
         ArkSaveLogger.api_log("Stopping PlayerApi")
@@ -193,83 +196,72 @@ class PlayerApi:
         
         self.data = _TribeAndPlayerData(self.save.get_custom_value("GameModeCustomBytes"))
 
-        for index in range(len(self.data.player_data_pointers)):
-            path = self.__store_as_file(self.data.get_ark_profile_raw_data(index), f"{index}.arkprofile")
-            self.profile_paths.add(path)
+        for key, value in self.data.player_data_pointers.items():
+            self.data.players_data[key] = self.data.get_ark_profile_raw_data(key)
 
-        for index in range(len(self.data.tribe_data_pointers)):
-            path = self.__store_as_file(self.data.get_ark_tribe_raw_data(index), f"{index}.arktribe")
-            self.tribe_paths.add(path)
+        for key, value in self.data.tribe_data_pointers.items():
+            self.data.tribes_data[key] = self.data.get_ark_tribe_raw_data(key)
 
     def get_files_from_directory(self, directory: Path):
         for path in directory.glob("*.arkprofile"):
-            self.profile_paths.add(path)
+            self.profile_paths.append(path)
         for path in directory.glob("*.arktribe"):
-            self.tribe_paths.add(path)
+            self.tribe_paths.append(path)
 
-    def __update_files(self):
+    def __update_files(self, bypass_inventory: bool):
         new_players: Dict[int, ArkPlayer] = {}
         new_tribes: Dict[int, ArkTribe] = {}
-        new_tribe_to_player = {}
+        new_tribe_to_player: Dict[int, List[ArkPlayer]] = {}
 
-        for path in self.profile_paths:
+        if not self.from_store:
+            index: int = 0
+            for path in self.profile_paths:
+                self.data.players_data[uuid.UUID(int=index)] = path.read_bytes()
+                index += 1
+            index = 0
+            for path in self.tribe_paths:
+                self.data.tribes_data[uuid.UUID(int=index)] = path.read_bytes()
+                index += 1
+
+        for player_uuid, player_data in self.data.players_data.items():
             try:
-                player: ArkPlayer = ArkPlayer(path, self.from_store)
+                parsed_player: ArkPlayer = ArkPlayer(player_data, self.from_store)
             except Exception as e:
                 if "Unsupported archive version" in str(e):
-                    ArkSaveLogger.warning_log(f"Skipping player data {path} due to unsupported archive version: {e}")
+                    ArkSaveLogger.api_log(f"Skipping player data {player_uuid} due to unsupported archive version: {e}")
+                    continue
+                if self.ignore_error:
+                    continue
+                raise e
+            new_players[parsed_player.id_] = parsed_player
+
+        if not self.pawns is None:
+            for player in new_players.values():
+                for pawn in self.pawns.values():
+                    if player.id_ == pawn.get_property_value("LinkedPlayerDataID"):
+                        player.get_location_and_inventory(self.save, pawn, bypass_inventory)
+                        break
+
+        for tribe_uuid, tribe_data in self.data.tribes_data.items():
+            try:
+                parsed_tribe: ArkTribe = ArkTribe(tribe_data, self.from_store)
+            except Exception as e:
+                if "Unsupported archive version" in str(e):
+                    ArkSaveLogger.api_log(f"Skipping player data {tribe_uuid} due to unsupported archive version: {e}")
                     continue
                 if self.ignore_error:
                     continue
                 raise e
 
-            # latest is newest??
-            if player.id_ in new_players:
-                ArkSaveLogger.api_log(f"Player with ID {player.id_} already exists, taking latest.")
-           
-            new_players[player.id_] = player
-
-        for player in new_players.values():
-            player_pawn = None
-            for pawn in self.pawns.keys():
-                pawn_player_id = self.pawns[pawn].get_property_value("LinkedPlayerDataID")
-                if pawn_player_id == player.id_:
-                    player_pawn = self.pawns[pawn]
-                    break
-            if self.save is not None and player_pawn is not None:
-                player.get_location_and_inventory(self.save, player_pawn)
-        
-        
-        for path in self.tribe_paths:
-            try:
-                tribe: ArkTribe = ArkTribe(path, self.from_store)
-            except Exception as e:
-                if "Unsupported archive version" in str(e):
-                    ArkSaveLogger.warning_log(f"Skipping player data {path} due to unsupported archive version: {e}")
-                    continue
-                if self.ignore_error:
-                    continue
-                raise e
-            
             players = []
-            for id in tribe.member_ids:
-                found = None
-                for p in new_players.values():
-                    p: ArkPlayer
-                    if p.id_ == id and found is None:
-                        players.append(p)
-                        found = p
-        
-                if found is None:
-                    ArkSaveLogger.api_log(f"Player with ID {id} not found in player list")
+            for member_id in parsed_tribe.member_ids:
+                if new_players.__contains__(member_id):
+                    players.append(new_players[member_id])
+                else:
+                    ArkSaveLogger.api_log(f"Player with ID {member_id} not found in player list")
 
-            # latest is newest??
-            if tribe.tribe_id in new_tribes:
-                ArkSaveLogger.api_log(f"Tribe with ID {tribe.tribe_id} already exists, taking latest.")
-                # print(f"Tribe {tribe.name} with ID {tribe.tribe_id} already exists, taking latest.")
-                
-            new_tribes[tribe.tribe_id] = tribe
-            new_tribe_to_player[tribe.tribe_id] = players
+            new_tribes[parsed_tribe.tribe_id] = parsed_tribe
+            new_tribe_to_player[parsed_tribe.tribe_id] = players
 
         self.players = list(new_players.values())
         self.tribes = list(new_tribes.values())
