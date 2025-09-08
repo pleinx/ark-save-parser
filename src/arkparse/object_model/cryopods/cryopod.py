@@ -102,11 +102,13 @@ class Cryopod(InventoryItem):
         
         if dino_obj is not None and status_obj is not None:
             self.dino = TamedDino.from_object(dino_obj, status_obj, self)
+            self.dino.save = save
             self.dino.location.in_cryopod = True
 
         saddle_obj = self.embedded_data.get_saddle_obj()
         if saddle_obj is not None:
             self.saddle = Saddle.from_object(saddle_obj)  
+            self.saddle.save = save
 
     def is_empty(self):
         return self.dino is None 

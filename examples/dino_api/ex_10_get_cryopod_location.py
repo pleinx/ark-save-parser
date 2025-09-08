@@ -16,9 +16,4 @@ dino_api = DinoApi(save)                                                        
 wild_tamables: Dict[UUID, TamedDino] = dino_api.get_all_in_cryopod()
 
 for dino in wild_tamables.values():
-    container = save.get_container_of_inventory(dino.cryopod.owner_inv_uuid)
-    if container:
-        loc = str(container.location) + f" {container.location.as_map_coords(ArkMap.RAGNAROK)}"
-    else:
-        loc = "Unknown location"
-    print(f"Dino {dino.get_short_name()} (owned by tribe {dino.owner.target_team}) is in a cryopod at {loc}")
+    print(f"Dino {dino.get_short_name()} (owned by tribe {dino.owner.target_team}) is in a cryopod at {dino.location}")
