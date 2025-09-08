@@ -84,7 +84,7 @@ class StructureApi:
         if config is None:
             self.retrieved_all = True
 
-        return structures
+        return structures    
 
     def get_by_id(self, id: UUID) -> Union[Structure, StructureWithInventory]:
         obj = self.save.get_game_object_by_id(id)

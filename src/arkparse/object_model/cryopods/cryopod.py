@@ -9,6 +9,7 @@ from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
+from arkparse.logging import ArkSaveLogger
 
 class EmbeddedCryopodData:
     class Item:
@@ -40,7 +41,12 @@ class EmbeddedCryopodData:
                     for _ in range(nr_of_obj):
                         objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
                     for obj in objects:
-                        obj.read_props_at_offset(parser)
+                        try:
+                            obj.read_props_at_offset(parser)
+                        except Exception as e:
+                            parser.structured_print()
+                            logging.error(f"Error reading props of embedded object {obj.blueprint} ({obj.uuid}): {e}")
+                            raise e
                     parser.save_context.generate_unknown = False
                         
                     return objects[0], objects[1]

@@ -34,6 +34,7 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         16: "OwningPlayerID",
         17: "OwningPlayerName",
         19: "StructProperty",
+        20: "UnknownStruct1", # !!!
         23: "DinoID1",
         24: "UInt32Property",
         26: "UntamedPoopTimeCache",

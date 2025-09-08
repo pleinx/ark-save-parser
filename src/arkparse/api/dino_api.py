@@ -25,6 +25,12 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.misc.inventory_item import InventoryItem
 
 class DinoApi:
+    _DEFAULT_CONFIG = GameObjectReaderConfiguration(
+        blueprint_name_filter=lambda name: \
+            name is not None and \
+                (("Dinos/" in name and "_Character_" in name) or \
+                ("PrimalItem_WeaponEmptyCryopod_C" in name)))
+
     def __init__(self, save: AsaSave):
         self.save = save
         self.all_objects = None
@@ -38,11 +44,7 @@ class DinoApi:
             if self.all_objects is not None:
                 return self.all_objects
 
-            config = GameObjectReaderConfiguration(
-                blueprint_name_filter=lambda name: \
-                    name is not None and \
-                        (("Dinos/" in name and "_Character_" in name) or \
-                        ("PrimalItem_WeaponEmptyCryopod_C" in name)))
+            config = self._DEFAULT_CONFIG
 
         objects = self.save.get_game_objects(config)
         
@@ -171,8 +173,14 @@ class DinoApi:
     def get_all_wild_tamables(self) -> Dict[UUID, Dino]:
         return {key: dino for key, dino in self.get_all_wild().items() if dino.get_short_name() + "_C" not in Dinos.non_tameable.all_bps}
     
-    def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
-        return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
+    def get_all_tamed(self, include_cryopodded = True, only_cryopodded = False) -> Dict[UUID, TamedDino]:
+        config = self._DEFAULT_CONFIG
+        if not only_cryopodded:
+            config.property_names.append("TamedTimeStamp")
+        if include_cryopodded:
+            config.property_names.append("AssociatedDinoID1")
+
+        return self.get_all(config, include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
 
     def get_all_babies(self, include_tamed: bool = True, include_cryopodded: bool = True, include_wild: bool = False) -> Dict[UUID, TamedBaby]:
         dinos = self.get_all(include_cryos=include_cryopodded, include_wild=include_wild, include_tamed=include_tamed)
