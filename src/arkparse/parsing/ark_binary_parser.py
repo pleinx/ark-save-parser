@@ -311,7 +311,11 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         uuid_count = self.read_int()
         return [self.read_uuid() for _ in range(uuid_count)]
     
-    def store(self, folder: Path, uuid: UUID):
+    def store(self, folder: Path = None, uuid: UUID = None):
+        if folder is None:
+            folder = TEMP_FILES_DIR
+        if uuid is None:
+            uuid = "temp_parser_file"
         folder.mkdir(parents=True, exist_ok=True)
         with open(folder / f"{uuid}.bin", "wb") as f:
             f.write(self.byte_buffer)
@@ -332,7 +336,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             int_value = self.read_uint32()
             name = self.save_context.get_name(int_value)
             
-            if name is not None:
+            if name is not None and int_value != 0:
                 found[int_value if use_id else i] = name
                 self.set_position(i)
                 if prints < max_prints:

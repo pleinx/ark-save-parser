@@ -2,12 +2,13 @@ from typing import List, Dict
 from uuid import UUID
 from io import BytesIO
 import zlib
+from pathlib import Path
 
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.logging import ArkSaveLogger
 from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
-from .ark_value_type import ArkValueType
+from arkparse.parsing.ark_value_type import ArkValueType
 from collections import deque
 from arkparse.utils.temp_files import TEMP_FILES_DIR
 
@@ -161,7 +162,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             name_table[i | 0x10000000] = parser.read_string()
         parser.save_context.names = name_table
         parser.save_context.constant_name_table = COMPRESSED_BYTES_NAME_CONSTANTS
-        parser.save_context.generate_unknown_names = True
+        parser.save_context.generate_unknown = True
         parser.position = 0
 
         return parser
@@ -171,7 +172,6 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         key_type_name = self.read_name()
         key_type = ArkValueType.from_name(key_type_name)
         if key_type is None:
-            ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
             raise ValueError(f"Unknown value type {key_type_name} at position {position}")
         return key_type
@@ -226,7 +226,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             int_value = self.read_uint32()
             name = self.save_context.get_name(int_value)
             
-            if name is not None:
+            if name is not None and int_value != 0:
                 found[i] = name
                 self.set_position(i)
                 if prints < max_prints:
@@ -255,6 +255,13 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         for length in lengths:
             if self.position >= len(self.byte_buffer):
                 break
+
+            if length is None:
+                name_id = self.read_uint32()
+                name = self.save_context.get_name(name_id)
+                self.validate_int32(0)
+                self.__structured_print_print(f"{name} ", to_file, end="")
+                continue
             
             for _ in range(length):
                 if self.position >= len(self.byte_buffer):
@@ -278,11 +285,13 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
 
         current_position = self.position
         known_structures = {
-            "UInt32Property": [4,1,4,4],
-            "DoubleProperty": [4,1,4,8],
-            "IntProperty": [4,1,4,4],
-            "ByteProperty": [4,1,4,1],
-            "UInt16Property": [4,4,1,4,2],
+            "UInt32Property": [4,4,1,4],
+            "DoubleProperty": [4,4,1,8],
+            "IntProperty": [4,4,1,4],
+            "ByteProperty": [4,4],
+            "UInt16Property": [4,4,1,2],
+            "BoolProperty": [4,4,2],
+            "ArrayProperty": [4, 4, None, 1, 4], # None means name
         }
         names = self.find_names(no_print=True)
         self.position = 0
@@ -342,6 +351,15 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #                 prints += 1
     #     self.set_position(original_position)
     #     return found
+
+    def store(self, folder: Path = None, uuid: UUID = None):
+        if folder is None:
+            folder = TEMP_FILES_DIR
+        if uuid is None:
+            uuid = "temp_parser_file"
+        folder.mkdir(parents=True, exist_ok=True)
+        with open(folder / f"{uuid}.bin", "wb") as f:
+            f.write(self.byte_buffer)
 
     def find_byte_sequence(self, pattern: bytes):
         original_position = self.get_position()

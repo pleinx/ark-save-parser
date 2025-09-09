@@ -13,7 +13,7 @@ from .struct.ark_struct_type import ArkStructType
 from .struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
 
 from .ark_binary_parser import ArkBinaryParser
-from .ark_value_type import ArkValueType
+from arkparse.parsing.ark_value_type import ArkValueType
 from arkparse.enums.ark_enum import ArkEnumValue
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.struct.ark_color import ArkColor
@@ -67,6 +67,8 @@ class ArkProperty:
 
         if value_type == ArkValueType.Boolean:
             p = ArkProperty(key, value_type.name, position, 0, ArkProperty.read_property_value(value_type, byte_buffer))
+            if not in_array:
+                byte_buffer.validate_byte(0)
         elif value_type in {ArkValueType.Float, ArkValueType.Int, ArkValueType.Int8, ArkValueType.Double, ArkValueType.UInt32,
                             ArkValueType.UInt64, ArkValueType.UInt16, ArkValueType.Int16, ArkValueType.Int64,
                             ArkValueType.String, ArkValueType.Name, ArkValueType.SoftObject, ArkValueType.Object}:
@@ -382,7 +384,7 @@ class ArkProperty:
         elif value_type == ArkValueType.Name:
             return byte_buffer.read_name()
         elif value_type == ArkValueType.Boolean:
-            return byte_buffer.read_short() == 1
+            return byte_buffer.read_byte() == 1
         elif value_type == ArkValueType.Struct:
             return ArkProperty.read_struct_property(byte_buffer, byte_buffer.read_int(), True)
         elif value_type == ArkValueType.SoftObject:

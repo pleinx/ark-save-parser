@@ -173,13 +173,17 @@ class DinoApi:
         return {key: dino for key, dino in self.get_all_wild().items() if dino.get_short_name() + "_C" not in Dinos.non_tameable.all_bps}
     
     def get_all_tamed(self, include_cryopodded = True, only_cryopodded = False) -> Dict[UUID, TamedDino]:
-        config = self._DEFAULT_CONFIG
-        if not only_cryopodded:
-            config.property_names.append("TamedTimeStamp")
-        if include_cryopodded:
-            config.property_names.append("AssociatedDinoID1")
+        all = self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
 
-        return self.get_all(config, include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
+        if only_cryopodded:
+            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino) and dino.cryopod is not None}
+        else:
+            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino)}
+
+        if include_cryopodded:
+            return tamed
+        else:
+            return {key: dino for key, dino in tamed.items() if dino.cryopod is None}
 
     def get_all_babies(self, include_tamed: bool = True, include_cryopodded: bool = True, include_wild: bool = False) -> Dict[UUID, TamedBaby]:
         dinos = self.get_all(include_cryos=include_cryopodded, include_wild=include_wild, include_tamed=include_tamed)

@@ -156,16 +156,16 @@ class BaseValueParser(BinaryReaderBase):
             # print(f"Name with id {name_id} not found, using default: {name}")
             ArkSaveLogger.parser_log(f"Name with id {name_id} not found, using default: {name}")
 
-        if name is None and self.save_context.generate_unknown:
+        elif name is None and self.save_context.generate_unknown:
             name = f"UnknownName_{name_id:08X}"
             ArkSaveLogger.warning_log(f"Name with id {name_id} not found, generating unknown name: {name}")
         
-        if name is None:
+        elif name is None:
             # ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
-            raise ValueError(f"Name is None, for name index {hex(name_id)} at position {pos}")
+            raise ValueError(f"Name is None, for name index {hex(name_id)} at position {pos}, generate_unknown is {self.save_context.generate_unknown}")
 
-        if name == "NPCZoneVolume" or "NPCZoneVolume_" in name or "_NPCZoneVolume" in name or "NPCCountVolume" in name:
+        elif name == "NPCZoneVolume" or "NPCZoneVolume_" in name or "_NPCZoneVolume" in name or "NPCCountVolume" in name:
             return name + "_" + hex(self.read_int())
 
         always_zero = self.read_int()

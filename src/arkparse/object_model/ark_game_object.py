@@ -12,6 +12,9 @@ from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.saves.save_context import SaveContext
 from arkparse.logging import ArkSaveLogger
 
+from arkparse.parsing._legacy_parsing.ark_property import ArkProperty as LegacyArkProperty
+from arkparse.parsing._legacy_parsing.ark_binary_parser import ArkBinaryParser as LegacyArkBinaryParser
+
 class _NameMetadata:
     def __init__(self, name: str, offset: int, is_read_as_string: bool):
         self.name = name
@@ -32,8 +35,10 @@ class ArkGameObject(ArkPropertyContainer):
     section: Optional[str] = None
     unknown: Optional[int] = None
     properties_offset : int = 0
+    parser_type: type = None
 
-    def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser] = None, from_custom_bytes: bool = False, no_header: bool = False):
+    def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser|LegacyArkBinaryParser] = None, from_custom_bytes: bool = False, no_header: bool = False):
+        self.parser_type = ArkProperty if (isinstance(binary_reader, ArkBinaryParser) or binary_reader is None) else LegacyArkProperty
         super().__init__()
         if binary_reader:
             ArkSaveLogger.set_file(binary_reader, "debug.bin")
@@ -93,7 +98,7 @@ class ArkGameObject(ArkPropertyContainer):
                         binary_reader.validate_uint32(0)
 
                 if not from_custom_bytes: 
-                    self.read_properties(binary_reader, ArkProperty, binary_reader.size())
+                    self.read_properties(binary_reader, self.parser_type, binary_reader.size())
                     
                     if  binary_reader.size() - binary_reader.position >= 20:
                         binary_reader.set_position(binary_reader.size() - 20)
@@ -175,7 +180,7 @@ class ArkGameObject(ArkPropertyContainer):
         if not legacy:
             reader.validate_byte(0)
         
-        self.read_properties(reader, ArkProperty, reader.size())
+        self.read_properties(reader, self.parser_type, reader.size())
         # reader.read_int()
         # self.uuid2 = reader.read_uuid()
 

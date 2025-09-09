@@ -10,9 +10,11 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 from arkparse.logging import ArkSaveLogger
+from arkparse.parsing.ark_property import ArkProperty
 
 # legacy classes 
 from arkparse.parsing._legacy_parsing.ark_binary_parser import ArkBinaryParser as LegacyArkBinaryParser
+from arkparse.parsing._legacy_parsing.ark_property import ArkProperty as LegacyArkProperty
 
 class EmbeddedCryopodData:
     class Item:
@@ -36,7 +38,7 @@ class EmbeddedCryopodData:
 
                 if len(bts) != 0:
                     is_legacy = ArkBinaryParser.is_legacy_compressed_data(bts)
-                    ArkSaveLogger.info_log(f"Unembedding cryopod data, size: {len(bts)} bytes, legacy: {is_legacy}")
+                    ArkSaveLogger.parser_log(f"Unembedding cryopod data, size: {len(bts)} bytes, legacy: {is_legacy}")
                     ParserClass: type[ArkBinaryParser] | type[LegacyArkBinaryParser] = LegacyArkBinaryParser if is_legacy else ArkBinaryParser
                     parser: ArkBinaryParser = ParserClass.from_deflated_data(bts)
                     parser.in_cryopod = True
@@ -56,7 +58,7 @@ class EmbeddedCryopodData:
                     except Exception as e:
                         ArkSaveLogger.error_log(f"Error reading embedded cryopod data:")
                         parser.structured_print()
-                        ArkSaveLogger.info_log(f"Made structured print of parser at error")
+                        ArkSaveLogger.parser_log(f"Made structured print of parser at error")
                         try:
                             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
                             objects = []
@@ -73,10 +75,7 @@ class EmbeddedCryopodData:
                     parser.save_context.generate_unknown = False
 
                     if is_legacy:
-                        ArkSaveLogger.info_log("Parsed legacy cryopod data")
-                        for obj in objects:
-                            obj.print_properties()
-                        
+                        ArkSaveLogger.parser_log("Parsed legacy cryopod data")
                         
                     return objects[0], objects[1]
 
@@ -85,21 +84,40 @@ class EmbeddedCryopodData:
                 bts = self.custom_data.byte_arrays[1].data if len(self.custom_data.byte_arrays) > 1 else b""
                 if len(bts) != 0:
                     parser = ArkBinaryParser(bts)
-                    parser.skip_bytes(4)  # Skip the first 8 bytes (header)
-                    parser.validate_uint32(7)
-                    parser.skip_bytes(8)  # Skip the first 8 bytes (header)
+                    first_int = parser.read_uint32()
+                    if first_int > 6:
+                        second_int = parser.read_uint32()
+                        if second_int == 7:
+                            parser.skip_bytes(8)
+                            ArkSaveLogger.parser_log("Detected modern saddle data in cryopod")
+                        else:
+                            raise Exception("Unsupported embedded data version for saddle")
+                    else:
+                        parser = LegacyArkBinaryParser(bts)
+                        PropType = LegacyArkProperty
+                        parser.skip_bytes(4)
+                        ArkSaveLogger.objects_log("Detected legacy saddle data in cryopod")
                     parser.save_context.generate_unknown = True
-                    obj = ArkGameObject(binary_reader=parser, no_header=True)
+                    try:
+                        obj = ArkGameObject(binary_reader=parser, no_header=True)
+                    except Exception as e:
+                        ArkSaveLogger.error_log(f"Error reading saddle data: {e}")
+                        parser.structured_print()
+                        parser.store()
+                        ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
+                        obj = ArkGameObject(binary_reader=parser, no_header=True)
+                        ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+                        raise e
                     parser.save_context.generate_unknown = False
                     
             else:
-                logging.warning(f"Unsupported item type: {item}")
+                ArkSaveLogger.warning_log(f"Unsupported item type: {item}")
             
             return None
     
         except Exception as e:
             if "Unsupported embedded data version" not in str(e):
-                logging.error(f"Error unembedding item {item}: {e}")
+                ArkSaveLogger.error_log(f"Error unembedding item {item}: {e}")
             raise e
     
     def get_dino_obj(self):
@@ -119,8 +137,8 @@ class Cryopod(InventoryItem):
         self.dino = None
         self.saddle = None
         self.costume = None
+        # ArkSaveLogger.debug_log(f"Parsing cryopod {uuid}")
         custom_item_data = self.object.get_array_property_value("CustomItemDatas")
-        ArkSaveLogger.debug_log(f"Parsing cryopod {uuid}")
         self.embedded_data = EmbeddedCryopodData(custom_item_data[0]) if len(custom_item_data) > 0 else None
 
         if self.embedded_data is None:
