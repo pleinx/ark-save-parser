@@ -87,7 +87,7 @@ class Weapon(EquipmentWithDurability):
         return weapon
 
     def __str__(self):
-        return f"Weapon: {self.get_short_name()} - Damage: {self.damage} - Durability: {self.durability} - BP: {self.is_bp} - Crafted: {self.is_crafted()} - Rating: {self.rating}"
+        return f"Weapon: {self.get_short_name()} - Damage: {self.damage} -" + super().__str__()
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()

@@ -12,6 +12,9 @@ from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.saves.save_context import SaveContext
 from arkparse.logging import ArkSaveLogger
 
+from arkparse.parsing._legacy_parsing.ark_property import ArkProperty as LegacyArkProperty
+from arkparse.parsing._legacy_parsing.ark_binary_parser import ArkBinaryParser as LegacyArkBinaryParser
+
 class _NameMetadata:
     def __init__(self, name: str, offset: int, is_read_as_string: bool):
         self.name = name
@@ -32,11 +35,14 @@ class ArkGameObject(ArkPropertyContainer):
     section: Optional[str] = None
     unknown: Optional[int] = None
     properties_offset : int = 0
+    parser_type: type = None
 
-    def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser] = None, from_custom_bytes: bool = False, no_header: bool = False):
+    def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser|LegacyArkBinaryParser] = None, from_custom_bytes: bool = False, no_header: bool = False):
+        self.parser_type = ArkProperty if (isinstance(binary_reader, ArkBinaryParser) or binary_reader is None) else LegacyArkProperty
         super().__init__()
         if binary_reader:
             ArkSaveLogger.set_file(binary_reader, "debug.bin")
+            ArkSaveLogger.parser_log(f"Parsing object with UUID: {uuid}, Blueprint: {blueprint}, From custom bytes: {from_custom_bytes}, No header: {no_header}")
             if not no_header:
                 if not from_custom_bytes:
                     self.uuid = uuid
@@ -48,12 +54,11 @@ class ArkGameObject(ArkPropertyContainer):
                     sContext : SaveContext = binary_reader.save_context
                     self.location = sContext.get_actor_transform(uuid) or None
                     ArkSaveLogger.parser_log(f"Retrieved actor location: {('Success' if self.location else 'Failed')}")
-                    
                 else:
                     self.uuid = binary_reader.read_uuid()
                     self.blueprint = binary_reader.read_string()
+                    ArkSaveLogger.parser_log(f"Read UUID: {self.uuid}, Blueprint: {self.blueprint}")
 
-                ArkSaveLogger.parser_log(f"Blueprint: {blueprint}")
                 binary_reader.validate_uint32(0)
 
             try:
@@ -64,6 +69,7 @@ class ArkGameObject(ArkPropertyContainer):
                         self.names, offsets = binary_reader.read_names(nr_names)
                     else:
                         self.names = binary_reader.read_strings_array()
+                        ArkSaveLogger.parser_log(f"Read {len(self.names)} names from custom bytes")
 
                     self.name_metadata = []
                     for i, offset in enumerate(offsets):
@@ -92,7 +98,7 @@ class ArkGameObject(ArkPropertyContainer):
                         binary_reader.validate_uint32(0)
 
                 if not from_custom_bytes: 
-                    self.read_properties(binary_reader, ArkProperty, binary_reader.size())
+                    self.read_properties(binary_reader, self.parser_type, binary_reader.size())
                     
                     if  binary_reader.size() - binary_reader.position >= 20:
                         binary_reader.set_position(binary_reader.size() - 20)
@@ -166,13 +172,15 @@ class ArkGameObject(ArkPropertyContainer):
         md = self.name_metadata[-1]
         return md.name.split("_")[-1].encode("utf-8")
                     
-    def read_props_at_offset(self, reader: ArkBinaryParser):
+    def read_props_at_offset(self, reader: ArkBinaryParser, legacy: bool = False):
         reader.set_position(self.properties_offset)
         # if reader.position != self.properties_offset:
         #     ArkSaveLogger.open_hex_view()
         #     raise Exception("Invalid offset for properties: ", reader.position, "expected: ", self.properties_offset)
-        reader.validate_byte(0)
-        self.read_properties(reader, ArkProperty, reader.size())
+        if not legacy:
+            reader.validate_byte(0)
+        
+        self.read_properties(reader, self.parser_type, reader.size())
         # reader.read_int()
         # self.uuid2 = reader.read_uuid()
 
@@ -200,3 +208,40 @@ class ArkGameObject(ArkPropertyContainer):
         name = buffer.read_string()
         buffer.validate_uint32(0)
         return name
+    
+    def get_short_name(self) -> str:
+        to_strip_end = [
+            "_C",
+            "_BP"
+        ]
+
+        to_strip_start = [
+            "PrimalItemResource_",
+            "PrimalItemAmmo_",
+            "BP_"
+        ]
+
+        to_replace = {
+            "_Character_BP": "",
+            "_ASA_C": "",
+            "StructureBP_": "",
+            "PrimalItemStructure_": "",
+            "PrimalItem_": "",
+            "PrimalItem": "",
+            "DinoCharacterStatus_BP": "Status",
+        }
+
+        short = self.blueprint.split('/')[-1].split('.')[0]
+
+        for old, new in to_replace.items():
+            short = short.replace(old, new)
+
+        for strip in to_strip_end:
+            if short.endswith(strip):
+                short = short[:-len(strip)]
+
+        for strip in to_strip_start:
+            if short.startswith(strip):
+                short = short[len(strip):]
+
+        return short

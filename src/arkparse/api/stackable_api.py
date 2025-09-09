@@ -15,7 +15,7 @@ class StackableApi(GeneralApi):
 
     def __init__(self, save: AsaSave):
         config = GameObjectReaderConfiguration(
-            blueprint_name_filter=lambda name: name is not None and "Resources/PrimalItemResource" in name
+            blueprint_name_filter=lambda name: name is not None and "Resources/PrimalItemResource" in name or "/PrimalItemConsumable" in name
         )
         super().__init__(save, config)
     

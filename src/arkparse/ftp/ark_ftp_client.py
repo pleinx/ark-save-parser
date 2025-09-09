@@ -1,10 +1,8 @@
 import ftplib
 import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from io import BytesIO
-
-from dateutil.tz import tzfile
-from pytz import UTC
 from pathlib import Path
 import json
 
@@ -19,8 +17,31 @@ SAVE_FILE_EXTENSION = ".ark"
 
 PROFILE_FILE_EXTENSION = ".arkprofile"
 TRIBE_FILE_EXTENSION = ".arktribe"
-# UTC_TIME = datetime.now(timezone.utc)
-# LOCAL_TIMEZONE = timezone(name='Europe/Berlin')
+
+LOCAL_TIMEZONE = datetime.now().astimezone().tzinfo
+UTC_TZ = ZoneInfo("UTC")
+
+def _parse_mdtm_to_utc(mdtm_response: str) -> datetime | None:
+    if not mdtm_response:
+        return None
+    s = mdtm_response.strip()
+    if s.startswith("213"):
+        s = s[3:].lstrip()
+    try:
+        naive = datetime.strptime(s, "%Y%m%d%H%M%S")
+    except ValueError:
+        logging.error(f"Error parsing MDTM '{mdtm_response}'")
+        return None
+    # MDTM is defined as UTC; attach UTC tzinfo
+    return naive.replace(tzinfo=UTC_TZ)
+
+
+def _to_utc_for_compare(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=LOCAL_TIMEZONE).astimezone(UTC_TZ)
+    return dt.astimezone(UTC_TZ)
 
 class ArkFile:
     path: str
@@ -32,23 +53,16 @@ class ArkFile:
         Initialize ArkFile with name, path, and last_modified time.
         The last_modified time is expected to be in the format returned by FTP MDTM command.
         """
-        # Parse the MDTM response, assuming it's in UTC
-        # Example MDTM response: '213 20240426153000'
-        # We remove the first 4 characters ('213 ') and parse the datetime
-        dt_str = last_modified[4:]
-        try:
-            dt = datetime.strptime(dt_str, "%Y%m%d%H%M%S")
-            dt = UTC.localize(dt)  # Make it timezone-aware as UTC
-            self.last_modified = dt.astimezone(tz=tzfile('Europe/Berlin'))  # Convert to local timezone
-        except ValueError as e:
-            logging.error(f"Error parsing date '{dt_str}': {e}")
-            self.last_modified = None  # Handle invalid date format
-
+        self.last_modified = _parse_mdtm_to_utc(last_modified)
         self.name = name
         self.path = path
 
     def __str__(self):
-        return f"Name: {self.name}, Path: {self.path}, Last Modified: {self.last_modified}"
+        if self.last_modified is None:
+            lm = "unknown"
+        else:
+            lm = self.last_modified.astimezone(LOCAL_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S %Z")
+        return f"Name: {self.name}, Path: {self.path}, Last Modified: {lm}"
 
     def is_newer_than(self, other: "ArkFile"):
         if self.last_modified and other.last_modified:
@@ -297,13 +311,16 @@ class ArkFtpClient:
         files = self.ftp.nlst()
         backup_files = [file for file in files if file.endswith(SAVE_FILE_EXTENSION + ".gz")]
         backup_files = [ArkFile(file, self.ftp.pwd(), self.ftp.sendcmd(f"MDTM {file}")) for file in backup_files]
-        backup_files.sort(key=lambda x: x.last_modified, reverse=True)
+        backup_files.sort(
+            key=lambda x: x.last_modified or datetime.min.replace(tzinfo=UTC_TZ),
+            reverse=True
+        )
         return backup_files
     
     def get_backup(self, since: datetime = None, before: datetime = None):
         backup_files = self.list_backups()
-        since = None if since is None else (since if since.tzinfo else UTC.localize(since))
-        before = None if before is None else (before if before.tzinfo else UTC.localize(before))
+        since = _to_utc_for_compare(since)
+        before = _to_utc_for_compare(before)
 
         for backup in backup_files:
             if (since is None or backup.last_modified > since) \

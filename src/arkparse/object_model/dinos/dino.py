@@ -29,7 +29,7 @@ class Dino(ParsedObjectBase):
 
     gene_traits: List[str] = []
     stats: DinoStats = DinoStats()
-    location: ActorTransform = ActorTransform()
+    _location: ActorTransform = ActorTransform()
 
     #saddle: Saddle
 
@@ -41,7 +41,7 @@ class Dino(ParsedObjectBase):
         self.id2 = self.object.get_property_value("DinoID2")
         self.gene_traits = self.object.get_array_property_value("GeneTraits")
         self.is_dead = self.object.get_property_value("bIsDead", False)
-        self.location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
+        self._location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
     
     def __init__(self, uuid: UUID = None, save: AsaSave = None, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
         super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
@@ -57,6 +57,10 @@ class Dino(ParsedObjectBase):
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)
+    
+    @property
+    def location(self) -> ActorTransform:
+        return self._location
 
     @staticmethod
     def from_object(dino_obj: ArkGameObject, status_obj: ArkGameObject, dino: "Dino" = None):
@@ -160,10 +164,10 @@ class Dino(ParsedObjectBase):
                      "ItemArchetype": self.object.blueprint }
 
         # Grab dino location if it exists
-        if self.location is not None:
-            json_obj["ActorTransformX"] = self.location.x
-            json_obj["ActorTransformY"] = self.location.y
-            json_obj["ActorTransformZ"] = self.location.z
+        if self._location is not None:
+            json_obj["ActorTransformX"] = self._location.x
+            json_obj["ActorTransformY"] = self._location.y
+            json_obj["ActorTransformZ"] = self._location.z
 
         # Grab dino inventory UUID if it exists
         if self.object.has_property("MyInventoryComponent"):
@@ -244,7 +248,7 @@ class Dino(ParsedObjectBase):
 
         self.save.modify_actor_transform(self.object.uuid, location.to_bytes())
         self.update_binary()
-        self.location = location
+        self._location = location
 
     def heal(self):
         self.stats.heal()

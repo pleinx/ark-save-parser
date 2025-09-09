@@ -84,6 +84,9 @@ class EquipmentWithArmor(EquipmentWithDurability):
             return value if value >= d else d
         else:
             return super().get_internal_value(stat)
+        
+    def __str__(self):
+        return f"armor: {self.armor} -" + super().__str__()
 
     def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
         if stat == ArkEquipmentStat.ARMOR:

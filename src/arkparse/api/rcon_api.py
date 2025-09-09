@@ -153,6 +153,7 @@ class RconApi:
         self.subscribers: Dict[str, int] = {}
         self.lock = threading.Lock()  # To handle concurrent access
 
+    @staticmethod
     def from_config(config: Path) -> "RconApi":
         with open(config, 'r') as config_file:
             config = json.load(config_file)

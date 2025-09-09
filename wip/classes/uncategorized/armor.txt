@@ -1,5 +1,6 @@
 
 /Game/ASA/Dinos/FireLion/PrimalItemArmor_Saddle_FireLion.PrimalItemArmor_Saddle_FireLion_C
+/Game/ASA/Dinos/Helicoprion/Saddle/PrimalItemArmor_Helicoprion.PrimalItemArmor_Helicoprion_C
 /Game/ClubARk/Rewards/RepairKit/Armor/PrimalItem_RepairKit_BootsOnly.PrimalItem_RepairKit_BootsOnly_C
 /Game/ClubARk/Rewards/RepairKit/Armor/PrimalItem_RepairKit_GlovesOnly.PrimalItem_RepairKit_GlovesOnly_C
 /Game/ClubARk/Rewards/RepairKit/Armor/PrimalItem_RepairKit_HatOnly.PrimalItem_RepairKit_HatOnly_C
