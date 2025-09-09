@@ -22,6 +22,9 @@ from .ark_gene_trait_struct import ArkGeneTraitStruct
 from .ark_gacha_resource_struct import ArkGachaResourceStruct
 from .ark_gigantoraptor_bonded_struct import ArkGigantoraptorBondedStruct
 from .ark_painting_key_value import ArkPaintingKeyValue
+from .ark_tracked_actor_id_category_pair import ArkTrackedActorIdCategoryPair
+from .ark_dino_order_id import ArkDinoOrderID
+from .ark_tribe_alliance import ArkTribeAlliance
 
 class ArkStructType(Enum):
     LinearColor = "LinearColor"
@@ -32,6 +35,7 @@ class ArkStructType(Enum):
     Color = "Color"
     VectorBoolPair = "VectorBoolPair"
     ArkTrackedActorIdCategoryPairWithBool = "TrackedActorIDCategoryPairWithBool"
+    ArkTrackedActorIdCategoryPair = "TrackedActorIDCategoryPair"
     MyPersistentBuffDatas = "MyPersistentBuffDatas"
     ItemNetId = "ItemNetID"
     ArkDinoAncestor = "DinoAncestorsEntry"
@@ -45,6 +49,8 @@ class ArkStructType(Enum):
     GachaResourceStruct = "Gacha_ResourceStruct"
     GigantoraptorBondedStruct = "GigantoraptorBonded_Struct"
     ArkPaintingKeyValue = "PaintingKeyValue"
+    ArkDinoOrderID = "DinoOrderID"
+    ArkTribeAlliance = "TribeAlliance"
 
     # Static constructor mapping for ArkStructType
     
@@ -67,6 +73,7 @@ class ArkStructType(Enum):
             "Color": lambda data: ArkColor(data),
             "VectorBoolPair": lambda data: ArkVectorBoolPair(data),
             "ArkTrackedActorIdCategoryPairWithBool": lambda data: ArkTrackedActorIdCategoryPairWithBool(data),
+            "ArkTrackedActorIdCategoryPair": lambda data: ArkTrackedActorIdCategoryPair(data),
             "MyPersistentBuffDatas": lambda data: ArkMyPersistentBuffDatas(data),
             "ItemNetID": lambda data: ArkItemNetId(data),
             "DinoAncestorsEntry": lambda data: ArkDinoAncestorEntry(data),
@@ -80,6 +87,8 @@ class ArkStructType(Enum):
             "Gacha_ResourceStruct": lambda data: ArkGachaResourceStruct(data),
             "GigantoraptorBonded_Struct": lambda data: ArkGigantoraptorBondedStruct(data),
             "PaintingKeyValue": lambda data: ArkPaintingKeyValue(data),
+            "DinoOrderID": lambda data: ArkDinoOrderID(data),
+            "TribeAlliance": lambda data: ArkTribeAlliance(data),
         }
         self.constructor = _constructors.get(type_name)
 

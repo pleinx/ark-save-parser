@@ -42,6 +42,9 @@ class ArkProperty:
         self.binary_position = 0
         self.nr_of_bytes = 0
 
+    def to_json_obj(self):
+        return { "name": self.name, "type": self.type, "value": self.value.__str__() }
+
     @staticmethod
     def read_property(byte_buffer: 'ArkBinaryParser', in_array: bool = False) -> Optional['ArkProperty']:
         key = byte_buffer.read_name()

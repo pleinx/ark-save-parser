@@ -23,6 +23,7 @@ from arkparse.parsing.struct.ark_gigantoraptor_bonded_struct import ArkGigantora
 from arkparse.parsing.struct.ark_tracked_actor_id_category_pair_with_bool import (
     ArkTrackedActorIdCategoryPairWithBool,
 )
+from arkparse.parsing.struct.ark_tracked_actor_id_category_pair import ArkTrackedActorIdCategoryPair
 from arkparse.parsing.struct.ark_my_persistent_buff_datas import ArkMyPersistentBuffDatas
 from arkparse.parsing.struct.ark_item_net_id import ArkItemNetId
 from arkparse.parsing.struct.object_reference import ObjectReference
@@ -30,6 +31,8 @@ from arkparse.parsing.struct.ark_struct_type import ArkStructType
 from arkparse.parsing.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
 from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 from arkparse.parsing.struct.ark_painting_key_value import ArkPaintingKeyValue
+from arkparse.parsing.struct.ark_dino_order_id import ArkDinoOrderID
+from arkparse.parsing.struct.ark_tribe_alliance import ArkTribeAlliance
 
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.ark_set import ArkSet
@@ -75,6 +78,7 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.UniqueNetIdRepl: lambda bb, ds: ArkUniqueNetIdRepl(bb),
     ArkStructType.VectorBoolPair: lambda bb, ds: ArkVectorBoolPair(bb),
     ArkStructType.ArkTrackedActorIdCategoryPairWithBool: lambda bb, ds: ArkTrackedActorIdCategoryPairWithBool(bb),
+    ArkStructType.ArkTrackedActorIdCategoryPair: lambda bb, ds: ArkTrackedActorIdCategoryPair(bb),
     ArkStructType.MyPersistentBuffDatas: lambda bb, ds: ArkMyPersistentBuffDatas(bb, ds),
     ArkStructType.ItemNetId: lambda bb, ds: ArkItemNetId(bb),
     ArkStructType.ArkDinoAncestor: lambda bb, ds: ArkDinoAncestorEntry(bb),
@@ -88,6 +92,8 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.GachaResourceStruct: lambda bb, ds: ArkGachaResourceStruct(bb),
     ArkStructType.GigantoraptorBondedStruct: lambda bb, ds: ArkGigantoraptorBondedStruct(bb),
     ArkStructType.ArkPaintingKeyValue: lambda bb, ds: ArkPaintingKeyValue(bb),
+    ArkStructType.ArkDinoOrderID: lambda bb, ds: ArkDinoOrderID(bb),
+    ArkStructType.ArkTribeAlliance: lambda bb, ds: ArkTribeAlliance(bb),
 }
 
 # Flags driving how a primitive value is read
@@ -489,6 +495,7 @@ class ArkProperty:
                 # uncomment the lines below if you want to make objects of unknown structs
                 # ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
                 # bb.structured_print(to_default_file=True)
+                # bb.store()
                 # ArkSaveLogger.error_log(f"Unsupported struct type {struct_type} in array")
                 # ArkSaveLogger.open_hex_view(True)
                 # raise ValueError(f"Unsupported struct type {struct_type}")

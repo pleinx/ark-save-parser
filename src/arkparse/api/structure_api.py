@@ -24,6 +24,7 @@ class StructureApi:
                                                    and not "PrimalItemStructure_" in name \
                                                    and not "/Skins/" in name \
                                                    and not "PrimalInventory" in name \
+                                                   and not "/TreasureMap/" in name \
                                                 #    and not "Tileset" in name \
                                                    and not "PrimalItemStructureSkin" in name
                                                    and not "PrimalItemResource" in name \
@@ -74,7 +75,7 @@ class StructureApi:
                 continue
 
             if obj.get_property_value("StructureID") is None:
-                ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) is not a structure, skipping")
+                ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) does not seem to be a structure, skipping")
                 continue
             
             structure = self._parse_single_structure(obj, bypass_inventory)
