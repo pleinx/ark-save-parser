@@ -11,6 +11,9 @@ from arkparse.object_model.misc.inventory_item import InventoryItem
 from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 from arkparse.logging import ArkSaveLogger
 
+# legacy classes 
+from arkparse.parsing._legacy_parsing.ark_binary_parser import ArkBinaryParser as LegacyArkBinaryParser
+
 class EmbeddedCryopodData:
     class Item:
         DINO_AND_STATUS = 0
@@ -30,24 +33,50 @@ class EmbeddedCryopodData:
         try:
             if item == self.Item.DINO_AND_STATUS:
                 bts = self.custom_data.byte_arrays[0].data if len(self.custom_data.byte_arrays) > 0 else b""
+
                 if len(bts) != 0:
-                    parser: ArkBinaryParser = ArkBinaryParser.from_deflated_data(bts)
+                    is_legacy = ArkBinaryParser.is_legacy_compressed_data(bts)
+                    ArkSaveLogger.info_log(f"Unembedding cryopod data, size: {len(bts)} bytes, legacy: {is_legacy}")
+                    ParserClass: type[ArkBinaryParser] | type[LegacyArkBinaryParser] = LegacyArkBinaryParser if is_legacy else ArkBinaryParser
+                    parser: ArkBinaryParser = ParserClass.from_deflated_data(bts)
                     parser.in_cryopod = True
-                    
-                    objects: List[ArkGameObject] = []
-                    parser.skip_bytes(8)  # Skip the first 8 bytes (header)
-                    nr_of_obj = parser.read_uint32()
-                    parser.save_context.generate_unknown = True
-                    for _ in range(nr_of_obj):
-                        objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
-                    for obj in objects:
+
+                    try:
+                        objects: List[ArkGameObject] = []
+                        if not is_legacy:
+                            parser.skip_bytes(8)  # Skip the first 8 bytes (header)
+                        nr_of_obj = parser.read_uint32()
+                        ArkSaveLogger.parser_log(f"Number of embedded objects: {nr_of_obj}")
+                        parser.save_context.generate_unknown = True
+                        for _ in range(nr_of_obj):
+                            objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
+                        for obj in objects:
+                            # parser.position += 8 if is_legacy else 0
+                            obj.read_props_at_offset(parser, legacy=is_legacy)
+                    except Exception as e:
+                        ArkSaveLogger.error_log(f"Error reading embedded cryopod data:")
+                        parser.structured_print()
+                        ArkSaveLogger.info_log(f"Made structured print of parser at error")
                         try:
-                            obj.read_props_at_offset(parser)
-                        except Exception as e:
-                            parser.structured_print()
-                            logging.error(f"Error reading props of embedded object {obj.blueprint} ({obj.uuid}): {e}")
-                            raise e
+                            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
+                            objects = []
+                            parser.position = 4 if is_legacy else 12
+                            for _ in range(nr_of_obj):
+                                objects.append(ArkGameObject(binary_reader=parser, from_custom_bytes=True))
+                            for obj in objects:
+                                # parser.position += 8 if is_legacy else 0
+                                obj.read_props_at_offset(parser, legacy=is_legacy)
+                            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+                        except Exception as _:
+                            pass
+                        raise e
                     parser.save_context.generate_unknown = False
+
+                    if is_legacy:
+                        ArkSaveLogger.info_log("Parsed legacy cryopod data")
+                        for obj in objects:
+                            obj.print_properties()
+                        
                         
                     return objects[0], objects[1]
 
@@ -91,6 +120,7 @@ class Cryopod(InventoryItem):
         self.saddle = None
         self.costume = None
         custom_item_data = self.object.get_array_property_value("CustomItemDatas")
+        ArkSaveLogger.debug_log(f"Parsing cryopod {uuid}")
         self.embedded_data = EmbeddedCryopodData(custom_item_data[0]) if len(custom_item_data) > 0 else None
 
         if self.embedded_data is None:
@@ -103,7 +133,7 @@ class Cryopod(InventoryItem):
         if dino_obj is not None and status_obj is not None:
             self.dino = TamedDino.from_object(dino_obj, status_obj, self)
             self.dino.save = save
-            self.dino.location.in_cryopod = True
+            self.dino._location.in_cryopod = True
 
         saddle_obj = self.embedded_data.get_saddle_obj()
         if saddle_obj is not None:

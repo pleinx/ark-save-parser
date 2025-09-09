@@ -31,10 +31,11 @@ class TamedDino(Dino):
     
     @property
     def location(self) -> ActorTransform:
-        if self.cryopod is not None and self._location.x == 0 and self._location.y == 0 and self._location.z == 0:
+        if self.cryopod is not None and self._location.in_cryopod:
             container = self.save.get_container_of_inventory(self.cryopod.owner_inv_uuid)
             if container is not None:
                 self._location = container.location
+                self._location.in_cryopod = True
 
         return self._location
     

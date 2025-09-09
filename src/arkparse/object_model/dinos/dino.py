@@ -163,10 +163,10 @@ class Dino(ParsedObjectBase):
                      "ItemArchetype": self.object.blueprint }
 
         # Grab dino location if it exists
-        if self.location is not None:
-            json_obj["ActorTransformX"] = self.location.x
-            json_obj["ActorTransformY"] = self.location.y
-            json_obj["ActorTransformZ"] = self.location.z
+        if self._location is not None:
+            json_obj["ActorTransformX"] = self._location.x
+            json_obj["ActorTransformY"] = self._location.y
+            json_obj["ActorTransformZ"] = self._location.z
 
         # Grab dino inventory UUID if it exists
         if self.object.has_property("MyInventoryComponent"):

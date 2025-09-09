@@ -37,6 +37,7 @@ class ArkGameObject(ArkPropertyContainer):
         super().__init__()
         if binary_reader:
             ArkSaveLogger.set_file(binary_reader, "debug.bin")
+            ArkSaveLogger.parser_log(f"Parsing object with UUID: {uuid}, Blueprint: {blueprint}, From custom bytes: {from_custom_bytes}, No header: {no_header}")
             if not no_header:
                 if not from_custom_bytes:
                     self.uuid = uuid
@@ -48,12 +49,11 @@ class ArkGameObject(ArkPropertyContainer):
                     sContext : SaveContext = binary_reader.save_context
                     self.location = sContext.get_actor_transform(uuid) or None
                     ArkSaveLogger.parser_log(f"Retrieved actor location: {('Success' if self.location else 'Failed')}")
-                    
                 else:
                     self.uuid = binary_reader.read_uuid()
                     self.blueprint = binary_reader.read_string()
+                    ArkSaveLogger.parser_log(f"Read UUID: {self.uuid}, Blueprint: {self.blueprint}")
 
-                ArkSaveLogger.parser_log(f"Blueprint: {blueprint}")
                 binary_reader.validate_uint32(0)
 
             try:
@@ -64,6 +64,7 @@ class ArkGameObject(ArkPropertyContainer):
                         self.names, offsets = binary_reader.read_names(nr_names)
                     else:
                         self.names = binary_reader.read_strings_array()
+                        ArkSaveLogger.parser_log(f"Read {len(self.names)} names from custom bytes")
 
                     self.name_metadata = []
                     for i, offset in enumerate(offsets):
@@ -166,12 +167,14 @@ class ArkGameObject(ArkPropertyContainer):
         md = self.name_metadata[-1]
         return md.name.split("_")[-1].encode("utf-8")
                     
-    def read_props_at_offset(self, reader: ArkBinaryParser):
+    def read_props_at_offset(self, reader: ArkBinaryParser, legacy: bool = False):
         reader.set_position(self.properties_offset)
         # if reader.position != self.properties_offset:
         #     ArkSaveLogger.open_hex_view()
         #     raise Exception("Invalid offset for properties: ", reader.position, "expected: ", self.properties_offset)
-        reader.validate_byte(0)
+        if not legacy:
+            reader.validate_byte(0)
+        
         self.read_properties(reader, ArkProperty, reader.size())
         # reader.read_int()
         # self.uuid2 = reader.read_uuid()

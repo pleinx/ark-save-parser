@@ -208,6 +208,17 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.__structured_print_print(" === End of structured print === ", to_file)
 
     @staticmethod
+    def is_legacy_compressed_data(byte_arr: List[int]) -> int:
+        raw_data = BytesIO(bytes(byte_arr))
+        header_data_bytes = raw_data.read(4)
+        if len(header_data_bytes) < 4:
+            raise ValueError("Insufficient data for header")
+        
+        header_parser = ArkBinaryParser(header_data_bytes)
+        version = header_parser.read_uint32()
+        return True if version < 0x0407 else False
+
+    @staticmethod
     def from_deflated_data(byte_arr: List[int]):
         parser = ArkBinaryParser(None)
 
