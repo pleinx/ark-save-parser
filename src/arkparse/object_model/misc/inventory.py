@@ -38,6 +38,10 @@ class Inventory(ParsedObjectBase):
                 if is_engram is None or not is_engram:
                     self.items[item_uuid] = item
 
+    @property
+    def number_of_items(self):
+        return len(self.items)
+
     def add_item(self, item: UUID, store: bool = True):
         if len(self.items) == 0:
             raise ValueError("Currently, adding stuff to empty inventories is not supported!")
@@ -66,7 +70,8 @@ class Inventory(ParsedObjectBase):
         if len(self.items) == 0:
             return
 
-        self.items.pop(item)
+        if item in self.items:
+            self.items.pop(item)
         self.binary.set_property_position("InventoryItems")
 
         object_references = []

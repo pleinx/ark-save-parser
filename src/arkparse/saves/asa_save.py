@@ -1,4 +1,3 @@
-import logging
 import math
 from pathlib import Path
 from typing import Dict, Optional, Collection
@@ -14,11 +13,7 @@ from arkparse.object_model.ark_game_object import ArkGameObject
 from .save_connection import SaveConnection
 from .save_context import SaveContext
 
-logger = logging.getLogger(__name__)
-
 class AsaSave:
-    MAX_IN_LIST = 10000
-
     # Populate manually if constructor parameter use_connection is False
     parsed_objects: Dict[uuid.UUID, ArkGameObject] = {}
 
@@ -32,6 +27,7 @@ class AsaSave:
         self.custom_value_ActorTransforms: Optional['ArkBinaryParser'] = None
         self.game_obj_binaries: Optional['Dict[uuid.UUID, Optional[bytes]]'] = None
         self.all_classes: Optional['list[str]'] = None
+        self.containers: Optional[Dict[uuid.UUID, ArkGameObject]] = None
 
         self.profile_data_in_db = False
         self.save_dir = path.parent if path is not None else None
@@ -42,6 +38,12 @@ class AsaSave:
 
     def __del__(self):
         self.close()
+
+    @property
+    def faulty_objects(self) -> Dict[uuid.UUID, ArkGameObject]:
+        if self.save_connection is not None:
+            return self.save_connection.faulty_objects
+        return 0
 
     def initialize(self):
         self.read_actor_locations()
@@ -88,6 +90,19 @@ class AsaSave:
         if len(current_seconds) < 2:
             current_seconds = f"0{current_seconds}"
         return f"Day {self.save_context.current_day}, {current_hours}:{current_minutes}:{current_seconds}"
+    
+    def get_container_of_inventory(self, inv_uuid: uuid.UUID) -> ArkGameObject:
+        if self.containers is None:
+            ArkSaveLogger.save_log("Fetching all containers with MyInventoryComponent property")
+            config = GameObjectReaderConfiguration()
+            config.property_names = ["MyInventoryComponent"]
+            self.containers = self.get_game_objects(config)
+
+        for _, container in self.containers.items():
+            # print(container.get_short_name())
+            if container.get_property_value("MyInventoryComponent") is not None and uuid.UUID(container.get_property_value("MyInventoryComponent").value) == inv_uuid:
+                return container
+        return None
 
     def read_actor_locations(self):
         actor_transforms = self.get_custom_value("ActorTransforms")
@@ -245,6 +260,3 @@ class AsaSave:
     def close(self):
         if self.save_connection is not None:
             self.save_connection.close()
-
-    def remove_leading_slash(self, path: str) -> Path:
-        return Path(path.lstrip('/'))

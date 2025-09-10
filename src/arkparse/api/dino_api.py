@@ -24,6 +24,12 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.misc.inventory_item import InventoryItem
 
 class DinoApi:
+    _DEFAULT_CONFIG = GameObjectReaderConfiguration(
+        blueprint_name_filter=lambda name: \
+            name is not None and \
+                (("Dinos/" in name and "_Character_" in name) or \
+                ("PrimalItem_WeaponEmptyCryopod_C" in name)))
+
     def __init__(self, save: AsaSave):
         self.save = save
         self.all_objects = None
@@ -37,11 +43,7 @@ class DinoApi:
             if self.all_objects is not None:
                 return self.all_objects
 
-            config = GameObjectReaderConfiguration(
-                blueprint_name_filter=lambda name: \
-                    name is not None and \
-                        (("Dinos/" in name and "_Character_" in name) or
-                        ("PrimalItem_WeaponEmptyCryopod_C" in name)))
+            config = self._DEFAULT_CONFIG
 
         objects = self.save.get_game_objects(config)
         
@@ -134,7 +136,9 @@ class DinoApi:
                                 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
                                 ArkSaveLogger.error_log(f"Error parsing cryopod {obj.uuid}: {e}")
                                 raise e
-                
+                            finally:
+                                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+
                 if dino is not None:
                     dinos[key] = dino
             except Exception as e:
@@ -168,8 +172,18 @@ class DinoApi:
     def get_all_wild_tamables(self) -> Dict[UUID, Dino]:
         return {key: dino for key, dino in self.get_all_wild().items() if dino.get_short_name() + "_C" not in Dinos.non_tameable.all_bps}
     
-    def get_all_tamed(self, include_cryopodded = True) -> Dict[UUID, TamedDino]:
-        return self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
+    def get_all_tamed(self, include_cryopodded = True, only_cryopodded = False) -> Dict[UUID, TamedDino]:
+        all = self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True)
+
+        if only_cryopodded:
+            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino) and dino.cryopod is not None}
+        else:
+            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino)}
+
+        if include_cryopodded:
+            return tamed
+        else:
+            return {key: dino for key, dino in tamed.items() if dino.cryopod is None}
 
     def get_all_babies(self, include_tamed: bool = True, include_cryopodded: bool = True, include_wild: bool = False) -> Dict[UUID, TamedBaby]:
         dinos = self.get_all(include_cryos=include_cryopodded, include_wild=include_wild, include_tamed=include_tamed)
@@ -179,14 +193,17 @@ class DinoApi:
         return babies
     
     def get_all_in_cryopod(self) -> Dict[UUID, TamedDino]:
-        return self.get_all(include_cryos=True, include_wild=False, include_tamed=False)
-    
-    def get_all_by_class(self, class_names: List[str]) -> Dict[UUID, Dino]:
+        tamed = self.get_all_tamed(include_cryopodded=True)
+        cryod = {key: dino for key, dino in tamed.items() if dino.cryopod is not None}
+
+        return cryod
+
+    def get_all_by_class(self, class_names: List[str], include_cryopodded: bool = True) -> Dict[UUID, Dino]:
         config = GameObjectReaderConfiguration(
             blueprint_name_filter=lambda name: name is not None and name in class_names
         )
 
-        dinos = self.get_all(config)
+        dinos = self.get_all(config, include_cryos=include_cryopodded)
         class_dinos = {k: v for k, v in dinos.items() if v.object.blueprint in class_names}
 
         return class_dinos
@@ -196,9 +213,9 @@ class DinoApi:
         wild_dinos = {k: v for k, v in dinos.items() if not isinstance(v, TamedDino)}
 
         return wild_dinos
-    
-    def get_all_tamed_by_class(self, class_name: List[str]) -> Dict[UUID, TamedDino]:
-        dinos = self.get_all_by_class(class_name)
+
+    def get_all_tamed_by_class(self, class_name: List[str], include_cryopodded: bool = True) -> Dict[UUID, TamedDino]:
+        dinos = self.get_all_by_class(class_name, include_cryopodded=include_cryopodded)
         tamed_dinos = {k: v for k, v in dinos.items() if isinstance(v, TamedDino)}
 
         return tamed_dinos
@@ -352,18 +369,11 @@ class DinoApi:
 
         return cryopodded
     
-    def modify_dinos(self, dinos: Dict[UUID, TamedDino], new_owner: DinoOwner = None): # , ftp_client: ArkFtpClient = None):
+    def modify_dinos(self, dinos: Dict[UUID, TamedDino], new_owner: DinoOwner = None):
         for key, dino in dinos.items():
             if new_owner is not None:
                 dino.owner.replace_with(new_owner, dino.binary)
                 dino.update_binary()
-        '''
-        if ftp_client is not None:
-            self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.connect()
-            ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.close()
-        '''
 
     def create_heatmap(self, map: ArkMap, resolution: int = 100, dinos: Dict[UUID, TamedDino] = None, classes: List[str] = None, owner: DinoOwner = None, only_tamed: bool = False):
         import math

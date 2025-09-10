@@ -10,7 +10,7 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.dinos.dino import Dino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.struct.object_reference import ObjectReference
-from arkparse.logging import ArkSaveLogger
+from arkparse.parsing import ActorTransform
 
 from arkparse.utils.json_utils import DefaultJsonEncoder
 
@@ -28,6 +28,16 @@ class TamedDino(Dino):
     @property
     def percentage_imprinted(self):
         return self.stats._percentage_imprinted
+    
+    @property
+    def location(self) -> ActorTransform:
+        if self.cryopod is not None and self._location.in_cryopod:
+            container = self.save.get_container_of_inventory(self.cryopod.owner_inv_uuid)
+            if container is not None:
+                self._location = container.location
+                self._location.in_cryopod = True
+
+        return self._location
     
     def __init_props__(self):
         self._inventory = None

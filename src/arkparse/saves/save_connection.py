@@ -17,6 +17,9 @@ class SaveConnection:
     name_count = 0
     last_name_end = 0
 
+    nr_parsed = 0
+    faulty_objects = 0
+
     def __init__(self, save_context: SaveContext, path: Path = None, contents: bytes = None, read_only: bool = False):
 
         # create temp copy of file
@@ -31,10 +34,6 @@ class SaveConnection:
                 temp_file.write(contents)
         else:
             raise ValueError("Either path or contents must be provided")
-
-        self.var_objects = {}
-        self.var_objects["placed_structs"] = {}
-        self.var_objects["g_placed_structs"] = {}
 
         self.save_dir = path.parent if path is not None else None
         self.sqlite_db = temp_save_path
@@ -131,13 +130,13 @@ class SaveConnection:
             for row in cursor:
                 ArkSaveLogger.save_log(f"Custom key: {row[0]}")
 
-    def add_name_to_name_table(self, name: str):
+    def add_name_to_name_table(self, name: str, id: Optional[int] = None):
         header_data = self.get_custom_value("SaveHeader")
         self.name_count += 1
         header_data.set_position(self.name_offset)
         header_data.replace_bytes(self.name_count.to_bytes(4, byteorder="little"))
         header_data.set_position(self.last_name_end)
-        header_data.insert_uint32(self.save_context.add_new_name(name))
+        header_data.insert_uint32(self.save_context.add_new_name(name, id))
         header_data.insert_string(name)
         self.last_name_end = header_data.position
 
@@ -339,20 +338,27 @@ class SaveConnection:
         game_objects = {}
         row_index = 0
         objects = []
+        prop_ids = []
+
+        for prop in reader_config.property_names:
+            id_ = self.save_context.get_name_id(prop)
+            if id_ is not None:
+                prop_ids.append(id_.to_bytes(4, byteorder="little") + b'\x00\x00\x00\x00')
 
         ArkSaveLogger.enter_struct("GameObjects")
 
-        with self.connection as conn:
+        with self.connection as conn:   
             cursor = conn.execute(query)
             for row in cursor:
                 if row_index < 0:
                     row_index += 1
+                    self.nr_parsed += 1
                     continue
 
-                obj_uuid = SaveConnection.byte_array_to_uuid(row[0])
+                obj_uuid = self.byte_array_to_uuid(row[0])
                 self.save_context.all_uuids.append(obj_uuid)
                 if reader_config.uuid_filter and not reader_config.uuid_filter(obj_uuid):
-                    ArkSaveLogger.save_log(f"Skipping object {obj_uuid.__str__()}")
+                    ArkSaveLogger.save_log("Skipping object %s", obj_uuid)
                     ArkSaveLogger.exit_struct()
                     continue
 
@@ -371,28 +377,40 @@ class SaveConnection:
 
                 if class_name not in objects:
                     objects.append(class_name)
-
+                
                 if obj_uuid not in self.parsed_objects.keys():
-                    ark_game_object = SaveConnection.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
+                    ark_game_object = None
+                    found = False
+                    for pid in prop_ids:
+                        if byte_buffer.find_byte_sequence(pid, adjust_offset=0):
+                            found = True
+
+                    if found or len(prop_ids) == 0:
+                        ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
 
                     if ark_game_object:
                         game_objects[obj_uuid] = ark_game_object
                         self.parsed_objects[obj_uuid] = ark_game_object
+
+                        self.nr_parsed += 1
+                        if self.nr_parsed % 2500 == 0:
+                            ArkSaveLogger.save_log(f"Nr parsed: {self.nr_parsed}")
+                    else:
+                        self.faulty_objects += 1
                 else:
-                    game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
+                    found = False or (len(prop_ids) == 0)
+                    for prop in reader_config.property_names:
+                        if self.parsed_objects[obj_uuid].has_property(prop):
+                            found = True
 
-        for o in self.var_objects:
-            sorted_properties = sorted(self.var_objects[o].items(), key=lambda item: item[1], reverse=True)
-            for p, count in sorted_properties:
-                print("  - " + p + " " + str(count))
-
-        '''
+                    if found:
+                        game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
+        
         if self.faulty_objects > 0:
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
             ArkSaveLogger.error_log(f"{self.faulty_objects} objects could not be parsed, if possible, please report this to the developers.")
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, False)
-        '''
-
+        
         return game_objects
 
     def reset_caching(self):
@@ -426,41 +444,31 @@ class SaveConnection:
 
     @staticmethod
     def parse_as_predefined_object(obj_uuid, class_name, byte_buffer: ArkBinaryParser):
-        skip_list = [
-            "/Game/PrimalEarth/CoreBlueprints/Items/Notes/PrimalItem_StartingNote.PrimalItem_StartingNote_C",
-            "/Script/ShooterGame.StructurePaintingComponent",
-            "/Game/Packs/Frontier/Structures/TreasureCache/TreasureMap/PrimalItem_TreasureMap_WildSupplyDrop.PrimalItem_TreasureMap_WildSupplyDrop_C",
-            "/Game/PrimalEarth/Structures/Wooden/CropPlotLarge_SM.CropPlotLarge_SM_C",
-            "/Game/PrimalEarth/Structures/Pipes/WaterPipe_Stone_Intake.WaterPipe_Stone_Intake_C",
-            "/Game/PrimalEarth/Structures/BuildingBases/WaterTank_Metal.WaterTank_Metal_C",
-            "/Game/PrimalEarth/Structures/WaterTap_Metal.WaterTap_Metal_C"
-        ]
-
-        if class_name in skip_list:
-            return None
-
-        # if not class_name.startswith("/Game/"):
-        #     return None
-
         try:
             return ArkGameObject(obj_uuid, class_name, byte_buffer)
         except Exception as e:
+            reraise = False
             if "/Game/" in class_name or "/Script/" in class_name:
                 if ArkSaveLogger._allow_invalid_objects is False:
                     byte_buffer.find_names(type=2)
                     byte_buffer.structured_print(to_default_file=True)
                     ArkSaveLogger.error_log(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
-                    ArkSaveLogger.error_log("Reparsing with logging:")
-                    ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
-                    try:
-                        ArkGameObject(obj_uuid, class_name, byte_buffer)
-                    except Exception as _:
-                        ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
-                        ArkSaveLogger.open_hex_view(True)
-
-                    raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+                    reraise = True
+                
                 ArkSaveLogger.warning_log(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
+                byte_buffer.structured_print(to_default_file=True)
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
+            
+            ArkSaveLogger.error_log("Reparsing with logging:")
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
+            try:
+                ArkGameObject(obj_uuid, class_name, byte_buffer)
+            except Exception as _:
+                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
+                ArkSaveLogger.open_hex_view(True)
 
+            if reraise:
+                raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+            
         return None

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Dict, TYPE_CHECKING
 from uuid import UUID
 from io import BytesIO
@@ -33,6 +34,7 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         16: "OwningPlayerID",
         17: "OwningPlayerName",
         19: "StructProperty",
+        20: "UnknownStruct1", # !!!
         23: "DinoID1",
         24: "UInt32Property",
         26: "UntamedPoopTimeCache",
@@ -206,6 +208,17 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.__structured_print_print(" === End of structured print === ", to_file)
 
     @staticmethod
+    def is_legacy_compressed_data(byte_arr: List[int]) -> int:
+        raw_data = BytesIO(bytes(byte_arr))
+        header_data_bytes = raw_data.read(4)
+        if len(header_data_bytes) < 4:
+            raise ValueError("Insufficient data for header")
+        
+        header_parser = ArkBinaryParser(header_data_bytes)
+        version = header_parser.read_uint32()
+        return True if version < 0x0407 else False
+
+    @staticmethod
     def from_deflated_data(byte_arr: List[int]):
         parser = ArkBinaryParser(None)
 
@@ -297,9 +310,17 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     def read_uuids(self) -> List[UUID]:
         uuid_count = self.read_int()
         return [self.read_uuid() for _ in range(uuid_count)]
-
     
-    def find_names(self, no_print=False, type=0):
+    def store(self, folder: Path = None, uuid: UUID = None):
+        if folder is None:
+            folder = TEMP_FILES_DIR
+        if uuid is None:
+            uuid = "temp_parser_file"
+        folder.mkdir(parents=True, exist_ok=True)
+        with open(folder / f"{uuid}.bin", "wb") as f:
+            f.write(self.byte_buffer)
+
+    def find_names(self, no_print=False, type=0, use_id = False):
         if not self.save_context.has_name_table():
             return []
         
@@ -315,8 +336,8 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             int_value = self.read_uint32()
             name = self.save_context.get_name(int_value)
             
-            if name is not None:
-                found[i] = name
+            if name is not None and int_value != 0:
+                found[int_value if use_id else i] = name
                 self.set_position(i)
                 if prints < max_prints:
                     if not no_print:
@@ -332,6 +353,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.set_position(original_position)
 
         return found
+        
     
     # def find_byte_sequence(self, bytes: bytes):
     #     original_position = self.get_position()

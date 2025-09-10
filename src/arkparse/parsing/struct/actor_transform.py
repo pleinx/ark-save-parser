@@ -297,6 +297,9 @@ class ActorTransform:
         return ((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2) ** 0.5
     
     def __str__(self) -> str:
+        return f"({self.x:.2f}, {self.y:.2f}, {self.z:.2f})"
+        
+    def to_str_full(self) -> str:
         return f"({self.x:.2f}, {self.y:.2f}, {self.z:.2f}) ({self.pitch:.2f}, {self.yaw:.2f}, {self.roll:.2f})"
 
     def as_map_coords(self, map) -> MapCoords:
