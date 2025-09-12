@@ -1,4 +1,5 @@
 import json
+from typing import Optional
 
 from ..ark_game_object import ArkGameObject
 from uuid import UUID
@@ -35,8 +36,8 @@ class InventoryItem(ParsedObjectBase):
         else:
             ArkSaveLogger.warning_log("InventoryItem object is None, cannot initialize properties")
 
-    def __init__(self, uuid: UUID = None, save: AsaSave = None):
-        super().__init__(uuid, save=save)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
+        super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
 
     def __str__(self):
         return f"InventoryItem(item={self.object.blueprint.split('/')[-1].split('.')[0]}, quantity={self.quantity})"
@@ -67,12 +68,12 @@ class InventoryItem(ParsedObjectBase):
 
         self.update_binary()
 
-    def get_inventory(self, save: AsaSave):
+    def get_inventory(self):
         if self.owner_inv_uuid is None:
             ArkSaveLogger.error_log(f"InventoryItem {self.object.uuid} has no owner inventory UUID")
             return None
         from .inventory import Inventory # placed here to avoid circular import
-        return Inventory(self.owner_inv_uuid, save=save)
+        return Inventory(self.owner_inv_uuid, save=self.save)
 
     # def get_owner(self, save: AsaSave):
     #     from .inventory import Inventory # placed here to avoid circular import

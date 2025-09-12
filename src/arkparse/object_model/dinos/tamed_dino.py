@@ -1,7 +1,7 @@
 #TamedTimeStamp
 import json
 from uuid import UUID
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import ArkBinaryParser
@@ -10,7 +10,7 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.dinos.dino import Dino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.struct.object_reference import ObjectReference
-from arkparse.logging import ArkSaveLogger
+from arkparse.parsing import ActorTransform
 
 from arkparse.utils.json_utils import DefaultJsonEncoder
 
@@ -29,6 +29,16 @@ class TamedDino(Dino):
     def percentage_imprinted(self):
         return self.stats._percentage_imprinted
     
+    @property
+    def location(self) -> ActorTransform:
+        if self.cryopod is not None and self._location.in_cryopod:
+            container = self.save.get_container_of_inventory(self.cryopod.owner_inv_uuid)
+            if container is not None:
+                self._location = container.location
+                self._location.in_cryopod = True
+
+        return self._location
+    
     def __init_props__(self):
         self._inventory = None
         super().__init_props__()
@@ -44,10 +54,10 @@ class TamedDino(Dino):
         else:
             self.inv_uuid = UUID(inv_uuid.value)
 
-    def __init__(self, uuid: UUID = None, save: AsaSave = None, bypass_inventory: bool = True):
+    def __init__(self, uuid: UUID = None, save: AsaSave = None, bypass_inventory: bool = True, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
         self.inv_uuid = None
         self._inventory = None
-        super().__init__(uuid, save=save)
+        super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
 
         if self.inv_uuid is not None and not bypass_inventory:
             self._inventory = Inventory(self.inv_uuid, save=save)

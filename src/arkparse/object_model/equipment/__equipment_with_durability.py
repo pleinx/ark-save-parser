@@ -115,6 +115,9 @@ class EquipmentWithDurability(Equipment):
         else:
             raise ValueError(f"Stat {stat} is not valid for {self.class_name}")
         
+    def __str__(self):
+        return f"dura: {self.durability} -" + super().__str__()
+        
     def get_actual_value(self, stat: ArkEquipmentStat, internal_value: int) -> float:
         if stat == ArkEquipmentStat.DURABILITY:
             d = EquipmentWithDurability.get_default_dura(self.object.blueprint)

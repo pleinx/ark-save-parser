@@ -1,3 +1,4 @@
+from typing import Dict
 import pytest
 import time
 
@@ -172,12 +173,12 @@ def test_retrieving_the_center_object_through_api(the_center_save: AsaSave, obje
         pytest.skip("The Center map is not enabled in the test configuration.")
     retrieve_with_api(the_center_save, ArkMap.THE_CENTER, objects_per_map)
 
-def test_game_time_retrieval(enabled_map_objects):
+def test_game_time_retrieval(enabled_map_objects: Dict[ArkMap, AsaSave]):
     """
     Test to retrieve game time information from all enabled map saves.
     """
     print("\nGame Time Retrieval:")
-    for save in enabled_map_objects:
+    for _, save in enabled_map_objects.items():
         save: AsaSave
         assert save.save_context.current_time != 0, f"Game time for {save.save_context.map_name} is 0"
         assert save.save_context.current_day != 0, f"Game day for {save.save_context.map_name} is 0"

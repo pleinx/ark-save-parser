@@ -2,13 +2,15 @@ from typing import List, Dict
 from uuid import UUID
 from io import BytesIO
 import zlib
+from pathlib import Path
 
 from arkparse.parsing.struct.actor_transform import ActorTransform
 from arkparse.logging import ArkSaveLogger
 from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
-from .ark_value_type import ArkValueType
+from arkparse.parsing.ark_value_type import ArkValueType
 from collections import deque
+from arkparse.utils.temp_files import TEMP_FILES_DIR
 
 COMPRESSED_BYTES_NAME_CONSTANTS = {
         0: "TribeName",
@@ -22,16 +24,21 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         9: "ColorSetNames",
         10: "NameProperty",
         11: "TamingTeamID",
-        12: "UInt64Property",  # ???
+        12: "ObjectProperty",
         13: "RequiredTameAffinity",
         14: "TamingTeamID",
         15: "IntProperty",
+        16: "OwningPlayerID",
+        17: "OwningPlayerName",
         19: "StructProperty",
+        20: "UnknownStruct1", # !!!
         23: "DinoID1",
         24: "UInt32Property",
+        26: "UntamedPoopTimeCache",
         25: "DinoID2",
         31: "UploadedFromServerName",
         32: "TamedOnServerName",
+        34: "UnknownProperty", # !!!
         36: "TargetingTeam",
         38: "bReplicateGlobalStatusValues",
         39: "bAllowLevelUps",
@@ -40,6 +47,7 @@ COMPRESSED_BYTES_NAME_CONSTANTS = {
         42: "CurrentStatusValues",
         44: "ArrayProperty",
         55: "bIsFemale",
+        56: "UnknowColor1", # !!!
     }
 
 class ArkBinaryParser(PropertyParser, PropertyReplacer):
@@ -154,7 +162,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             name_table[i | 0x10000000] = parser.read_string()
         parser.save_context.names = name_table
         parser.save_context.constant_name_table = COMPRESSED_BYTES_NAME_CONSTANTS
-        parser.save_context.generate_unknown_names = True
+        parser.save_context.generate_unknown = True
         parser.position = 0
 
         return parser
@@ -164,7 +172,6 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         key_type_name = self.read_name()
         key_type = ArkValueType.from_name(key_type_name)
         if key_type is None:
-            ArkSaveLogger.enable_debug = True
             ArkSaveLogger.open_hex_view()
             raise ValueError(f"Unknown value type {key_type_name} at position {position}")
         return key_type
@@ -203,35 +210,129 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         uuid_count = self.read_int()
         return [self.read_uuid() for _ in range(uuid_count)]
     
-    def find_names(self):
+    def find_names(self, no_print=False, type=0):
         if not self.save_context.has_name_table():
             return []
-        
-        gen_unknown_names = self.save_context.generate_unknown_names
-        self.save_context.generate_unknown_names = False
         
         original_position = self.get_position()
         max_prints = 150
         prints = 0
 
-        ArkSaveLogger.parser_log("--- Looking for names ---")
+        if not no_print:
+            ArkSaveLogger.parser_log("--- Looking for names ---")
         found = {}
         for i in range(self.size() - 4):
             self.set_position(i)
             int_value = self.read_uint32()
             name = self.save_context.get_name(int_value)
             
-            if name is not None:
+            if name is not None and int_value != 0:
                 found[i] = name
                 self.set_position(i)
                 if prints < max_prints:
-                    ArkSaveLogger.parser_log(f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})")
+                    if not no_print:
+                        message = f"Found name: {name} at {self.read_bytes_as_hex(4)} (position {i})"
+                        if type == 0:
+                            ArkSaveLogger.parser_log(message)
+                        elif type == 1:
+                            ArkSaveLogger.warning_log(message)
+                        elif type == 2:
+                            ArkSaveLogger.error_log(message)
                     prints += 1
                 i += 3  # Adjust index to avoid overlapping reads
         self.set_position(original_position)
 
-        self.save_context.generate_unknown_names = gen_unknown_names
         return found
+    
+    def __structured_print_print(self, msg: str, to_file: BytesIO, end: str = "\n"):
+        if to_file is not None:
+            to_file.write(msg.encode())
+            to_file.write(end.encode())
+        else:
+            print(msg, end=end)
+
+    def __structured_print_known(self, lengths: List[int], to_file: BytesIO = None):
+        for length in lengths:
+            if self.position >= len(self.byte_buffer):
+                break
+
+            if length is None:
+                name_id = self.read_uint32()
+                name = self.save_context.get_name(name_id)
+                self.validate_int32(0)
+                self.__structured_print_print(f"{name} ", to_file, end="")
+                continue
+            
+            for _ in range(length):
+                if self.position >= len(self.byte_buffer):
+                    break
+                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
+            self.__structured_print_print("", to_file)
+            self.__structured_print_print(f"{self.position}: ", to_file, end="")
+
+    def __structured_print_string_property(self, to_file: BytesIO = None):
+        self.read_byte() # length?
+        self.validate_uint32(0)
+        self.validate_uint32(0)
+        value = self.read_string()
+        self.__structured_print_print(f"{value}", to_file)
+        self.__structured_print_print(f"{self.position}: ", to_file, end="")
+    
+    def structured_print(self, to_file: BytesIO = None, to_default_file: bool = True):
+        if to_default_file:
+            file_path = TEMP_FILES_DIR / "structured_print.txt"
+            to_file = file_path.open("wb")
+
+        current_position = self.position
+        known_structures = {
+            "UInt32Property": [4,4,1,4],
+            "DoubleProperty": [4,4,1,8],
+            "IntProperty": [4,4,1,4],
+            "ByteProperty": [4,4],
+            "UInt16Property": [4,4,1,2],
+            "BoolProperty": [4,4,2],
+            "ArrayProperty": [4, 4, None, 1, 4], # None means name
+        }
+        names = self.find_names(no_print=True)
+        self.position = 0
+        printed = 0
+
+        while self.has_more():
+            if self.position >= len(self.byte_buffer):
+                break
+            
+            in_names = self.position in names and self.position + 8 < len(self.byte_buffer)
+            if in_names:
+                self.set_position(self.position + 4)
+                int_after = self.read_uint32()
+                self.set_position(self.position - 8)
+                in_names = int_after == 0
+                if in_names:
+                    if printed > 0:
+                        self.__structured_print_print("", to_file)
+                        self.__structured_print_print(f"{self.position}: ", to_file, end="")
+                    name = names[self.position]
+                    self.__structured_print_print(f"{name}", to_file)
+                    self.set_position(self.position + 8)
+                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
+                    printed = 0
+                    if name in known_structures:
+                        self.__structured_print_known(known_structures[name], to_file=to_file)
+                        continue
+                    elif name == "StrProperty":
+                        self.__structured_print_string_property(to_file=to_file)
+                        continue            
+            if not in_names:
+                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
+                printed += 1
+
+                if printed == 4:
+                    self.__structured_print_print("", to_file)
+                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
+                    printed = 0  
+
+        self.position = current_position
+        self.__structured_print_print(" === End of structured print === ", to_file)
     
     # def find_byte_sequence(self, bytes: bytes):
     #     original_position = self.get_position()
@@ -250,6 +351,15 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #                 prints += 1
     #     self.set_position(original_position)
     #     return found
+
+    def store(self, folder: Path = None, uuid: UUID = None):
+        if folder is None:
+            folder = TEMP_FILES_DIR
+        if uuid is None:
+            uuid = "temp_parser_file"
+        folder.mkdir(parents=True, exist_ok=True)
+        with open(folder / f"{uuid}.bin", "wb") as f:
+            f.write(self.byte_buffer)
 
     def find_byte_sequence(self, pattern: bytes):
         original_position = self.get_position()
