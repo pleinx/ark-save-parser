@@ -19,11 +19,13 @@ from time import time
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from arkparse.saves.asa_save import AsaSave
 from arkparse.api.player_api import PlayerApi
 
 start_time = time()
 
+# ASA LoginTime epoch (seconds since this timestamp)
 EPOCH_LOGIN = datetime(2019, 1, 1, tzinfo=timezone.utc)
 
 # ---------- CLI ----------
@@ -38,28 +40,47 @@ def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
     """Extract map folder and map key from savegame path."""
     return save_path.parent.name, save_path.stem
 
-def convert_login_time_to_mysql(ts) -> str | None:
+def _normalize_seconds(ts: float | int | None) -> Optional[float]:
+    """Return seconds as float; if clearly milliseconds, divide by 1000. None -> None."""
     if ts is None:
         return None
     try:
-        dt = EPOCH_LOGIN + timedelta(seconds=float(ts))
-        return dt.strftime("%Y-%m-%d %H:%M:%S")  # MySQL DATETIME
+        x = float(ts)
     except Exception:
         return None
+    # Heuristic: since 2019-01-01 to late 2025 is ~2.1e8 seconds; >>1e11 means likely ms
+    if x > 1e11:
+        x /= 1000.0
+    return x
+
+def asa_to_dt_utc(ts: float | int | None) -> Optional[datetime]:
+    """Convert ASA LoginTime seconds to aware UTC datetime."""
+    x = _normalize_seconds(ts)
+    if x is None:
+        return None
+    return EPOCH_LOGIN + timedelta(seconds=x)
+
+def asa_to_mysql_local(ts: float | int | None, tz_name: str = "Europe/Berlin") -> Optional[str]:
+    """
+    Convert ASA LoginTime to local (Europe/Berlin by default) and format as MySQL DATETIME string,
+    without timezone information, e.g. '2025-05-04 13:46:57'.
+    """
+    dt_utc = asa_to_dt_utc(ts)
+    if dt_utc is None:
+        return None
+    dt_local = dt_utc.astimezone(ZoneInfo(tz_name))
+    return dt_local.strftime("%Y-%m-%d %H:%M:%S")
 
 def is_active_within_months(login_time, months: int = 2) -> bool:
     """
-    True, wenn LoginTime innerhalb der letzten 'months' Monate liegt.
-    Näherung: months * 30 Tage (60 Tage bei 2 Monaten).
+    True if LoginTime within the last 'months' months.
+    Uses UTC for comparison to avoid DST/TZ pitfalls; 1 month ~ 30 days approximation.
     """
-    if login_time is None:
+    dt_utc = asa_to_dt_utc(login_time)
+    if dt_utc is None:
         return False
-    try:
-        last_dt = EPOCH_LOGIN + timedelta(seconds=float(login_time))
-        now = datetime.now(timezone.utc)
-        return last_dt >= now - timedelta(days=months * 30)
-    except Exception:
-        return False
+    now_utc = datetime.now(timezone.utc)
+    return dt_utc >= now_utc - timedelta(days=months * 30)
 
 # ---------- LOAD SAVE ----------
 save_path: Path = args.savegame
@@ -80,21 +101,22 @@ for tribe in getattr(player_api, "tribes", []):
         if name in (None, "") and hasattr(tribe, "tribe_name"):
             name = getattr(tribe, "tribe_name", "")
 
-        # Fallback über to_json_obj(), falls vorhanden
+        # Fallback via to_json_obj(), if available
         if (tid is None or name in (None, "")) and hasattr(tribe, "to_json_obj"):
             tj = tribe.to_json_obj() or {}
             tid = tid if tid is not None else tj.get("TribeID", None)
             name = name if name not in (None, "") else tj.get("TribeName", "")
 
         if tid is None:
-            continue  # ohne ID kein Mapping
+            continue  # cannot map without ID
         tribes_by_id[int(tid)] = str(name or "")
     except Exception:
         continue
 
 players: List[Dict[str, Any]] = []
 for player in getattr(player_api, "players", []):
-    last_login = convert_login_time_to_mysql(player.login_time)
+    # Localized MySQL DATETIME (Europe/Berlin) without tz
+    last_login_local = asa_to_mysql_local(player.login_time, tz_name="Europe/Berlin")
 
     if player.tribe is None:
         continue
@@ -120,7 +142,7 @@ for player in getattr(player_api, "players", []):
         "craft": player.stats.stats.crafting_speed,
         "fort": player.stats.stats.fortitude,
         "active": is_active_within_months(player.login_time, months=2),
-        "last_login": last_login,
+        "last_login": last_login_local,  # Europe/Berlin, formatted as MySQL DATETIME string
         "ccc": "0 0 0",
         "steamid": str(player.unique_id),
         "netAddress": player.ip_address,
