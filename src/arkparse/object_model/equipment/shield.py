@@ -37,7 +37,7 @@ class Shield(EquipmentWithDurability):
         return shield
 
     def __str__(self):
-        return f"Shield: {self.get_short_name()} - CurrentDurability: {self.current_durability} - Durability: {self.durability} - BP: {self.is_bp} - Crafted: {self.is_crafted()} - Rating: {self.rating}"
+        return f"Shield: {self.get_short_name()} - CurrentDurability: {self.current_durability} -" + super().__str__()
 
     def to_json_obj(self):
         return super().to_json_obj()

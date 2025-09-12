@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 from pathlib import Path
 import os
@@ -35,7 +35,7 @@ class BaseApi(StructureApi):
 
         return closest
     
-    def get_base_at(self, coords: MapCoords, radius: float = 0.3, owner_tribe_id = None, keystone: Structure = None) -> Base:
+    def get_base_at(self, coords: MapCoords, radius: float = 0.3, owner_tribe_id = None, keystone: Structure = None, owner_tribe_name = None) -> Base:
         structures = self.get_at_location(self.map, coords, radius)
         if structures is None or len(structures) == 0:
             return None
@@ -48,8 +48,8 @@ class BaseApi(StructureApi):
                 if key not in all_structures:
                     all_structures[key] = conn_structure
 
-        if owner_tribe_id is not None:
-            all_structures = {k: v for k, v in all_structures.items() if v.owner.tribe_id == owner_tribe_id}
+        if owner_tribe_id is not None or owner_tribe_name is not None:
+            all_structures = {k: v for k, v in all_structures.items() if (v.owner.tribe_id == owner_tribe_id or v.owner.tribe_name == owner_tribe_name)}
 
         if keystone is None:
             keystone = self.__get_closest_to(all_structures, coords)
@@ -58,7 +58,7 @@ class BaseApi(StructureApi):
 
         return Base(keystone.object.uuid, filtered_structures) if keystone is not None else None
     
-    def __get_all_files_from_dir_recursive(self, dir_path: Path) -> Dict[str, bytes]:
+    def __get_all_files_from_dir_recursive(self, dir_path: Path) -> tuple[list[ImportFile], Optional[Path]]:
         out = []
         base_file = None
         for root, _, files in os.walk(dir_path):
@@ -94,8 +94,8 @@ class BaseApi(StructureApi):
         actor_transforms: Dict[UUID, ActorTransform] = {}
         structures: Dict[UUID, Structure] = {}
 
-        files: List[ImportFile] = None
-        base_file: Path = None
+        files: Optional[List[ImportFile]] = None
+        base_file: Optional[Path] = None
         files, base_file = self.__get_all_files_from_dir_recursive(path)
 
         # assign new uuids to all

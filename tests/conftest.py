@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 import pytest
 from pathlib import Path
 import shutil
@@ -13,6 +13,7 @@ ArkSaveLogger.disable_all_logs()
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.INFO, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.DEBUG, True)
+ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.WARNING, True)
 ArkSaveLogger.allow_invalid_objects(False)
 CURENT_SET = "1"
 
@@ -156,19 +157,19 @@ def the_center_save(enabled_maps):
 
 @pytest.fixture(scope="session")
 def enabled_map_objects(enabled_maps):
-    enabled: List[AsaSave] = []
+    enabled: Dict[ArkMap, AsaSave] = {}
     if ArkMap.RAGNAROK in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.RAGNAROK)))
+        enabled[ArkMap.RAGNAROK] = AsaSave(save_path(ArkMap.RAGNAROK))
     if ArkMap.ABERRATION in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.ABERRATION)))
+        enabled[ArkMap.ABERRATION] = AsaSave(save_path(ArkMap.ABERRATION))
     if ArkMap.EXTINCTION in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.EXTINCTION)))
+        enabled[ArkMap.EXTINCTION] = AsaSave(save_path(ArkMap.EXTINCTION))
     if ArkMap.ASTRAEOS in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.ASTRAEOS)))
+        enabled[ArkMap.ASTRAEOS] = AsaSave(save_path(ArkMap.ASTRAEOS))
     if ArkMap.SCORCHED_EARTH in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.SCORCHED_EARTH)))
+        enabled[ArkMap.SCORCHED_EARTH] = AsaSave(save_path(ArkMap.SCORCHED_EARTH))
     if ArkMap.THE_ISLAND in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.THE_ISLAND)))
+        enabled[ArkMap.THE_ISLAND] = AsaSave(save_path(ArkMap.THE_ISLAND))
     if ArkMap.THE_CENTER in enabled_maps:
-        enabled.append(AsaSave(save_path(ArkMap.THE_CENTER)))
+        enabled[ArkMap.THE_CENTER] = AsaSave(save_path(ArkMap.THE_CENTER))
     yield enabled

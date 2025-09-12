@@ -211,6 +211,9 @@ Check out the [README](https://github.com/VincentHenauGithub/ark-save-parser/blo
 
 I welcome contributions! If you have updates to this library that you would like to share, feel free!
 
+Special thanks go to [O-S Marin](https://github.com/K07H) for many contributions to the library!
+Check out his Arkparse powered save visualizer, [ASI (Ark-Save-Inspector)](https://github.com/K07H/ASA-Save-Inspector) Spoiler alert: it's pretty awesome 😊 
+
 ---
 
 ## License

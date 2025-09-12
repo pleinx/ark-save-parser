@@ -44,7 +44,7 @@ class Saddle(EquipmentWithArmor):
         return saddle
 
     def __str__(self):
-        return f"Saddle: {self.get_short_name()} - Armor: {self.armor} - Durability: {self.durability} - BP: {self.is_bp} - Crafted: {self.is_crafted()}"
+        return f"Saddle: {self.get_short_name()} -" + super().__str__()
 
     def to_json_obj(self):
         return super().to_json_obj()

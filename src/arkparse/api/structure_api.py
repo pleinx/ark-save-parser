@@ -2,10 +2,7 @@ from typing import Dict, Union, List
 from uuid import UUID
 
 from arkparse.saves.asa_save import AsaSave
-from arkparse.parsing import GameObjectReaderConfiguration, ArkBinaryParser
-from arkparse.ftp.ark_ftp_client import ArkFtpClient
-from arkparse.utils import TEMP_FILES_DIR
-
+from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.object_model import ArkGameObject
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.object_model.structures import Structure, StructureWithInventory
@@ -27,7 +24,8 @@ class StructureApi:
                                                    and not "PrimalItemStructure_" in name \
                                                    and not "/Skins/" in name \
                                                    and not "PrimalInventory" in name \
-                                                   and not "Tileset" in name \
+                                                   and not "/TreasureMap/" in name \
+                                                #    and not "Tileset" in name \
                                                    and not "PrimalItemStructureSkin" in name
                                                    and not "PrimalItemResource" in name \
                                                    and not "/TrainCarts/" in name \
@@ -77,7 +75,7 @@ class StructureApi:
                 continue
 
             if obj.get_property_value("StructureID") is None:
-                ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) is not a structure, skipping")
+                ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) does not seem to be a structure, skipping")
                 continue
             
             structure = self._parse_single_structure(obj, bypass_inventory)
@@ -87,42 +85,14 @@ class StructureApi:
         if config is None:
             self.retrieved_all = True
 
-        return structures
+        return structures    
 
     def get_by_id(self, id: UUID) -> Union[Structure, StructureWithInventory]:
         obj = self.save.get_game_object_by_id(id)
         if obj is None:
             return None
         return self._parse_single_structure(obj)
-
-    def _parse_single_structure_fast(self, obj: ArkGameObject, parser: ArkBinaryParser = None) -> Union[Structure | StructureWithInventory]:
-        """Same as _parse_single_structure, but does not parse Inventory and does not store in cache."""
-
-        if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
-            structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=True)
-        else:
-            structure = Structure(obj.uuid, self.save)
-
-        if obj.uuid in self.save.save_context.actor_transforms:
-            structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
-
-        return structure
-
-    def get_all_fast(self, config: GameObjectReaderConfiguration = None) -> List[Structure | StructureWithInventory]:
-        """Same as get_all, but uses fast parsing and does not store in cache."""
-
-        objects = self.get_all_objects(config)
-
-        structures = []
-
-        for obj in objects.values():
-            if obj is None:
-                continue
-            structure = self._parse_single_structure_fast(obj)
-            structures.append(structure)
-
-        return structures
-
+    
     def get_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, classes: List[str] = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         if classes is not None:
             config = GameObjectReaderConfiguration(
@@ -144,18 +114,18 @@ class StructureApi:
 
         return result
     
-    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None):
+    def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None, owner_tribe_name: str = None):
         structures = self.get_at_location(map, coords, radius)
 
         for _, obj in structures.items():
-            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id:
+            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id or obj.owner.tribe_name == owner_tribe_name:
                 obj.remove_from_save(self.save)
-    
-    def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
+
+    def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None, owner_tribe_name: str = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
-        
-        if owner is None and owner_tribe_id is None:
-            raise ValueError("Either owner or owner_tribe_id must be provided")
+
+        if owner is None and owner_tribe_id is None and owner_tribe_name is None:
+            raise ValueError("Either owner, owner_tribe_id or owner_tribe_name must be provided")
 
         structures = self.get_all()
         
@@ -163,6 +133,8 @@ class StructureApi:
             if owner is not None and obj.is_owned_by(owner):
                 result[key] = obj
             elif owner_tribe_id is not None and obj.owner.tribe_id == owner_tribe_id:
+                result[key] = obj
+            elif owner_tribe_name is not None and obj.owner.tribe_name == owner_tribe_name:
                 result[key] = obj
 
         return result
@@ -233,7 +205,7 @@ class StructureApi:
 
         return result
      
-    def modify_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None, ftp_client: ArkFtpClient = None):
+    def modify_structures(self, structures: Dict[UUID, Union[Structure, StructureWithInventory]], new_owner: ObjectOwner = None, new_max_health: float = None):
         for key, obj in structures.items():
             for uuid in obj.linked_structure_uuids:
                 if uuid not in structures.keys():
@@ -246,12 +218,6 @@ class StructureApi:
                 obj.owner.replace_self_with(new_owner, binary=obj.binary)
 
             obj.update_binary()
-
-        if ftp_client is not None:
-            self.save.store_db(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.connect()
-            ftp_client.upload_save_file(TEMP_FILES_DIR / "sapi_temp_save.ark")
-            ftp_client.close()
 
     def create_heatmap(self, map: ArkMap, resolution: int = 100, structures: Dict[UUID, Union[Structure, StructureWithInventory]] = None, classes: List[str] = None, owner: ObjectOwner = None, min_in_section: int = 1):
         import math
