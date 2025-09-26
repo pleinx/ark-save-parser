@@ -21,18 +21,15 @@ print(f"Total tamed dinos: {len(tamed)}")
 
 random_tamed = list(tamed.values())[random.randint(0, len(tamed)-1)]
 
+pedigrees: List[Pedigree] = dino_api.get_all_pedigrees(player_api, min_generations=2)
+# pedigrees: List[Pedigree] = [Pedigree(random_tamed, dino_api, player_api)]
 
-# pedigrees: List[Pedigree] = dino_api.get_all_pedigrees(player_api)
-pedigrees: List[Pedigree] = [Pedigree(random_tamed, dino_api, player_api)]
-
-random_pedigree = pedigrees[random.randint(0, len(pedigrees)-1)]
-
-random_pedigree.visualize_as_html(f"random_pedigree_{random_pedigree.dino_type}.html", random_pedigree.dino_type)
-random_pedigree.print_tree()
-
-count = 0
+largest = None
 for pedigree in pedigrees:
-    if pedigree.mixed_ownership:
-        print(f"Mixed ownership pedigree found for {pedigree.dino_type}, bottom_ids: {[str(dino.id_) for dino in pedigree.bottom_entries]}")
-        pedigree.visualize_as_html(f"mixed_ownership_pedigree_{pedigree.dino_type}_{count}.html", pedigree.dino_type)
-        count += 1
+    if largest is None or len(pedigree.entries) > len(largest.entries):
+        largest = pedigree
+
+largest_pedigree = largest
+
+largest_pedigree.visualize_as_html(f"largest_pedigree_{largest_pedigree.dino_type}.html", largest_pedigree.dino_type)
+largest_pedigree.print_tree()

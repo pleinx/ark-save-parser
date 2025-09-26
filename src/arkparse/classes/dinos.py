@@ -363,6 +363,7 @@ class Dinos:
     tek_parasaur = "/Game/PrimalEarth/Dinos/Para/BionicPara_Character_BP.BionicPara_Character_BP_C"
     queen_bee = "/Game/PrimalEarth/Dinos/Bee/Bee_Queen_Character_BP.Bee_Queen_Character_BP_C"
     rubble_golem = "/Game/ScorchedEarth/Dinos/RockGolem/RubbleGolem_Character_BP.RubbleGolem_Character_BP_C"
+    helicoprion = "/Game/ASA/Dinos/Helicoprion/Helicoprion_Character_BP.Helicoprion_Character_BP_C"
 
     abberant = Abberant()
     paleo = Paleo()

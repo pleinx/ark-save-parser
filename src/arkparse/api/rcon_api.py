@@ -152,6 +152,7 @@ class RconApi:
         # Dictionary to track last seen index for each user
         self.subscribers: Dict[str, int] = {}
         self.lock = threading.Lock()  # To handle concurrent access
+        self.last_error = None
 
     @staticmethod
     def from_config(config: Path) -> "RconApi":
@@ -165,6 +166,7 @@ class RconApi:
                 return rcon.run(cmd)
         except Exception as e:
             ArkSaveLogger.error_log(f"RCON command failed: {cmd} with error: {e}")
+            self.last_error = f"RCON command failed: {cmd} with error: {e}"
             return None
         
     def send_message(self, message: str):
@@ -186,6 +188,9 @@ class RconApi:
                     players.append(ActivePlayer(l))
 
         return players 
+    
+    def get_error(self):
+        return self.last_error
     
     def __update_game_log(self):
         response = self.send_cmd("getgamelog")

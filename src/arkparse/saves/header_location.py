@@ -1,5 +1,7 @@
 import re
 
+from arkparse.logging import ArkSaveLogger
+
 class HeaderLocation:
     def __init__(self, loc_str: str):
         # Regex to match the pattern in the Part strings
@@ -13,15 +15,16 @@ class HeaderLocation:
             self.x = int(match.group("x"))
             self.y = int(match.group("y"))
             self.dl = int(match.group("dl"), 16) if match.group("dl") else None
-        elif loc_str == "BunkerSPZV":
-            self.map = "BunkerSPZV"
-            self.grid = "BunkerSPZV"
+        else:
+            if not loc_str.startswith("SPZ"):
+                ArkSaveLogger.error_log("String format does not match expected pattern: " + loc_str)
+            self.map = loc_str
+            self.grid = loc_str
             self.l = 0
             self.x = 0
             self.y = 0
             self.dl = None
-        else:
-            raise ValueError("String format does not match expected pattern: " + loc_str)
-        
+
+
     def __str__(self):
         return f"{self.map}_{self.grid}_L{self.l}_X{self.x}_Y{self.y}" + (f"_DL{self.dl:08X}" if self.dl is not None else "")

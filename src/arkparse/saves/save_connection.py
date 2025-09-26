@@ -442,14 +442,10 @@ class SaveConnection:
         ArkSaveLogger.save_log(f"Number of header locations: {num_parts}")
 
         for _ in range(num_parts):
-            try:
-                part = header_data.read_string()
-                if not part.endswith("_WP"):
-                    parts.append(HeaderLocation(part))
-                header_data.validate_uint32(0xFFFFFFFF)
-            except Exception as e:
-                ArkSaveLogger.open_hex_view()
-                raise ValueError(f"Error reading header location: {e}")
+            part = header_data.read_string()
+            if not part.endswith("_WP"):
+                parts.append(HeaderLocation(part))
+            header_data.validate_uint32(0xFFFFFFFF)
         return parts
 
     @staticmethod

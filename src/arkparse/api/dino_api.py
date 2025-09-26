@@ -204,7 +204,7 @@ class DinoApi:
 
     def get_all_by_class(self, class_names: List[str], include_cryopodded: bool = True) -> Dict[UUID, Dino]:
         config = GameObjectReaderConfiguration(
-            blueprint_name_filter=lambda name: name is not None and name in class_names
+            blueprint_name_filter=lambda name: name is not None and ((name in class_names) or (include_cryopodded and ("PrimalItem_WeaponEmptyCryopod_C" in name)))
         )
 
         dinos = self.get_all(config, include_cryos=include_cryopodded)
