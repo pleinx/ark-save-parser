@@ -11,7 +11,10 @@ class ArkItemNetId:
     id2 : int
 
     def __init__(self, byte_buffer: "ArkBinaryParser"):
-        self.id1 = byte_buffer.parse_uint32_property("ItemID1")
+        if byte_buffer.peek_name() == "ItemID2":
+            self.id1 = 0
+        else:
+            self.id1 = byte_buffer.parse_uint32_property("ItemID1")
         self.id2 = byte_buffer.parse_uint32_property("ItemID2")
         byte_buffer.validate_name("None")
 

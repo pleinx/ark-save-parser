@@ -1,4 +1,4 @@
-from ..ark_game_object import ArkGameObject
+
 from uuid import UUID, uuid4
 import json
 from arkparse.parsing import ArkBinaryParser
@@ -8,11 +8,12 @@ from importlib.resources import files
 from typing import Dict, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    from ..ark_game_object import ArkGameObject
     from arkparse import AsaSave
 
 class ParsedObjectBase:
     binary: ArkBinaryParser = None
-    object: ArkGameObject = None
+    object: "ArkGameObject" = None
     props_initialized: bool = False
     save: "AsaSave" = None
 
@@ -54,6 +55,7 @@ class ParsedObjectBase:
         return new_uuid, parser
 
     def reidentify(self, new_uuid: UUID = None, update=True):
+        from ..ark_game_object import ArkGameObject
         self.replace_uuid(new_uuid=new_uuid)
         self.renumber_name()
         uuid = new_uuid if new_uuid is not None else self.object.uuid
@@ -82,6 +84,7 @@ class ParsedObjectBase:
         self.binary.byte_buffer = self.object.re_number_names(self.binary, new_number)
 
     def replace_name_at_index_with(self, index: int, new_name: str):
+        from ..ark_game_object import ArkGameObject
         if self.object is None:
             ArkSaveLogger.error_log("This object has no ArkGameObject associated with it, cannot replace name")
             return
