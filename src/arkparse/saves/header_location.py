@@ -17,7 +17,7 @@ class HeaderLocation:
             self.dl = int(match.group("dl"), 16) if match.group("dl") else None
         else:
             if not loc_str.startswith("SPZ"):
-                ArkSaveLogger.error_log("String format does not match expected pattern: " + loc_str)
+                ArkSaveLogger.warning_log("String format does not match expected pattern: " + loc_str)
             self.map = loc_str
             self.grid = loc_str
             self.l = 0

@@ -154,8 +154,8 @@ class Dino(ParsedObjectBase):
     def to_json_obj(self):
         # Grab already set properties
         json_obj = { "UUID": self.object.uuid.__str__(),
-                     "DinoID1": self.id1,
-                     "DinoID2": self.id2,
+                     "DinoID1": self.id_.id1,
+                     "DinoID2": self.id_.id2,
                      "bIsCryopodded": self.is_cryopodded,
                      "bIsFemale": self.is_female,
                      "ShortName": self.get_short_name(),
