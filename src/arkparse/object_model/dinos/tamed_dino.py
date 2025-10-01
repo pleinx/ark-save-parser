@@ -120,6 +120,13 @@ class TamedDino(Dino):
         Dino.from_object(dino_obj, status_obj, d)
 
         return d
+    
+    def remove_from_save(self):
+        if self.inventory is not None:
+            for item in list(self.inventory.items.keys()):
+                self.save.remove_obj_from_db(item)
+            self.save.remove_obj_from_db(self.inv_uuid)
+        super().remove_from_save()
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):
         if self.inventory is None and force_inventory:

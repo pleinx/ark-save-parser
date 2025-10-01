@@ -73,6 +73,12 @@ class Dino(ParsedObjectBase):
         d.stats = DinoStats.from_object(status_obj)
 
         return d
+    
+    def remove_from_save(self):
+        self.save.remove_obj_from_db(self.stats.uuid)
+
+        if self.ai_controller is not None:
+            self.save.remove_obj_from_db(self.ai_controller.uuid)
 
     def __get_gene_trait_bytes(self, trait: ArkDinoTrait, level: int, save: AsaSave) -> bytes:
         trait = f"{trait.value}[{level}]"
