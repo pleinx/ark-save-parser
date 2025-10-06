@@ -1,6 +1,6 @@
 
 /Game/ASA/Dinos/FireLion/PrimalItemArmor_Saddle_FireLion.PrimalItemArmor_Saddle_FireLion_C
-
+/Game/ASA/Dinos/Helicoprion/Saddle/PrimalItemArmor_Helicoprion.PrimalItemArmor_Helicoprion_C
 /Game/ClubARk/Rewards/RepairKit/Armor/PrimalItem_RepairKit_BootsOnly.PrimalItem_RepairKit_BootsOnly_C
 /Game/ClubARk/Rewards/RepairKit/Armor/PrimalItem_RepairKit_GlovesOnly.PrimalItem_RepairKit_GlovesOnly_C
 /Game/ClubARk/Rewards/RepairKit/Armor/PrimalItem_RepairKit_HatOnly.PrimalItem_RepairKit_HatOnly_C
@@ -480,6 +480,7 @@
 /Game/PrimalEarth/CoreBlueprints/Items/Armor/Skin/PrimalItemSkin_WitchHat.PrimalItemSkin_WitchHat_C
 /Game/PrimalEarth/CoreBlueprints/Items/Armor/Skin/PrimalItemSkin_WyvernGloves.PrimalItemSkin_WyvernGloves_C
 /Game/ScorchedEarth/Dinos/SpineyLizard/PrimalItemArmor_SpineyLizardPromoSaddle.PrimalItemArmor_SpineyLizardPromoSaddle_C
+/PA_Ascension/Cosmetics/StrawHat/PrimalItemArmor_Strawhat.PrimalItemArmor_Strawhat_C
 /PA_Ascension/Dinos/PaleoKentro/PrimalItemArmor_Paleo_Kentro_Saddle.PrimalItemArmor_Paleo_Kentro_Saddle_C
 /PA_Ascension/Dinos/PaleoMoschops/Saddle/PrimalItemArmor_PaleoMoschopsSaddle.PrimalItemArmor_PaleoMoschopsSaddle_C
 /PA_EVO_Pack_01/Dinos/EVO_Giga/Saddle/PrimalItemArmor_EVO_Giga_Saddle.PrimalItemArmor_EVO_Giga_Saddle_C
