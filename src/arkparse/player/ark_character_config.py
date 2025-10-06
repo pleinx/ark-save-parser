@@ -34,17 +34,12 @@ class ArkCharacterConfig:
             )
         
         properties = properties.get_property_value("MyPlayerCharacterConfig")
+
+        if not properties:
+            return
+
         # Parse is_female
-        is_female_prop = properties.find_property("bIsFemale")
-        if not is_female_prop:
-            self.is_female = False
-            # raise ValueError("Missing 'bIsFemale' property.")
-        else:
-            self.is_female = (
-                is_female_prop.value
-                if is_female_prop.type == "Boolean"
-                else False
-            )
+        self.is_female = properties.get_property_value("bIsFemale", False)
 
         # Parse BodyColors
         body_colors_props = properties.find_all_properties_of_name("BodyColors")

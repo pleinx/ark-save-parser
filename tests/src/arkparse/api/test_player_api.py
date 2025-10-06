@@ -6,6 +6,8 @@ from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.misc.dino_owner import DinoOwner
 from arkparse.parsing.struct import ActorTransform
 
+from arkparse import AsaSave
+
 def get_test_player(player_api: PlayerApi | None) -> ArkPlayer:
     """
     Helper function to retrieve a specific player by name.
@@ -154,3 +156,13 @@ def test_get_player_xp(player_api: PlayerApi, test_player):
         f"Expected >383304000 XP for player {test_player.name}, got {xp}"
     )
 
+def test_non_use_store(base_save_path):
+    save_path = base_save_path / "set_2" / "TheIsland_WP" / "TheIsland_WP.ark"
+    save = AsaSave(save_path)
+    player_api = PlayerApi(save)
+    
+    print(f"Total players: {len(player_api.players)}")
+    print(f"Total tribes: {len(player_api.tribes)}")
+
+    assert len(player_api.players) == 1222, f"Expected 1222 players, got {len(player_api.players)}"
+    assert len(player_api.tribes) == 387, f"Expected 387 tribes, got {len(player_api.tribes)}"
