@@ -71,7 +71,7 @@ class TamedDino(Dino):
         return self._inventory
 
     def __str__(self) -> str:
-        return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner))
+        return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner.tribe))
     
     def is_ancestor_of(self, other: "TamedDino") -> bool:
         if other is None or other.object is None or self.object is None:

@@ -57,6 +57,12 @@ class StatPoints:
                self.water + self.temperature + self.weight + self.melee_damage + \
                self.movement_speed + self.fortitude + self.crafting_speed + (1 if self.type == "NumberOfLevelUpPointsApplied" else 0)
     
+    def get_stat(self, stat: ArkStat) -> Optional[int]:
+        if stat.value not in STAT_POSITION_MAP:
+            raise ValueError(f"Invalid stat: {stat}")
+
+        return getattr(self, STAT_POSITION_MAP[stat.value])
+    
     def set_stat(self, stat: ArkStat, value: int):
         if stat.value not in STAT_POSITION_MAP:
             raise ValueError(f"Invalid stat: {stat}")
