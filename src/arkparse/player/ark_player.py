@@ -64,7 +64,7 @@ class ArkPlayer:
         
         self.id_ = my_data.get_property_value("PlayerDataID")
         self.char_name = my_data.get_property_value("PlayerCharacterName")
-        self.unique_id = my_data.get_property_value("UniqueID").value
+        self.unique_id = my_data.get_property_value("UniqueID").value if my_data.get_property_value("UniqueID") is not None else None
         self.ip_address = my_data.get_property_value("SavedNetworkAddress")
         self.name = my_data.get_property_value("PlayerName")
         self.first_spawned = my_data.get_property_value("bFirstSpawned")
@@ -92,6 +92,11 @@ class ArkPlayer:
         _archive = ArkArchive(archive_data, from_store)
         
         self.player_data = _archive.get_object_by_class("/Game/PrimalEarth/CoreBlueprints/PrimalPlayerDataBP.PrimalPlayerDataBP_C")
+        
+        if self.player_data is None:
+            print(_archive.objects)
+            raise ValueError("No PrimalPlayerDataBP found in archive.")
+        
         self.__init_player_data(self.player_data)
 
         self.persistent_buffs = []

@@ -15,7 +15,7 @@ ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.INFO, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.DEBUG, True)
 ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.WARNING, True)
 ArkSaveLogger.allow_invalid_objects(False)
-CURENT_SET = "1"
+CURRENT_SET = "1"
 
 def file_directory(set: str) -> Path:
     """
@@ -23,11 +23,18 @@ def file_directory(set: str) -> Path:
     """
     return Path(__file__).parent / "test_data" / set
 
-def save_path(map: ArkMap, set: str = "set_" + CURENT_SET):
+def save_path(map: ArkMap, set: str = "set_" + CURRENT_SET):
     """
     Returns the path to the save file for the given map.
     """
     return file_directory(set) / f"{map.to_file_name()}_WP" / f"{map.to_file_name()}_WP.ark"
+
+@pytest.fixture(scope="session")
+def base_save_path() -> Path:
+    """
+    Returns the base path to the save files.
+    """
+    return Path(__file__).parent / "test_data"
 
 def pytest_addoption(parser: pytest.Parser):
     parser.addoption(

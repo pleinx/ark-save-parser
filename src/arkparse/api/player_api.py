@@ -37,16 +37,17 @@ class _TribeAndPlayerData:
         0x61, 0x74, 0x61, 0x42, 0x50, 0x5f, 0x43, 0x00
     ])
 
-    def __init__(self, store_data: ArkBinaryParser):
+    def __init__(self, store_data: ArkBinaryParser = None):
         self.data = store_data
         
         self.tribe_data_pointers: Dict[uuid.UUID, list] = {}
         self.player_data_pointers: Dict[uuid.UUID, list] = {}
         self.tribes_data: Dict[uuid.UUID, bytes] = {}
         self.players_data: Dict[uuid.UUID, bytes] = {}
-        ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
-        self.initialize_data()
-        ArkSaveLogger.api_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
+        if self.data is not None:
+            ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
+            self.initialize_data()
+            ArkSaveLogger.api_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
 
     def initialize_data(self) -> None:
         # Read initial flag (unused)
@@ -207,6 +208,7 @@ class PlayerApi:
 
         if not self.from_store:
             index: int = 0
+            self.data = _TribeAndPlayerData()
             for path in self.profile_paths:
                 self.data.players_data[uuid.UUID(int=index)] = path.read_bytes()
                 index += 1
