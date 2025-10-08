@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import random
 
-from arkparse.object_model import ArkGameObject
+from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.object_model.misc.__parsed_object_base import ParsedObjectBase
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.parsing import ArkBinaryParser
@@ -51,8 +51,8 @@ class Structure(ParsedObjectBase):
     #MyInventoryComponent
     #NetDestructionTime
 
-    def __init__(self, uuid: UUID, save: AsaSave, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
-        super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
+    def __init__(self, uuid: UUID, save: AsaSave):
+        super().__init__(uuid, save=save)
 
         properties = self.object
         self.owner = ObjectOwner(properties)

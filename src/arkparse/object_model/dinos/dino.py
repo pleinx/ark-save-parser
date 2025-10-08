@@ -15,11 +15,11 @@ from .dino_ai_controller import DinoAiController
 from .stats import DinoStats
 from ...parsing import ArkBinaryParser
 from ...parsing.struct import ObjectReference
+from .dino_id import DinoId
 
 
 class Dino(ParsedObjectBase):
-    id1: int = 0
-    id2: int = 0
+    id_: DinoId = None
 
     is_female: bool = False
     is_cryopodded: bool = False
@@ -37,23 +37,22 @@ class Dino(ParsedObjectBase):
         super().__init_props__()
 
         self.is_female = self.object.get_property_value("bIsFemale", False)
-        self.id1 = self.object.get_property_value("DinoID1")
-        self.id2 = self.object.get_property_value("DinoID2")
+        self.id_ = DinoId.from_data(self.object)
         self.gene_traits = self.object.get_array_property_value("GeneTraits")
         self.is_dead = self.object.get_property_value("bIsDead", False)
         self._location = ActorTransform(vector=self.object.get_property_value("SavedBaseWorldLocation"))
     
-    def __init__(self, uuid: UUID = None, save: AsaSave = None, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
-        super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None):
+        super().__init__(uuid, save=save)
 
         if save is not None and self.object.get_property_value("MyCharacterStatusComponent") is not None:
             stat_uuid = self.object.get_property_value("MyCharacterStatusComponent").value
-            self.stats = DinoStats(UUID(stat_uuid), save=save, game_bin=game_bin, game_obj=game_obj)
+            self.stats = DinoStats(UUID(stat_uuid), save=save)
 
         if save is not None and self.object.get_property_value("Owner") is not None:
             if self.save.is_in_db(UUID(self.object.get_property_value("Owner").value)):
                 ai_uuid = self.object.get_property_value("Owner").value
-                self.ai_controller = DinoAiController(UUID(ai_uuid), save=save, game_bin=game_bin, game_obj=game_obj)
+                self.ai_controller = DinoAiController(UUID(ai_uuid), save=save)
 
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)
@@ -74,6 +73,12 @@ class Dino(ParsedObjectBase):
         d.stats = DinoStats.from_object(status_obj)
 
         return d
+    
+    def remove_from_save(self):
+        self.save.remove_obj_from_db(self.stats.uuid)
+
+        if self.ai_controller is not None:
+            self.save.remove_obj_from_db(self.ai_controller.uuid)
 
     def __get_gene_trait_bytes(self, trait: ArkDinoTrait, level: int, save: AsaSave) -> bytes:
         trait = f"{trait.value}[{level}]"
@@ -155,8 +160,8 @@ class Dino(ParsedObjectBase):
     def to_json_obj(self):
         # Grab already set properties
         json_obj = { "UUID": self.object.uuid.__str__(),
-                     "DinoID1": self.id1,
-                     "DinoID2": self.id2,
+                     "DinoID1": self.id_.id1,
+                     "DinoID2": self.id_.id2,
                      "bIsCryopodded": self.is_cryopodded,
                      "bIsFemale": self.is_female,
                      "ShortName": self.get_short_name(),
@@ -262,12 +267,8 @@ class Dino(ParsedObjectBase):
             self.update_binary()
 
     def reidentify(self, new_uuid: UUID = None, update=True):
-        new_id_1 = random.randint(0, 2**31 - 1)
-        new_id_2 = random.randint(0, 2**31 - 1)
-        self.id1 = new_id_1
-        self.id2 = new_id_2
-        self.binary.replace_u32(self.object.find_property("DinoID1"), new_id_1)
-        self.binary.replace_u32(self.object.find_property("DinoID2"), new_id_2)
+        self.id_ = DinoId.generate()
+        self.id_.replace(self.binary, self.object)
 
         current_time_stamp = self.save.save_context.game_time
 

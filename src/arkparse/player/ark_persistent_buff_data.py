@@ -9,8 +9,8 @@ class PersistentBuffData:
     name: str
 
     def __init__(self, properties: ArkPropertyContainer):
-        self.class_ = properties.find_property("ForPrimalBuffClass").value.value
-        self.name = properties.find_property("ForPrimalBuffClassString").value
+        self.class_ = properties.find_property("ForPrimalBuffClass").value.value if properties.find_property("ForPrimalBuffClass") is not None else None
+        self.name = properties.find_property("ForPrimalBuffClassString").value if properties.find_property("ForPrimalBuffClassString") is not None else None
 
     def __str__(self):
         return f"class={self.class_}, name={self.name}"

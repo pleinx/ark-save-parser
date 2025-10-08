@@ -1,8 +1,9 @@
 #TamedTimeStamp
 import json
 from uuid import UUID
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 
+from arkparse.object_model.dinos.dino_id import DinoId
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.dino_owner import DinoOwner
@@ -11,6 +12,7 @@ from arkparse.object_model.dinos.dino import Dino
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.struct.object_reference import ObjectReference
 from arkparse.parsing import ActorTransform
+from arkparse.parsing.struct.ark_dino_ancestor_entry import ArkDinoAncestorEntry
 
 from arkparse.utils.json_utils import DefaultJsonEncoder
 
@@ -54,10 +56,10 @@ class TamedDino(Dino):
         else:
             self.inv_uuid = UUID(inv_uuid.value)
 
-    def __init__(self, uuid: UUID = None, save: AsaSave = None, bypass_inventory: bool = True, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
+    def __init__(self, uuid: UUID = None, save: AsaSave = None, bypass_inventory: bool = True):
         self.inv_uuid = None
         self._inventory = None
-        super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
+        super().__init__(uuid, save=save)
 
         if self.inv_uuid is not None and not bypass_inventory:
             self._inventory = Inventory(self.inv_uuid, save=save)
@@ -69,7 +71,44 @@ class TamedDino(Dino):
         return self._inventory
 
     def __str__(self) -> str:
-        return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner))
+        return "Dino(type={}, lv={}, owner={})".format(self.get_short_name(), self.stats.current_level, str(self.owner.tribe))
+    
+    def is_ancestor_of(self, other: "TamedDino") -> bool:
+        if other is None or other.object is None or self.object is None:
+            return False
+
+        ancestors: List[ArkDinoAncestorEntry] = other.object.get_property_value("DinoAncestors", [])
+        ancestors_m: List[ArkDinoAncestorEntry] = other.object.get_property_value("DinoAncestorsMale", [])
+
+        for anc in ancestors:
+            if anc.female.id_ == self.id_ or anc.male.id_ == self.id_:
+                return True
+        for anc in ancestors_m:
+            if anc.female.id_ == self.id_ or anc.male.id_ == self.id_:
+                return True
+            
+        return False
+    
+    @property
+    def generation(self) -> int:
+        ancestors: List[ArkDinoAncestorEntry] = self.object.get_property_value("DinoAncestors", [])
+        ancestors_m: List[ArkDinoAncestorEntry] = self.object.get_property_value("DinoAncestorsMale", [])
+        return max(len(ancestors), len(ancestors_m)) + 1
+    
+    @property
+    def ancestor_ids(self) -> set[DinoId]:
+        if self.object is None:
+            return []
+        ancestors: List[ArkDinoAncestorEntry] = self.object.get_property_value("DinoAncestors", [])
+        ancestors_m: List[ArkDinoAncestorEntry] = self.object.get_property_value("DinoAncestorsMale", [])
+        ids = set()
+        for anc in ancestors:
+            ids.add(anc.female.id_)
+            ids.add(anc.male.id_)
+        for anc in ancestors_m:
+            ids.add(anc.female.id_)
+            ids.add(anc.male.id_)
+        return ids
 
     @staticmethod
     def from_object(dino_obj: ArkGameObject, status_obj: ArkGameObject, cryopod: "Cryopod" = None):
@@ -81,6 +120,13 @@ class TamedDino(Dino):
         Dino.from_object(dino_obj, status_obj, d)
 
         return d
+    
+    def remove_from_save(self):
+        if self.inventory is not None:
+            for item in list(self.inventory.items.keys()):
+                self.save.remove_obj_from_db(item)
+            self.save.remove_obj_from_db(self.inv_uuid)
+        super().remove_from_save()
 
     def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):
         if self.inventory is None and force_inventory:

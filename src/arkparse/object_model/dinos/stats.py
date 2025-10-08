@@ -57,6 +57,12 @@ class StatPoints:
                self.water + self.temperature + self.weight + self.melee_damage + \
                self.movement_speed + self.fortitude + self.crafting_speed + (1 if self.type == "NumberOfLevelUpPointsApplied" else 0)
     
+    def get_stat(self, stat: ArkStat) -> Optional[int]:
+        if stat.value not in STAT_POSITION_MAP:
+            raise ValueError(f"Invalid stat: {stat}")
+
+        return getattr(self, STAT_POSITION_MAP[stat.value])
+    
     def set_stat(self, stat: ArkStat, value: int):
         if stat.value not in STAT_POSITION_MAP:
             raise ValueError(f"Invalid stat: {stat}")
@@ -165,8 +171,8 @@ class DinoStats(ParsedObjectBase):
         self.current_level = self.base_stat_points.get_level() + self.added_stat_points.get_level() + self.mutated_stat_points.get_level()
         self._percentage_imprinted = self.object.get_property_value("DinoImprintingQuality", 0.0) * 100
     
-    def __init__(self, uuid: UUID = None, save: AsaSave = None, game_bin: Optional[ArkBinaryParser] = None, game_obj: Optional[ArkGameObject] = None):
-        super().__init__(uuid, save=save, game_bin=game_bin, game_obj=game_obj)
+    def __init__(self, uuid: UUID = None, save: AsaSave = None):
+        super().__init__(uuid, save=save)
 
     @staticmethod
     def from_object(obj: ArkGameObject):

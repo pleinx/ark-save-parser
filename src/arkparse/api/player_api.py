@@ -37,16 +37,17 @@ class _TribeAndPlayerData:
         0x61, 0x74, 0x61, 0x42, 0x50, 0x5f, 0x43, 0x00
     ])
 
-    def __init__(self, store_data: ArkBinaryParser):
+    def __init__(self, store_data: ArkBinaryParser = None):
         self.data = store_data
         
         self.tribe_data_pointers: Dict[uuid.UUID, list] = {}
         self.player_data_pointers: Dict[uuid.UUID, list] = {}
         self.tribes_data: Dict[uuid.UUID, bytes] = {}
         self.players_data: Dict[uuid.UUID, bytes] = {}
-        ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
-        self.initialize_data()
-        ArkSaveLogger.api_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
+        if self.data is not None:
+            ArkSaveLogger.set_file(self.data, "TribeAndPlayerData.bin")
+            self.initialize_data()
+            ArkSaveLogger.api_log(f"Found {len(self.tribe_data_pointers)} tribe data pointers and {len(self.player_data_pointers)} player data pointers in the save data.")
 
     def initialize_data(self) -> None:
         # Read initial flag (unused)
@@ -71,8 +72,8 @@ class _TribeAndPlayerData:
             self.tribe_data_pointers[tribe_uuid] = [uuid_bytes, offset+1, size]
 
     def _get_player_offsets(self) -> None:
+        pattern = bytes([0x4E, 0x6F, 0x6E, 0x65])
         positions = self.data.find_byte_sequence(self.PLAYER_DATA_NAME)
-        nones = self.data.find_byte_sequence(bytes([0x4E, 0x6F, 0x6E, 0x65]))
         # print(f"Found {len(positions)} player data offsets in the save data.")
         for i, pos in enumerate(positions):
             # Get ID
@@ -82,22 +83,13 @@ class _TribeAndPlayerData:
             offset = pos - 36
 
             next_player_data = positions[i + 1] if i + 1 < len(positions) else None
-            last_none = self.get_last_none_before(nones, next_player_data)
-            end_pos = last_none + 4
-            size = end_pos - offset
-            ArkSaveLogger.api_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
-
-            self.player_data_pointers[player_uuid] = [uuid_bytes, offset, size+1]
-
-    def get_last_none_before(self, nones: List[int], pos: int = None):
-        if pos is None:
-            pos = self.data.size() - 1
-        for i in range(len(nones) - 1, -1, -1):
-            if nones[i] < pos:
-                return nones[i]
-            
-        return None
-
+            if not next_player_data is None:
+                last_none = self.data.find_last_byte_sequence_before(pattern, next_player_data)
+                if not last_none is None:
+                    end_pos = last_none + 4
+                    size = end_pos - offset
+                    ArkSaveLogger.api_log(f"Player UUID: {uuid_bytes.hex()}, Offset: {offset}, Size: {size}, End: {offset+size}, Next Player Data: {next_player_data}")
+                    self.player_data_pointers[player_uuid] = [uuid_bytes, offset, size+1]
 
     def get_ark_tribe_raw_data(self, index: uuid.UUID) -> Optional[bytes]:
         pointer = self.tribe_data_pointers[index]
@@ -216,6 +208,7 @@ class PlayerApi:
 
         if not self.from_store:
             index: int = 0
+            self.data = _TribeAndPlayerData()
             for path in self.profile_paths:
                 self.data.players_data[uuid.UUID(int=index)] = path.read_bytes()
                 index += 1

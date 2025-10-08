@@ -14,6 +14,7 @@ class ObjectReference:
     TYPE_NAME = 3
     TYPE_ID = 4
     TYPE_POS_MOD_REF = 5
+    TYPE_NAME_2 = 256
     TYPE_UNKNOWN = -1
 
     type: int
@@ -26,10 +27,11 @@ class ObjectReference:
 
         # If the save context has a name table, handle accordingly
         if reader.save_context.has_name_table() and not reader.in_cryopod:
+            ArkSaveLogger.parser_log(f"Reading type at position {reader.position} with name table")
             type = reader.read_short()
             ArkSaveLogger.parser_log(f"ObjectReference type: {type}, position: {reader.position}")
 
-            if type == ObjectReference.TYPE_PATH:
+            if type == ObjectReference.TYPE_PATH or type == ObjectReference.TYPE_NAME_2:
                 self.type = ObjectReference.TYPE_PATH
                 self.value = reader.read_name()
             elif type == ObjectReference.TYPE_UUID:
