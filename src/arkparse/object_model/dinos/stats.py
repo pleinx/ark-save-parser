@@ -209,9 +209,9 @@ class DinoStats(ParsedObjectBase):
     def to_string_all(self):
         return f"DinoStats(base_level={self.base_level}, " + \
                f"level={self.current_level}, " + \
-               f"\nbase stats={self.base_stat_points.to_string_all()}, " + \
-               f"\nadded stats={self.added_stat_points.to_string_all()}, " + \
-               f"\nstat_values={self.stat_values.to_string_all()})"
+               f"\n - base stats={self.base_stat_points.to_string_all()}, " + \
+               f"\n - added stats={self.added_stat_points.to_string_all()}, " + \
+               f"\n - stat_values={self.stat_values.to_string_all()})"
     
     def get_highest_stat(self, base: bool = False, mutated: bool = False):
         highest = 0
