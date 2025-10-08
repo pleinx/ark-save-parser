@@ -8,6 +8,7 @@ class Saddles:
     gigantoraptor: str = "/Game/ASA/Dinos/Gigantoraptor/PrimalItemArmor_GigantoraptorSaddle.PrimalItemArmor_GigantoraptorSaddle_C"
     shastasaurus: str = "/Game/ASA/Dinos/Shastasaurus/PrimalItemArmor_ShastaSaddle_Submarine.PrimalItemArmor_ShastaSaddle_Submarine_C"
     xiphactinus: str = "/Game/ASA/Dinos/Xiphactinus/Dinos/Saddle/PrimalItemArmor_XiphSaddle_ASA.PrimalItemArmor_XiphSaddle_ASA_C"
+    helicoprion: str = "/Game/ASA/Dinos/Helicoprion/Saddle/PrimalItemArmor_Helicoprion.PrimalItemArmor_Helicoprion_C"
 
     # Frontier Pack Saddles
     saddle_cart_btt: str = "/Game/Packs/Frontier/CoreBlueprints/Items/Armor/Saddles/PrimalItemArmor_SaddleCart.PrimalItemArmor_SaddleCart_C"
@@ -262,6 +263,8 @@ class Primitive:
     shotgun: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponShotgun.PrimalItem_WeaponShotgun_C"
     simple_pistol: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponGun.PrimalItem_WeaponGun_C"
     crossbow: str = "/Game/PrimalEarth/CoreBlueprints/Weapons/PrimalItem_WeaponCrossbow.PrimalItem_WeaponCrossbow_C"
+    whip: str = "/Game/ScorchedEarth/WeaponWhip/PrimalItem_WeaponWhip.PrimalItem_WeaponWhip_C"
+    boomerang: str = "/Game/ScorchedEarth/WeaponBoomerang/PrimalItem_WeaponBoomerang.PrimalItem_WeaponBoomerang_C"
     all_bps = [bow, slingshot, stone_club, torch, lance, pike, sword, shotgun, simple_pistol, crossbow]
 
 class Advanced:

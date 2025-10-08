@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Collection, Optional, Dict
 
 from arkparse.logging import ArkSaveLogger
-from arkparse.object_model import ArkGameObject
+from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser, GameObjectReaderConfiguration
 from arkparse.saves.header_location import HeaderLocation
 from arkparse.saves.save_context import SaveContext
@@ -171,6 +171,24 @@ class SaveConnection:
 
             for r in result:
                 print(f"Found at {row[0]}, index: {r}")
+
+    def replace_value_in_custom_tables(self, search: bytes, replace: bytes):
+        query = "SELECT key, value FROM custom"
+        cursor = self.connection.cursor()
+        cursor.execute(query)
+        for row in cursor:
+            reader = ArkBinaryParser(row[1], self.save_context)
+            result = reader.find_byte_sequence(search, adjust_offset=0)
+
+            for r in result:
+                print(f"Found at {row[0]}, index: {r}")
+                reader.set_position(r)
+                reader.replace_bytes(replace)
+
+                query = "UPDATE custom SET value = ? WHERE key = ?"
+                with self.connection as conn:
+                    conn.execute(query, (reader.byte_buffer, row[0]))
+                    conn.commit()
 
     def get_obj_uuids(self) -> Collection[uuid.UUID]:
         query = "SELECT key FROM game"
@@ -424,14 +442,10 @@ class SaveConnection:
         ArkSaveLogger.save_log(f"Number of header locations: {num_parts}")
 
         for _ in range(num_parts):
-            try:
-                part = header_data.read_string()
-                if not part.endswith("_WP"):
-                    parts.append(HeaderLocation(part))
-                header_data.validate_uint32(0xFFFFFFFF)
-            except Exception as e:
-                ArkSaveLogger.open_hex_view()
-                raise ValueError(f"Error reading header location: {e}")
+            part = header_data.read_string()
+            if not part.endswith("_WP"):
+                parts.append(HeaderLocation(part))
+            header_data.validate_uint32(0xFFFFFFFF)
         return parts
 
     @staticmethod
