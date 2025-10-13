@@ -133,16 +133,16 @@ class MapCoordinateParameters:
         elif map == ArkMap.VALGUERO:
             self.origin_min_x = -408000.0
             self.origin_min_y = -408000.0
-            self.origin_min_z = -15000.0 # No Idea
+            self.origin_min_z = -655000.0
             self.origin_max_x = 408000.0
             self.origin_max_y = 408000.0
-            self.origin_max_z = 61800.0
+            self.origin_max_z = 54695.0
             self.playable_min_x = -408000.0
             self.playable_min_y = -408000.0
-            self.playable_min_z = -15000.0
+            self.playable_min_z = -100000.0
             self.playable_max_x = 408000.0
             self.playable_max_y = 408000.0
-            self.playable_max_z = 61800.0
+            self.playable_max_z = 655000.0
         elif map == ArkMap.CLUB_ARK:
             self.origin_min_x = -12812.0
             self.origin_min_y = -15121.0
