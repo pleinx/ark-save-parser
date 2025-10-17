@@ -374,46 +374,48 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
     #     self.set_position(original_position)
     #     return found
 
+    # def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1, print_findings: bool = False) -> List[int]:
+          # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
+    #     original_position = self.get_position()
+    #     max_prints = 20
+    #     prints = 0
+    #     found = []
+    #     buffer = self.byte_buffer
+    #     cur_offset = 0
+        
+    #     while True:
+    #         pos = buffer.find(pattern)
+    #         if pos == -1:
+    #             break
+    #         found.append(pos + cur_offset + adjust_offset)
+    #         if print_findings and prints < max_prints:
+    #             ArkSaveLogger.parser_log(
+    #                 f"Found byte sequence at {pos + cur_offset + adjust_offset}"
+    #             )
+    #             prints += 1
+    #         buffer = buffer[pos + 1:]
+    #         cur_offset += pos + 1
+        
+    #     self.set_position(original_position)
+    #     return found
+
     def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1, print_findings: bool = False) -> List[int]:
         # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
-        original_position = self.get_position()
-        max_prints = 20
-        prints = 0
-        found = []
-        buffer = self.byte_buffer
-        cur_offset = 0
-        
-        while True:
-            pos = buffer.find(pattern)
-            if pos == -1:
-                break
-            found.append(pos + cur_offset + adjust_offset)
+        found: List[int] = []
+        pos: int = 0
+        max_prints: int = 20
+        prints: int = 0
+        buffer_len: int = len(self.byte_buffer)
+        while pos >= 0 and pos < buffer_len:
+            pos = self.byte_buffer.find(pattern, pos)
+            if pos > 0:
+                found.append(pos + adjust_offset)
             if print_findings and prints < max_prints:
-                ArkSaveLogger.parser_log(
-                    f"Found byte sequence at {pos + cur_offset + adjust_offset}"
-                )
                 prints += 1
-            buffer = buffer[pos + 1:]
-            cur_offset += pos + 1
-        
-        self.set_position(original_position)
+                ArkSaveLogger.parser_log(f"Found byte sequence at {pos + adjust_offset}")
+            if pos >= 0:
+                pos += len(pattern)
         return found
-
-    # def find_byte_sequence(self, pattern: bytes, adjust_offset: int = -1, max_findings_print: int = 0) -> List[int]:
-    #     # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
-    #     found: List[int] = []
-    #     pos: int = 0
-    #     prints: int = 0
-    #     buffer_len: int = len(self.byte_buffer)
-    #     while pos >= 0 and pos < buffer_len:
-    #         pos = self.byte_buffer.find(pattern, pos, sys.maxsize)
-    #         found.append(pos + adjust_offset)
-    #         if prints < max_findings_print:
-    #             prints += 1
-    #             ArkSaveLogger.parser_log(f"Found byte sequence at {pos + adjust_offset}")
-    #         if pos >= 0:
-    #             pos += len(pattern)
-    #     return found
 
     def find_last_byte_sequence_before(self, pattern: bytes, before_pos: int = sys.maxsize, adjust_offset: int = -1) -> Optional[int]:
         # adjust offset is a temporary fix for off-by-one errors which i still have to figure out
