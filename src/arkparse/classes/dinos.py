@@ -61,8 +61,10 @@ class Abberant:
 
 class PaleoAlphas:
     alpha_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Alpha/EVO_Alpha_Rex_Character_BP.EVO_Alpha_Rex_Character_BP_C"
+    alpha_mosa = "/PA_EVO_Pack_02/Dinos/EVO_Mosa/Alpha/EVO_Alpha_Mosa_Character_BP.EVO_Alpha_Mosa_Character_BP_C"
+    alpha_raptor = "/PA_Ascension/Dinos/PaleoRaptor/Alpha/Paleo_AlphaRaptor_Character_BP.Paleo_AlphaRaptor_Character_BP_C"
 
-    all_bps = [alpha_rex]
+    all_bps = [alpha_rex, alpha_mosa, alpha_raptor]
 
 class Alphas:
     alpha_reaper_king = "/Game/Aberration/Dinos/Nameless/MegaXenomorph_Character_BP_Male_Surface.MegaXenomorph_Character_BP_Male_Surface_C"
@@ -127,14 +129,16 @@ class DlcDinos:
     helper_bot = "/Game/Packs/Steampunk/Dinos/HelperBot/HelperBot_Character_BP.HelperBot_Character_BP_C"
     zeppelin = "/Game/Packs/Steampunk/Dinos/Zeppelin/Zeppelin_Character_BP.Zeppelin_Character_BP_C"
     doggo = "/Game/Packs/Wasteland/Dinos/Doggo/Doggo_Character_BP.Doggo_Character_BP_C"
-    all_bps = [firemane, archelon, dread_mare, oasisaur, train, helper_bot, zeppelin, doggo]
+    veilwyn = "/Game/LostColony/Dinos/YoungIceFox/YoungIceFox_DinoCompanion_Character_BP.YoungIceFox_DinoCompanion_Character_BP_C"
+    elderclaw = "/Game/ASA/Dinos/SpiritBear/SpiritBear_Character_BP.SpiritBear_Character_BP_C"
+    all_bps = [firemane, archelon, dread_mare, oasisaur, train, helper_bot, zeppelin, doggo, veilwyn, elderclaw]
 
 class ShoulderPets:
     glowtail = "/Game/Aberration/Dinos/LanternLizard/LanternLizard_Character_BP.LanternLizard_Character_BP_C"
     shinehorn = "/Game/Aberration/Dinos/LanternGoat/LanternGoat_Character_BP.LanternGoat_Character_BP_C"
     bulbdog = "/Game/Aberration/Dinos/LanternPug/LanternPug_Character_BP.LanternPug_Character_BP_C"
     cat = "/Game/ASA/Dinos/Cat/Cat_Character_BP.Cat_Character_BP_C"
-    veilwyn = "/Game/LostColony/Dinos/YoungIceFox/YoungIceFox_DinoCompanion_Character_BP.YoungIceFox_DinoCompanion_Character_BP_C"
+    
     archaeopteryx = "/Game/PrimalEarth/Dinos/Archaeopteryx/Archa_Character_BP.Archa_Character_BP_C"
     dimetrodon = "/Game/PrimalEarth/Dinos/Dimetrodon/Dimetro_Character_BP.Dimetro_Character_BP_C"
     dimorphodon = "/Game/PrimalEarth/Dinos/Dimorphodon/Dimorph_Character_BP.Dimorph_Character_BP_C"
@@ -150,7 +154,7 @@ class ShoulderPets:
     drakeling_winter = "/Game/ASA/Dinos/ShoulderDragon/ShoulderDragon_Character_BP_Winter.ShoulderDragon_Character_BP_Winter_C"
 
     all_bps = [
-        glowtail, shinehorn, bulbdog, cat, veilwyn, archaeopteryx, 
+        glowtail, shinehorn, bulbdog, cat, archaeopteryx, 
         dimetrodon, dimorphodon, microraptor, mesopithecus,
         otter, jerboa, vulture, drakeling_autumn, drakeling_spring,
         drakeling_summer, drakeling_winter
@@ -244,10 +248,11 @@ class Paleo:
     legacy_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Legacy/EVO_Legacy_Rex_Character_BP.EVO_Legacy_Rex_Character_BP_C"
     rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Paleo/EVO_Paleo_Rex_Character_BP.EVO_Paleo_Rex_Character_BP_C"
     mosa = "/PA_EVO_Pack_02/Dinos/EVO_Mosa/Paleo/EVO_Paleo_Mosa_Character_BP.EVO_Paleo_Mosa_Character_BP_C"
+    deinotherium = "/PA_Ascension/Dinos/PaleoDeinotherium/Paleo_DeinotheriumASA_Character_BP.Paleo_DeinotheriumASA_Character_BP_C"
 
     all_bps = [yuti, fasola, gigantoraptor, kentro, megalosaur, moschops,
                purlovia, raptor, sarco, spino, stego, thyla, trike,
-               giga, rex, legacy_rex, rex, mosa]
+               giga, rex, legacy_rex, rex, mosa, deinotherium]
 
 class Dinos:
     # Aberrant Dinos

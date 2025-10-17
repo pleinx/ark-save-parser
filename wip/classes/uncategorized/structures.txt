@@ -393,6 +393,7 @@
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Adobe.Pillar_Flat_Thin_Adobe_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Metal.Pillar_Flat_Thin_Metal_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Stone.Pillar_Flat_Thin_Stone_C
+/Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Tek.Pillar_Flat_Thin_Tek_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Thatch.Pillar_Flat_Thin_Thatch_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Flat_Thin/Pillar_Flat_Thin_Wood.Pillar_Flat_Thin_Wood_C
 /Game/PrimalEarth/Structures/Tileset/Pillars/Half/Pillar_Half_Metal.Pillar_Half_Metal_C
