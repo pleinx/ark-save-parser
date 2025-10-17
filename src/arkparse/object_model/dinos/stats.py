@@ -162,6 +162,9 @@ class DinoStats(ParsedObjectBase):
     def __init_props__(self):
         super().__init_props__()
 
+        if self.object is None:
+            return
+
         base_lv = self.object.get_property_value("BaseCharacterLevel")
         self.base_level = 0 if base_lv is None else base_lv
         self.base_stat_points = StatPoints(self.object)

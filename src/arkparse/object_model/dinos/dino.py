@@ -57,6 +57,12 @@ class Dino(ParsedObjectBase):
     def __str__(self) -> str:
         return "Dino(type={}, lv={})".format(self.get_short_name(), self.stats.current_level)
     
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Dino):
+            return False
+        
+        return self.object.uuid == other.object.uuid and self.id_ == other.id_
+    
     @property
     def location(self) -> ActorTransform:
         return self._location
@@ -79,6 +85,8 @@ class Dino(ParsedObjectBase):
 
         if self.ai_controller is not None:
             self.save.remove_obj_from_db(self.ai_controller.uuid)
+
+        self.save.remove_obj_from_db(self.object.uuid)
 
     def __get_gene_trait_bytes(self, trait: ArkDinoTrait, level: int, save: AsaSave) -> bytes:
         trait = f"{trait.value}[{level}]"
