@@ -121,7 +121,7 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False):
+    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False, pawn_objects: Optional[list[ArkGameObject]] = None):
         self.players: List[ArkPlayer] = []
         self.tribes: List[ArkTribe] = []
         self.tribe_to_player_map: Dict[int, List[ArkPlayer]] = {}
@@ -140,6 +140,11 @@ class PlayerApi:
         if self.save is not None and not no_pawns:
             ArkSaveLogger.api_log(f"Retrieving player pawns")
             self.__init_pawns()
+        elif pawn_objects is not None:
+            self.pawns = {}
+            for pawn in pawn_objects:
+                if not pawn is None:
+                    self.pawns[pawn.uuid] = pawn
 
         if self.from_store:
             self.__get_files_from_db()
