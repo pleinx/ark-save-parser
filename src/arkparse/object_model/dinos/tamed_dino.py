@@ -2,6 +2,7 @@
 import json
 from uuid import UUID
 from typing import TYPE_CHECKING, Optional, List
+from pathlib import Path
 
 from arkparse.object_model.dinos.dino_id import DinoId
 from arkparse.saves.asa_save import AsaSave
@@ -128,7 +129,7 @@ class TamedDino(Dino):
             self.save.remove_obj_from_db(self.inv_uuid)
         super().remove_from_save()
 
-    def store_binary(self, path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):
+    def store_binary(self, path: Path, name = None, prefix = "obj_", no_suffix=False, force_inventory=False):
         if self.inventory is None and force_inventory:
             raise ValueError("Cannot store TamedDino without inventory.")
         print(self.inventory)

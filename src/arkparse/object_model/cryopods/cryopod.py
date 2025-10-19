@@ -109,7 +109,9 @@ class EmbeddedCryopodData:
                         ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
                         raise e
                     parser.save_context.generate_unknown = False
-                    
+
+                    return obj
+                return None 
             else:
                 ArkSaveLogger.warning_log(f"Unsupported item type: {item}")
             
@@ -154,6 +156,7 @@ class Cryopod(InventoryItem):
             self.dino._location.in_cryopod = True
 
         saddle_obj = self.embedded_data.get_saddle_obj()
+        
         if saddle_obj is not None:
             self.saddle = Saddle.from_object(saddle_obj)  
             self.saddle.save = save

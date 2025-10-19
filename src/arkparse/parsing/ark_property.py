@@ -271,23 +271,31 @@ class ArkProperty:
         ArkSaveLogger.parser_log(f"Reading map property {key} with value type {value_type_name} at position {position} with data size {data_size}")
         key_type = bb.read_value_type_by_name()
         struct_names = bb.read_uint32()
-        map_name = ""
+        map_name = "None"
 
         if key_type == ArkValueType.Struct:
             value_type = bb.read_name()
         else:
             value_type = bb.read_value_type_by_name()
             struct_names = bb.read_int()
-            map_name = bb.read_name()
+            if struct_names > 0:
+                map_name = bb.read_name()
+
+        ArkSaveLogger.parser_log(f"Map key type: {key_type}, value type: {value_type}, struct names: {struct_names}, map name: {map_name}")
 
         data_size, position, read_pos, _ = ArkProperty.__read_struct_header(bb, 0, in_map=True, nr_of_struct_names=struct_names)
         start_of_data = bb.get_position() - 4
-        is_end = bb.position + data_size - 4 > bb.size()
-        if bb.peek_name() != "" or (not is_end and bb.peek_name(data_size-4) != ""):
+        is_end = bb.position + data_size >= bb.size()
+        is_end_m4 = bb.position + data_size - 4 >= bb.size()
+
+        if (not is_end and bb.peek_name(data_size) != "") and (bb.peek_name() != "" or (not is_end_m4 and bb.peek_name(data_size-4) != "")):
             ArkSaveLogger.parser_log(f"Restoring position to {start_of_data} for MapStruct")
             bb.set_position(bb.position - 4)
 
+        ArkSaveLogger.parser_log(f"Current position after map header: {bb.get_position()}, data size: {data_size}, expected end: {start_of_data + data_size}, buffer size: {bb.size()}")
+
         map_items = bb.read_uint32()
+        ArkSaveLogger.parser_log(f"Map has {map_items} items")
 
         if key_type == ArkValueType.Struct:
             ArkSaveLogger.warning_log( f"Map with key type {key_type} is currently not supported, skipping map prop")
@@ -300,8 +308,15 @@ class ArkProperty:
             if value_type == ArkValueType.Struct:
                 entries.append(ArkProperty.read_struct_map(key_type, bb, map_name))
             else:
-                ArkSaveLogger.open_hex_view()
-                raise ValueError(f"Unsupported map value type {value_type}")
+                if value_type in _SIMPLE_SPECS and key_type in _SIMPLE_SPECS:
+                    map_key = ArkProperty.read_property_value(key_type, bb)
+                    map_value = ArkProperty.read_property_value(value_type, bb)
+                    entry = ArkProperty(f"{map_key}", value_type.name, 0, 0, map_value)
+                    entries.append(entry)
+                    ArkSaveLogger.parser_log(f"Map entry: {map_key} -> {map_value}")
+                else:
+                    ArkSaveLogger.error_log(f"Unsupported map value type {value_type} in map {key}")
+                    raise RuntimeError(f"Unsupported map value type {value_type} in map {key}")
 
         ArkProperty._fixup_if_left(bb, start_of_data, data_size, "Map")
 
@@ -439,7 +454,8 @@ class ArkProperty:
     # ---------------------------------------------------------------------------------------------
     @staticmethod
     def __read_struct_header(bb: "ArkBinaryParser", position: int = 0, in_array: bool = False, in_map: bool = False, nr_of_struct_names: int = 1) -> Tuple[int, int, bool]:
-        bb.validate_uint32(1)  # V14 marker
+        if nr_of_struct_names != 0:
+            bb.validate_uint32(1)
         with log_block("StructHeader"):
             if nr_of_struct_names > 10:
                 ArkSaveLogger.warning_log(f"Too many struct names: {nr_of_struct_names}; reverting to reading one name")
