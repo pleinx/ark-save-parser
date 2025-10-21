@@ -159,7 +159,7 @@ class SaveConnection:
 
                 obj = self.get_game_object_by_id(SaveConnection.byte_array_to_uuid(row[0]))
                 if obj:
-                    print(f"Object: {obj.blueprint}")
+                    print(f"Object: {obj.blueprint} ({obj.uuid})")
 
     def find_value_in_custom_tables(self, value: bytes):
         query = "SELECT key, value FROM custom"
