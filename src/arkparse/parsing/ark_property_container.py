@@ -56,7 +56,7 @@ class ArkPropertyContainer:
             if property.name == name and (position is None or property.position == position):
                 return property
             elif isinstance(property.value, ArkPropertyContainer):
-                sub_property = property.value.find_property(name)
+                sub_property = property.value.find_property(name, position)
                 if sub_property:
                     return sub_property
         return None

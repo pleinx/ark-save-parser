@@ -40,6 +40,8 @@ from arkparse.parsing.ark_set import ArkSet
 from .ark_value_type import ArkValueType
 from ..enums.ark_enum import ArkEnumValue
 
+UNSUPPORTED_STRUCTS: List[str] = []
+
 if TYPE_CHECKING:
     from arkparse.parsing.ark_binary_parser import ArkBinaryParser
 
@@ -196,7 +198,7 @@ class ArkProperty:
             val, value_position = ArkProperty.read_struct_property(byte_buffer, data_size, struct_type, in_array, nr_of_names=nr_of_names)
             prop = ArkProperty(key, value_type.name, position, 0, val)
         elif value_type == ArkValueType.Array:
-            prop = ArkProperty.read_array_property(key, value_type.name, position, byte_buffer, data_size)
+            prop, value_position = ArkProperty.read_array_property(key, value_type.name, position, byte_buffer, data_size)
         elif value_type == ArkValueType.Map:
             byte_buffer.set_position(byte_buffer.get_position() - 4)
             prop = ArkProperty.read_map_property(key, value_type.name, position, byte_buffer, data_size)
@@ -360,7 +362,7 @@ class ArkProperty:
         return prop
 
     @staticmethod
-    def read_array_property(key: str, type_: str, position: int, bb: "ArkBinaryParser", data_size: int) -> "ArkProperty":
+    def read_array_property(key: str, type_: str, position: int, bb: "ArkBinaryParser", data_size: int) -> Tuple["ArkProperty", int]:
         # V14 no position in array
         bb.set_position(bb.get_position() - 4)
         array_type = bb.read_name()
@@ -417,7 +419,7 @@ class ArkProperty:
             # if array_content_type == "PrimalCharacterStatusValueModifier":
             #     ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
 
-            return prop
+            return prop, start_values_pos
 
         # Value array branch
         with log_block(f"Arr({array_type})"):
@@ -444,10 +446,10 @@ class ArkProperty:
                     ArkSaveLogger.parser_log(f"Array value: {values}")
 
                 prop = ArkProperty(key, type_, position, end_of_struct, values)
+                
 
         ArkSaveLogger.parser_log(f"============ END Arr({array_type}) ============")
-        
-        return prop
+        return prop, start_values_pos
 
     # ---------------------------------------------------------------------------------------------
     # Struct reading
@@ -507,7 +509,10 @@ class ArkProperty:
                 ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size}")
                 return _STRUCT_READERS[ark_struct_type](bb, data_size)
             if in_array:
-                ArkSaveLogger.warning_log(f"Unsupported struct type {struct_type} in array")
+                if struct_type not in UNSUPPORTED_STRUCTS:
+                    ArkSaveLogger.warning_log(f"Unsupported struct type {struct_type} in array")
+                    UNSUPPORTED_STRUCTS.append(struct_type)
+                
                 # uncomment the lines below if you want to make objects of unknown structs
                 # ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
                 # bb.structured_print(to_default_file=True)
