@@ -155,58 +155,62 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
         self.__structured_print_print(f"{self.position}: ", to_file, end="")
 
     def structured_print(self, to_file: BytesIO = None, to_default_file: bool = True):
-        if to_default_file:
-            file_path = TEMP_FILES_DIR / "structured_print.txt"
-            to_file = file_path.open("wb")
+        try:
+            if to_default_file:
+                file_path = TEMP_FILES_DIR / "structured_print.txt"
+                to_file = file_path.open("wb")
 
-        current_position = self.position
-        known_structures = {
-            "UInt32Property": [4,1,4,4],
-            "DoubleProperty": [4,1,4,8],
-            "IntProperty": [4,1,4,4],
-            "ByteProperty": [4,1,4,1],
-            "UInt16Property": [4,4,1,4,2],
-        }
-        names = self.find_names(no_print=True)
-        self.position = 0
-        printed = 0
+            current_position = self.position
+            known_structures = {
+                "UInt32Property": [4,1,4,4],
+                "DoubleProperty": [4,1,4,8],
+                "IntProperty": [4,1,4,4],
+                "ByteProperty": [4,1,4,1],
+                "UInt16Property": [4,4,1,4,2],
+            }
+            names = self.find_names(no_print=True)
+            self.position = 0
+            printed = 0
 
-        while self.has_more():
-            if self.position >= len(self.byte_buffer):
-                break
-            
-            in_names = self.position in names
-            if in_names:
-                self.set_position(self.position + 4)
-                int_after = self.read_uint32()
-                self.set_position(self.position - 8)
-                in_names = int_after == 0
+            while self.has_more():
+                if self.position >= len(self.byte_buffer):
+                    break
+                
+                in_names = self.position in names
                 if in_names:
-                    if printed > 0:
+                    self.set_position(self.position + 4)
+                    int_after = self.read_uint32()
+                    self.set_position(self.position - 8)
+                    in_names = int_after == 0
+                    if in_names:
+                        if printed > 0:
+                            self.__structured_print_print("", to_file)
+                            self.__structured_print_print(f"{self.position}: ", to_file, end="")
+                        name = names[self.position]
+                        self.__structured_print_print(f"{name}", to_file)
+                        self.set_position(self.position + 8)
+                        self.__structured_print_print(f"{self.position}: ", to_file, end="")
+                        printed = 0
+                        if name in known_structures:
+                            self.__structured_print_known(known_structures[name], to_file=to_file)
+                            continue
+                        elif name == "StrProperty":
+                            self.__structured_print_string_property(to_file=to_file)
+                            continue            
+                if not in_names:
+                    self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
+                    printed += 1
+
+                    if printed == 4:
                         self.__structured_print_print("", to_file)
                         self.__structured_print_print(f"{self.position}: ", to_file, end="")
-                    name = names[self.position]
-                    self.__structured_print_print(f"{name}", to_file)
-                    self.set_position(self.position + 8)
-                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
-                    printed = 0
-                    if name in known_structures:
-                        self.__structured_print_known(known_structures[name], to_file=to_file)
-                        continue
-                    elif name == "StrProperty":
-                        self.__structured_print_string_property(to_file=to_file)
-                        continue            
-            if not in_names:
-                self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
-                printed += 1
+                        printed = 0  
 
-                if printed == 4:
-                    self.__structured_print_print("", to_file)
-                    self.__structured_print_print(f"{self.position}: ", to_file, end="")
-                    printed = 0  
-
-        self.position = current_position
-        self.__structured_print_print(" === End of structured print === ", to_file)
+            self.position = current_position
+            self.__structured_print_print(" === End of structured print === ", to_file)
+        except Exception as e:
+            ArkSaveLogger.error_log(f"Error during structured print: {e}")
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
 
     @staticmethod
     def is_legacy_compressed_data(byte_arr: List[int]) -> int:

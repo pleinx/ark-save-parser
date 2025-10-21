@@ -79,6 +79,9 @@ class ObjectReference:
         if self.type == ObjectReference.TYPE_UNKNOWN:
             obj_ref_type = "UNKNOWN"
         return { "type": obj_ref_type, "value": self.value }
+    
+    def __str__(self):
+        return f"ObjectReference(type={self.type}, value={self.value})"
 
 def get_uuid_reference_bytes(uuid: UUID) -> bytes:
     bytes_ = bytearray()
