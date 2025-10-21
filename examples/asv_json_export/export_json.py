@@ -55,7 +55,6 @@ def build_argparser() -> argparse.ArgumentParser:
     )
     # Parallel-Flag
     p.add_argument("--parallel", type=int, default=0, choices=(0, 1), help="0=seriell, 1=parallel (Einmal-Prozesse)")
-    p.add_argument("--paralell", dest="parallel", type=int, choices=(0, 1), help=argparse.SUPPRESS)  # Alias
     # Wild-spezifische Parameter
     p.add_argument("--max-level", type=int, default=150, help="Levelcap für normale Wild-Dinos")
     p.add_argument("--max-level-bionic", type=int, default=180, help="Levelcap für Bionic/TEK Wild-Dinos")
@@ -64,7 +63,7 @@ def build_argparser() -> argparse.ArgumentParser:
                    help="1 = Cryopod-Dinos einbeziehen beim Tamed-Export, 0 = ohne Cryos (Default). Für andere Typen ignoriert.")
     return p
 
-# ---------- Konfiguration / Konstanten ----------
+# ---------- Configuration ----------
 
 SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
 
@@ -76,6 +75,7 @@ MAP_NAME_MAPPING: Dict[str, ArkMap] = {
     "ScorchedEarth_WP": ArkMap.SCORCHED_EARTH,
     "TheCenter_WP": ArkMap.THE_CENTER,
     "Astraeos_WP": ArkMap.ASTRAEOS,
+    "Valguero_WP": ArkMap.VALGUERO,
 }
 
 STAT_NAME_MAP = {
