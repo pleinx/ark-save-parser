@@ -31,7 +31,8 @@ class InventoryItem(ParsedObjectBase):
             try:
                 self.owner_inv_uuid = UUID(owner_in.value)
             except TypeError:
-                ArkSaveLogger.error_log(f"Invalid UUID for OwnerInventory: {owner_in.value}")
+                if owner_in.value is not None:
+                    ArkSaveLogger.error_log(f"Invalid UUID for OwnerInventory: {owner_in.value}")
                 self.owner_inv_uuid = None
         else:
             ArkSaveLogger.warning_log("InventoryItem object is None, cannot initialize properties")

@@ -411,7 +411,7 @@ class SaveConnection:
                             self.parsed_objects[obj_uuid] = ark_game_object
 
                             self.nr_parsed += 1
-                            if self.nr_parsed % 2500 == 0:
+                            if self.nr_parsed % 25000 == 0:
                                 ArkSaveLogger.save_log(f"Nr parsed: {self.nr_parsed}")
                         else:
                             self.faulty_objects += 1
