@@ -74,6 +74,9 @@ class Base:
             "nr_of_turrets": self.nr_of_turrets,
         }
     
+    def __str__(self):
+        return f"Base(keystone={self.keystone.object.uuid}, owner={self.owner}, nr_of_structures={len(self.structures)}, nr_of_turrets={self.nr_of_turrets})"
+    
     def __count_turrets(self):
         count = 0
         for _, structure in self.structures.items():
