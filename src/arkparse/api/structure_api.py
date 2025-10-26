@@ -149,9 +149,9 @@ class StructureApi:
     
     def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None, owner_tribe_name: str = None):
         structures = self.get_at_location(map, coords, radius)
-
+        
         for _, obj in structures.items():
-            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id or obj.owner.tribe_name == owner_tribe_name:
+            if (owner_tribe_id is None and owner_tribe_name is None) or obj.owner.tribe_id == owner_tribe_id or obj.owner.tribe_name == owner_tribe_name:
                 obj.remove_from_save(self.save)
 
     def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None, owner_tribe_name: str = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
