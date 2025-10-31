@@ -10,6 +10,8 @@ from arkparse.parsing.struct.actor_transform import MapCoords
 from arkparse.enums.ark_map import ArkMap
 from arkparse.logging import ArkSaveLogger
 
+SKIPPED_STRUCTURE_BPS = []
+
 class StructureApi:
     def __init__(self, save: AsaSave):
         self.save = save
@@ -18,9 +20,10 @@ class StructureApi:
 
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         if config is None:
+            ArkSaveLogger.api_log("Retrieving all structure objects from save")
             reader_config = GameObjectReaderConfiguration(
                 blueprint_name_filter=lambda name: name is not None \
-                                                   and "/Structures" in name \
+                                                   and "Structures" in name \
                                                    and not "PrimalItemStructure_" in name \
                                                    and not "/Skins/" in name \
                                                    and not "PrimalInventory" in name \
@@ -30,10 +33,44 @@ class StructureApi:
                                                    and not "PrimalItemResource" in name \
                                                    and not "/TrainCarts/" in name \
             )
+
+            objects = self.save.get_game_objects(reader_config)
+
+            ArkSaveLogger.api_log(f"Found {len(objects)} structure objects, now looking for containers that were missed")
+            config = GameObjectReaderConfiguration()
+            config.property_names = ["MyInventoryComponent"]
+            config.blueprint_name_filter = lambda name: name is not None and not "PlayerPawn" in name and not "/Dinos/" in name and not "Character_BP" in name
+            containers = self.save.get_game_objects(config)
+            for key, obj in containers.items():
+                if key not in objects.keys():
+                    objects[key] = obj
+            ArkSaveLogger.api_log(f"After adding containers, {len(objects)} structure objects remain")
+
+            # Filter engrams out
+            ArkSaveLogger.api_log("Filtering engrams out of structure list")
+            for key in list(objects.keys()):
+                obj: ArkGameObject = objects[key]
+                if obj.get_property_value("bIsEngram") is not None:
+                    del objects[key]
+
+            ArkSaveLogger.api_log(f"After filtering engrams, {len(objects)} structure objects remain")
         else:
             reader_config = config
+            objects = self.save.get_game_objects(reader_config)
 
-        objects = self.save.get_game_objects(reader_config)
+        ArkSaveLogger.api_log(f"Total objects retrieved for structure parsing: {len(objects)}")
+        to_remove = []
+        for obj in objects.values():
+            if obj.get_property_value("StructureID") is None:
+                if obj.blueprint not in SKIPPED_STRUCTURE_BPS:
+                    SKIPPED_STRUCTURE_BPS.append(obj.blueprint)
+                    ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) does not seem to be a structure, skipping bps of this type")
+                to_remove.append(obj.uuid)
+
+        for uuid in to_remove:
+            del objects[uuid]
+            
+        ArkSaveLogger.api_log(f"Total structure objects after filtering non-structures: {len(objects)}")
 
         return objects
 
@@ -42,7 +79,7 @@ class StructureApi:
             return self.parsed_structures[obj.uuid]
         
         try:
-            if obj.get_property_value("MaxItemCount") is not None or (obj.get_property_value("MyInventoryComponent") is not None and obj.get_property_value("CurrentItemCount") is not None):
+            if obj.get_property_value("MyInventoryComponent") is not None:
                 structure = StructureWithInventory(obj.uuid, self.save, bypass_inventory=bypass_inventory)
             else:
                 structure = Structure(obj.uuid, self.save)
@@ -72,10 +109,6 @@ class StructureApi:
             obj : ArkGameObject = obj
             if obj is None:
                 print(f"Object is None for {key}")
-                continue
-
-            if obj.get_property_value("StructureID") is None:
-                ArkSaveLogger.warning_log(f"Object {obj.uuid} ({obj.blueprint}) does not seem to be a structure, skipping")
                 continue
             
             structure = self._parse_single_structure(obj, bypass_inventory)
