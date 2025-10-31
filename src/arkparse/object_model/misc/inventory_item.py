@@ -65,9 +65,11 @@ class InventoryItem(ParsedObjectBase):
     def set_quantity(self, quantity: int):
         self.quantity = quantity
         prop = self.object.find_property("ItemQuantity")
-        self.binary.replace_u32(prop, quantity)
-
-        self.update_binary()
+        if prop is not None:
+            self.binary.replace_u32(prop, quantity)
+            self.update_binary()
+        else:
+            ArkSaveLogger.error_log(f"Cannot set quantity for InventoryItem {self.object.uuid}, property not found")
 
     def get_inventory(self):
         if self.owner_inv_uuid is None:
