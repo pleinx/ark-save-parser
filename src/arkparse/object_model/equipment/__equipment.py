@@ -198,8 +198,8 @@ class Equipment(InventoryItem):
                         "OwnerInventory" not in prop.name and \
                         "CustomItemDatas" not in prop.name:
                     prop_value = self.object.get_property_value(prop.name)
-                    if "NextSpoilingTime" in prop.name:
-                        if math.isnan(prop_value) or math.isinf(prop_value):
+                    if "NextSpoilingTime" in prop.name or "SavedDurability" in prop.name:
+                        if math.isnan(prop.value) or math.isinf(prop.value):
                             prop_value = None
                     json_obj[prop.name] = prop_value
 
