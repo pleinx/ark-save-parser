@@ -258,11 +258,10 @@ class Base:
                 ArkSaveLogger.objects_log(f"Reusing kept item {keep_item.object.uuid} for one of the full stacks")
                 keep_item: Resource = keep_item
                 if keep_item.object.find_property("ItemQuantity") is not None:
-                    keep_item.set_quantity(stack_size)
-                    num_full_stacks -= 1
+                    keep_item.set_quantity(remainder)
                     keep_reused = True
 
-            if remainder > 0:
+            if remainder > 0 and not keep_reused:
                 stack = self.__create_stack_item(save, item_class, remainder, structure.object.uuid)
                 structure.add_item(stack.object.uuid)
 

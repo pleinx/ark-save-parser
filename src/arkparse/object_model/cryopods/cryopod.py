@@ -111,6 +111,20 @@ class EmbeddedCryopodData:
                         raise e
                     parser.save_context.generate_unknown = False
 
+                    props_to_purge = ['ItemQuantity', 'ItemStatValues', 'bAllowRemovalFromInventory', 'SteamUserItemID', 'CustomItemName', 'OriginalItemDropLocation', 'EggGenderOverride', 'ItemCustomClass', 'EggDinoAncestors', \
+                                      'NextSpoilingTime', 'ClusterSpoilingTimeUTC', 'CustomItemDatas', 'EggNumberMutationsApplied', 'EggNumberOfLevelUpPointsApplied', 'bHideFromInventoryDisplay', 'CustomItemColors', 'CustomCosmeticAuthVars', \
+                                      'CraftQueue', 'ExpirationTimeUTC', 'bIsBlueprint', 'bAllowRemovalFromSteamInventory', 'NextCraftCompletionTime', 'EggDinoGeneTraits', 'bFromSteamInventory', 'EggDinoAncestorsMale', 'bIsRepairing', \
+                                      'EggColorSetIndices', 'ItemColorID', 'SlotIndex', 'bIsFoodRecipe', 'bIsInitialItem', 'OwnerPlayerDataId', 'LastSpoilingTime', 'CustomCosmeticModSkinVariantID', 'EggRandomMutationsFemale', \
+                                      'ItemProfileVersion', 'PreSkinItemColorID', 'bIsCustomRecipe', 'AssociatedDinoID2', 'CustomCosmeticModSkinReplacementID', 'bIsFromAllClustersInventory', 'bDoApplyOriginalColorsWhenUnskinned', \
+                                      'UploadEarliestValidTime', 'EggTamedIneffectivenessModifier', 'AssociatedDinoID1', 'WeaponClipAmmo', 'EggRandomMutationsMale']
+                                      
+                    new_props = []
+                    for prop in obj.properties:
+                        if prop.name not in props_to_purge:
+                            new_props.append(prop)
+                    obj.properties = new_props
+                    obj.blueprint = obj.blueprint.replace("BlueprintGeneratedClass ", "")
+                    
                     return obj
                 return None 
             else:
