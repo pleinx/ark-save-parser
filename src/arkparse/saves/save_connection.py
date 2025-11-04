@@ -231,10 +231,13 @@ class SaveConnection:
         self.get_game_object_by_id(obj_uuid, reparse=True)
 
     def remove_obj_from_db(self, obj_uuid: uuid.UUID):
-        query = "DELETE FROM game WHERE key = ?"
-        with self.connection as conn:
-            conn.execute(query, (SaveConnection.uuid_to_byte_array(obj_uuid),))
-            conn.commit()
+        try:
+            query = "DELETE FROM game WHERE key = ?"
+            with self.connection as conn:
+                conn.execute(query, (SaveConnection.uuid_to_byte_array(obj_uuid),))
+                conn.commit()
+        except Exception as e:
+            ArkSaveLogger.error_log(f"Error removing object {obj_uuid} from database: {e}")
 
         if obj_uuid in self.parsed_objects:
             self.parsed_objects.pop(obj_uuid)
