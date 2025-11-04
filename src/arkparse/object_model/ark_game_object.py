@@ -123,10 +123,27 @@ class ArkGameObject(ArkPropertyContainer):
         numbering = bytes([random.randint(49, 57) for _ in range(10)])
         new_bytes = as_bytes + numbering + b'\x00'
 
+        md = None
         if len(self.name_metadata) != 1:
-            raise NotImplementedError("Renaming is only supported for objects with one name")
-        
-        md = self.name_metadata[0]
+            # try to find renumberable name
+            for md_ in reversed(self.name_metadata):
+                if self.get_short_name() in md_.name:
+                    md = md_
+                    break
+                if md_.name.split("_")[-1].isdigit() and md_.name.split("_")[-1] != "1":
+                    ArkSaveLogger.warning_log(f"Using renumberable name for renaming: {md_.name} (selected from last names) bp={self.blueprint} ({self.uuid})")
+                    for md__ in self.name_metadata:
+                        ArkSaveLogger.warning_log(f" - Name: {md__.name}, Offset: {md__.offset}, Is read as string: {md__.is_read_as_string}")
+                    md = md_
+                    break
+
+            if md is None:
+                ArkSaveLogger.error_log(f"Cannot rename object {self.blueprint} ({self.uuid}): multiple names found")
+                for md_ in self.name_metadata:
+                    ArkSaveLogger.error_log(f" - Name: {md_.name}, Offset: {md_.offset}, Is read as string: {md_.is_read_as_string}")
+                raise NotImplementedError("Renaming is only supported for objects with one name")
+        else:
+            md = self.name_metadata[0]
         prev_length = md.length + 1
         new_length = len(new_bytes)
         md.length = new_length - 1
@@ -139,8 +156,9 @@ class ArkGameObject(ArkPropertyContainer):
         binary.set_position(md.offset)
         binary.replace_bytes(new_bytes, nr_to_replace=prev_length)
 
-    def change_class(self, new_class: str, binary: ArkBinaryParser):
-        self.__replace_name(new_class, binary)
+    def change_class(self, new_class: str, binary: ArkBinaryParser, renumber: bool = True):
+        if renumber:
+            self.__replace_name(new_class, binary)
         self.blueprint = new_class
 
         # replace class id

@@ -97,6 +97,7 @@ class AsaSave:
             config = GameObjectReaderConfiguration()
             config.property_names = ["MyInventoryComponent"]
             self.containers = self.get_game_objects(config)
+            ArkSaveLogger.save_log(f"Found {len(self.containers)} containers with MyInventoryComponent property")
 
         for _, container in self.containers.items():
             # print(container.get_short_name())

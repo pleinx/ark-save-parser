@@ -432,6 +432,10 @@ class PlayerApi:
         
         self.__check_pawns(save)
         pawn = self.get_player_pawn(player, self.save)
+
+        if pawn is None:
+            return None
+        
         player.get_location_and_inventory(save, pawn)
 
         return player.inventory

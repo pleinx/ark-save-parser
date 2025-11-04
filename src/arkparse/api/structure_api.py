@@ -84,6 +84,9 @@ class StructureApi:
             else:
                 structure = Structure(obj.uuid, self.save)
 
+            if structure is None:
+                return None
+
             if obj.uuid in self.save.save_context.actor_transforms:
                 structure.set_actor_transform(self.save.save_context.actor_transforms[obj.uuid])
 
@@ -149,10 +152,14 @@ class StructureApi:
     
     def remove_at_location(self, map: ArkMap, coords: MapCoords, radius: float = 0.3, owner_tribe_id: int = None, owner_tribe_name: str = None):
         structures = self.get_at_location(map, coords, radius)
+        
+        removed = 0
+        for uuid, obj in structures.items():
+            if (owner_tribe_id is None and owner_tribe_name is None) or obj.owner.tribe_id == owner_tribe_id or obj.owner.tribe_name == owner_tribe_name:
+                self.save.remove_obj_from_db(uuid)
+                removed += 1
 
-        for _, obj in structures.items():
-            if owner_tribe_id is None or obj.owner.tribe_id == owner_tribe_id or obj.owner.tribe_name == owner_tribe_name:
-                obj.remove_from_save(self.save)
+        ArkSaveLogger.api_log(f"Removed {removed} structures at location {coords} on map {map.name}")
 
     def get_owned_by(self, owner: ObjectOwner = None, owner_tribe_id: int = None, owner_tribe_name: str = None) -> Dict[UUID, Union[Structure, StructureWithInventory]]:
         result = {}
@@ -220,13 +227,17 @@ class StructureApi:
         result = structures.copy()
         new_found = True
         ignore = []
+        processed = []
 
         while new_found:
             new_found = False
             new_result = result.copy()
-            for _, s in result.items():
+            unprocessed = [s for s in result.values() if s.uuid not in processed]
+            for s in unprocessed:
+                if s.uuid in processed:
+                    continue
                 for uuid in s.linked_structure_uuids:
-                    if uuid not in new_result.keys() and uuid not in ignore:
+                    if uuid not in new_result.keys() and uuid not in ignore and uuid not in processed:
                         new_found = True
                         obj = self.get_by_id(uuid)
                         if obj is not None:
@@ -234,7 +245,10 @@ class StructureApi:
                         else:
                             ignore.append(uuid)
                             ArkSaveLogger.api_log(f"Could not find linked structure {uuid}, ignoring")
+                    processed.append(s.uuid)
             result = new_result
+
+            # ArkSaveLogger.api_log(f"Connected structures found so far: {len(result)}")
 
         return result
      
