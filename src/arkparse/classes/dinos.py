@@ -48,7 +48,8 @@ class Abberant:
     trilobite = "/Game/PrimalEarth/Dinos/Trilobite/Trilobite_Character_Aberrant.Trilobite_Character_Aberrant_C"
     sabertooth_salmon = "/Game/PrimalEarth/Dinos/Salmon/Salmon_Character_Aberrant.Salmon_Character_Aberrant_C"
     meganeura = "/Game/PrimalEarth/Dinos/Dragonfly/Dragonfly_Character_BP_Aberrant.Dragonfly_Character_BP_Aberrant_C"
-    
+    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
+
     all_bps = [carbonemys, pteranodon, castoroides, nameless, carnotaurus, 
            arthropluera, diplocaulus, dodo, ankylosaurus, dimetrodon, 
            cnidaria, lystrosaurus, purlovia, piranha, coelacanth, beelzebufo, 
