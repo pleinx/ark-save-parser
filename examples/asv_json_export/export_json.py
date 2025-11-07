@@ -377,7 +377,11 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
     for dino_id, dino in dino_api.get_all_tamed(with_cryo).items():
         if not isinstance(dino, (TamedDino, TamedBaby)):
             continue
+
         dino_json = dino.to_json_obj()
+
+        dino_class_short = getattr(dino, "tamed_name", "") or ""
+        dino_class = dino_json.get("ItemArchetype").split(".")[-1] or dino_class_short
 
         # Position (keine Weltposition bei Cryo)
         loc = _tamed_location(dino)
@@ -413,7 +417,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             "tamer": tamer_name or "",
             "imprinter": _tamed_owner_field(dino, "imprinter") or "",
             "imprint": float(getattr(dino, "percentage_imprinted", 0.0) or 0.0),
-            "creature": f"{dino.get_short_name()}_C",
+            "creature": dino_class,
             "name": getattr(dino, "tamed_name", "") or "",
             "sex": "Female" if getattr(dino, "is_female", False) else "Male",
             "base": getattr(getattr(dino, "stats", None), "base_level", None),
@@ -470,15 +474,18 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
         if not isinstance(dino, Dino):
             continue
 
-        dino_class = f"{dino.get_short_name()}_C"
+        dino_json = dino.to_json_obj()
+
         lvl = dino.stats.base_level if dino.stats else None
+
+        dino_class_short = getattr(dino, "tamed_name", "") or ""
+        dino_class = dino_json.get("ItemArchetype").split(".")[-1] or dino_class_short
 
         if "_Corrupt" in dino_class:
             continue
         if not wild_within_caps(dino_class, lvl, cap_normal, cap_bionic):
             continue
 
-        dino_json = dino.to_json_obj()
         if getattr(dino, "is_cryopodded", False) or not getattr(dino, "location", None):
             coords = (0.0, 0.0)
             ccc = ""

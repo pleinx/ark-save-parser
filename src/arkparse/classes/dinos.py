@@ -210,7 +210,6 @@ class NonTameable:
     enforcer = "/Game/Extinction/Dinos/Enforcer/Enforcer_Character_BP.Enforcer_Character_BP_C"
     scout = "/Game/Extinction/Dinos/Scout/Scout_Character_BP.Scout_Character_BP_C"
     defence_unit = "/Game/Extinction/Dinos/Tank/Defender_Character_BP.Defender_Character_BP_C"
-    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
     iceworm = "/Game/ASA/Dinos/Iceworm/Iceworm_Character_Minion_BP_smaller.Iceworm_Character_Minion_BP_smaller_C"
     tek_giga = "/Game/PrimalEarth/Dinos/Giganotosaurus/BionicGigant_Character_BP.BionicGigant_Character_BP_C"
     leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Leedsichthys_Character_BP.Leedsichthys_Character_BP_C"
@@ -224,7 +223,7 @@ class NonTameable:
         , titanomyrma, titanomyrma_flyer, cnidaria, coelacanth,
         coelacanth_ocean, leech, leech_diseased, piranha, 
         sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water,
-        enforcer, scout, defence_unit, polar_bear, iceworm, tek_giga,
+        enforcer, scout, defence_unit, iceworm, tek_giga,
         leedsichthys, yeti
     ] + corrupted.all_bps + alpha.all_bps + event.all_bps
 
@@ -370,6 +369,7 @@ class Dinos:
     queen_bee = "/Game/PrimalEarth/Dinos/Bee/Bee_Queen_Character_BP.Bee_Queen_Character_BP_C"
     rubble_golem = "/Game/ScorchedEarth/Dinos/RockGolem/RubbleGolem_Character_BP.RubbleGolem_Character_BP_C"
     helicoprion = "/Game/ASA/Dinos/Helicoprion/Helicoprion_Character_BP.Helicoprion_Character_BP_C"
+    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
 
     abberant = Abberant()
     paleo = Paleo()
