@@ -173,3 +173,23 @@ class PropertyReplacer(PropertyInsertor):
         
 
         self.insert_array(array_name, property_type, new_items, nr_of_items, type_int)
+
+    def replace_array_value(self, array: "ArkProperty", value_index: int, new_value: bytes):
+        if self.save_context is None:
+            raise ValueError("Save context is not set")
+        
+        if array.type != "Array":
+            raise ValueError(f"Property {array.name} is not an array, but {array.type}")
+
+        self.__check_property_alignment(array)
+        self.set_position(array.value_position - 4)
+
+        nr_of_items = self.read_uint32()
+        value_size = len(new_value)
+
+        if value_index >= nr_of_items:
+            raise ValueError(f"Value index {value_index} out of range, array has {nr_of_items} items")
+        
+        self.position = array.value_position + (value_index * value_size)
+
+        self.replace_bytes(new_value, nr_to_replace=value_size)

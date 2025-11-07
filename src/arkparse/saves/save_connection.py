@@ -231,10 +231,13 @@ class SaveConnection:
         self.get_game_object_by_id(obj_uuid, reparse=True)
 
     def remove_obj_from_db(self, obj_uuid: uuid.UUID):
-        query = "DELETE FROM game WHERE key = ?"
-        with self.connection as conn:
-            conn.execute(query, (SaveConnection.uuid_to_byte_array(obj_uuid),))
-            conn.commit()
+        try:
+            query = "DELETE FROM game WHERE key = ?"
+            with self.connection as conn:
+                conn.execute(query, (SaveConnection.uuid_to_byte_array(obj_uuid),))
+                conn.commit()
+        except Exception as e:
+            ArkSaveLogger.error_log(f"Error removing object {obj_uuid} from database: {e}")
 
         if obj_uuid in self.parsed_objects:
             self.parsed_objects.pop(obj_uuid)
@@ -406,15 +409,15 @@ class SaveConnection:
                     if found or len(prop_ids) == 0:
                         ark_game_object = self.parse_as_predefined_object(obj_uuid, class_name, byte_buffer)
 
-                    if ark_game_object:
-                        game_objects[obj_uuid] = ark_game_object
-                        self.parsed_objects[obj_uuid] = ark_game_object
+                        if ark_game_object:
+                            game_objects[obj_uuid] = ark_game_object
+                            self.parsed_objects[obj_uuid] = ark_game_object
 
-                        self.nr_parsed += 1
-                        if self.nr_parsed % 2500 == 0:
-                            ArkSaveLogger.save_log(f"Nr parsed: {self.nr_parsed}")
-                    else:
-                        self.faulty_objects += 1
+                            self.nr_parsed += 1
+                            if self.nr_parsed % 25000 == 0:
+                                ArkSaveLogger.save_log(f"Nr parsed: {self.nr_parsed}")
+                        else:
+                            self.faulty_objects += 1
                 else:
                     found = False or (len(prop_ids) == 0)
                     for prop in reader_config.property_names:
@@ -475,14 +478,16 @@ class SaveConnection:
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
             
             ArkSaveLogger.error_log("Reparsing with logging:")
-            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
             try:
                 ArkGameObject(obj_uuid, class_name, byte_buffer)
             except Exception as _:
-                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, False)
+                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
                 ArkSaveLogger.open_hex_view(True)
 
             if reraise:
                 raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
+        finally:
+            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
             
         return None

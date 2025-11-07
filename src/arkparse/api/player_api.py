@@ -121,7 +121,7 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False, pawn_objects: Optional[list[ArkGameObject]] = None):
+    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False, pawn_objects: Optional[list[ArkGameObject]] = None, force_legacy_store: bool = False):
         self.players: List[ArkPlayer] = []
         self.tribes: List[ArkTribe] = []
         self.tribe_to_player_map: Dict[int, List[ArkPlayer]] = {}
@@ -137,6 +137,9 @@ class PlayerApi:
             ArkSaveLogger.api_log("Profile data not found in save, checking database")
             self.from_store = False
 
+        if force_legacy_store:
+            self.from_store = False
+
         if self.save is not None and not no_pawns:
             ArkSaveLogger.api_log(f"Retrieving player pawns")
             self.__init_pawns()
@@ -148,8 +151,8 @@ class PlayerApi:
 
         if self.from_store:
             self.__get_files_from_db()
-        elif save.save_connection.save_dir is not None:
-            self.get_files_from_directory(save.save_connection.save_dir)
+        elif save.save_dir is not None:
+            self.get_files_from_directory(save.save_dir)
 
         if len(self.profile_paths) == 0 and len(self.tribe_paths) == 0 and not self.from_store:
             ArkSaveLogger.api_log("No profile or tribe data found")
@@ -429,6 +432,10 @@ class PlayerApi:
         
         self.__check_pawns(save)
         pawn = self.get_player_pawn(player, self.save)
+
+        if pawn is None:
+            return None
+        
         player.get_location_and_inventory(save, pawn)
 
         return player.inventory

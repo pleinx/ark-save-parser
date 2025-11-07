@@ -156,7 +156,7 @@ class Equipment(InventoryItem):
         return cls(item.object.uuid, parser)
     
     def __str__(self):
-        return f" BP: {self.is_bp} - Quality: {ArkItemQuality(self.quality).name} - Rating: {self.rating} - Crafted: {self.is_crafted()}"
+        return f" BP: {self.is_bp} - Quality: {ArkItemQuality(self.quality).name} - Rating: {self.rating:.2f} - Crafted: {self.is_crafted()}"
 
     def to_json_obj(self):
         json_obj = super().to_json_obj()
