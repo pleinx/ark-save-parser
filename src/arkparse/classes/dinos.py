@@ -48,16 +48,17 @@ class Abberant:
     trilobite = "/Game/PrimalEarth/Dinos/Trilobite/Trilobite_Character_Aberrant.Trilobite_Character_Aberrant_C"
     sabertooth_salmon = "/Game/PrimalEarth/Dinos/Salmon/Salmon_Character_Aberrant.Salmon_Character_Aberrant_C"
     meganeura = "/Game/PrimalEarth/Dinos/Dragonfly/Dragonfly_Character_BP_Aberrant.Dragonfly_Character_BP_Aberrant_C"
-    
-    all_bps = [carbonemys, pteranodon, castoroides, nameless, carnotaurus, 
-           arthropluera, diplocaulus, dodo, ankylosaurus, dimetrodon, 
-           cnidaria, lystrosaurus, purlovia, piranha, coelacanth, beelzebufo, 
-           megalosaurus, stegosaurus, dung_beetle, iguanodon, achatina, 
-           oviraptor, featherlight, gigantopithecus, doedicurus, triceratops, 
-           titanboa, raptor, baryonyx, direbear, scorpion, anglerfish, spino, 
-           equus, manta, araneo, electrophorus, moschops, diplodocus, megalania, 
-           ovis, paraceratherium, sarco, dimorphodon, fasolasuchus, gigantoraptor, 
-           trilobite, sabertooth_salmon, meganeura]
+    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
+
+    all_bps = [carbonemys, pteranodon, castoroides, nameless, carnotaurus,
+           arthropluera, diplocaulus, dodo, ankylosaurus, dimetrodon,
+           cnidaria, lystrosaurus, purlovia, piranha, coelacanth, beelzebufo,
+           megalosaurus, stegosaurus, dung_beetle, iguanodon, achatina,
+           oviraptor, featherlight, gigantopithecus, doedicurus, triceratops,
+           titanboa, raptor, baryonyx, direbear, scorpion, anglerfish, spino,
+           equus, manta, araneo, electrophorus, moschops, diplodocus, megalania,
+           ovis, paraceratherium, sarco, dimorphodon, fasolasuchus, gigantoraptor,
+           trilobite, sabertooth_salmon, meganeura, polar_bear]
 
 class PaleoAlphas:
     alpha_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Alpha/EVO_Alpha_Rex_Character_BP.EVO_Alpha_Rex_Character_BP_C"
@@ -84,7 +85,7 @@ class Alphas:
 
     all_bps = [
         alpha_reaper_king, alpha_karkinos, alpha_basilisk,
-        alpha_carnotaurus, alpha_megalodon, alpha_mosasaurus, alpha_raptor, 
+        alpha_carnotaurus, alpha_megalodon, alpha_mosasaurus, alpha_raptor,
         alpha_deathworm, alpha_rex, alpha_tuso, alpha_leedsichthys, alpha_fire_wyvern
     ] + paleo.all_bps
 
@@ -98,7 +99,7 @@ class Flyers:
         zombie_fire = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_ZombieFire.Wyvern_Character_BP_ZombieFire_C"
         zombie_lightning = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_ZombieLightning.Wyvern_Character_BP_ZombieLightning_C"
         zombie_poison = "/Game/ScorchedEarth/Dinos/Wyvern/Wyvern_Character_BP_ZombiePoison.Wyvern_Character_BP_ZombiePoison_C"
-    
+
         all_bps = [fire, lightning, poison, crystal, ice, zombie_fire, zombie_lightning, zombie_poison]
 
     wyverns = Wyverns()
@@ -138,7 +139,7 @@ class ShoulderPets:
     shinehorn = "/Game/Aberration/Dinos/LanternGoat/LanternGoat_Character_BP.LanternGoat_Character_BP_C"
     bulbdog = "/Game/Aberration/Dinos/LanternPug/LanternPug_Character_BP.LanternPug_Character_BP_C"
     cat = "/Game/ASA/Dinos/Cat/Cat_Character_BP.Cat_Character_BP_C"
-    
+
     archaeopteryx = "/Game/PrimalEarth/Dinos/Archaeopteryx/Archa_Character_BP.Archa_Character_BP_C"
     dimetrodon = "/Game/PrimalEarth/Dinos/Dimetrodon/Dimetro_Character_BP.Dimetro_Character_BP_C"
     dimorphodon = "/Game/PrimalEarth/Dinos/Dimorphodon/Dimorph_Character_BP.Dimorph_Character_BP_C"
@@ -154,12 +155,12 @@ class ShoulderPets:
     drakeling_winter = "/Game/ASA/Dinos/ShoulderDragon/ShoulderDragon_Character_BP_Winter.ShoulderDragon_Character_BP_Winter_C"
 
     all_bps = [
-        glowtail, shinehorn, bulbdog, cat, archaeopteryx, 
+        glowtail, shinehorn, bulbdog, cat, archaeopteryx,
         dimetrodon, dimorphodon, microraptor, mesopithecus,
         otter, jerboa, vulture, drakeling_autumn, drakeling_spring,
         drakeling_summer, drakeling_winter
     ]
-    
+
 class Corrupted:
     arthropluera = "/Game/Extinction/Dinos/Corrupt/Arthropluera/Arthro_Character_BP_Corrupt.Arthro_Character_BP_Corrupt_C"
     carno = "/Game/Extinction/Dinos/Corrupt/Carno/Carno_Character_BP_Corrupt.Carno_Character_BP_Corrupt_C"
@@ -181,11 +182,11 @@ class Corrupted:
     all_bps = [ arthropluera, carno, chalicotherium, dilo, giganotosaurus,
                 reaper_king, paraceratherium, ptero, raptor, alpha_rex,
                 rex, rock_drake, spino, stego, trike, wyvern ]
-                
+
 class event:
     dodo_rex = "/Game/PrimalEarth/Dinos/DodoRex/DodoRex_Character_BP.DodoRex_Character_BP_C"
     dodo_wyvern = "/Game/ScorchedEarth/Dinos/DodoWyvern/DodoWyvern_Character_BP.DodoWyvern_Character_BP_C"
-    
+
     all_bps = [dodo_rex, dodo_wyvern]
 
 class NonTameable:
@@ -221,7 +222,7 @@ class NonTameable:
     all_bps = [
         lamprey, lightbug, meganeura, surface_reaper, surface_nameless
         , titanomyrma, titanomyrma_flyer, cnidaria, coelacanth,
-        coelacanth_ocean, leech, leech_diseased, piranha, 
+        coelacanth_ocean, leech, leech_diseased, piranha,
         sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water,
         enforcer, scout, defence_unit, iceworm, tek_giga,
         leedsichthys, yeti
@@ -370,7 +371,6 @@ class Dinos:
     queen_bee = "/Game/PrimalEarth/Dinos/Bee/Bee_Queen_Character_BP.Bee_Queen_Character_BP_C"
     rubble_golem = "/Game/ScorchedEarth/Dinos/RockGolem/RubbleGolem_Character_BP.RubbleGolem_Character_BP_C"
     helicoprion = "/Game/ASA/Dinos/Helicoprion/Helicoprion_Character_BP.Helicoprion_Character_BP_C"
-    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
 
     abberant = Abberant()
     paleo = Paleo()
