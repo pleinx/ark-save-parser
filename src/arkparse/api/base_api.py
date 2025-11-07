@@ -41,9 +41,9 @@ class BaseApi(StructureApi):
             return None
         
         all_structures: Dict[UUID, Structure] = {}
+        connected = self.get_connected_structures(structures)
         for key, structure in structures.items():
             all_structures[key] = structure
-            connected = self.get_connected_structures(structures)
             for key, conn_structure in connected.items():
                 if key not in all_structures:
                     all_structures[key] = conn_structure
@@ -169,7 +169,7 @@ class BaseApi(StructureApi):
 
         return base
     
-    def get_all_bases(self, only_connected: bool = False, radius: float = 0.3) -> List[Base]:
+    def get_all_bases(self, only_connected: bool = False, radius: float = 0.3, min_structures: int = 10) -> List[Base]:
         all_bases: List[Base] = []
         all_structures: Dict[UUID, Structure] = super().get_all()
         visited_structures: List[UUID] = []
@@ -182,14 +182,16 @@ class BaseApi(StructureApi):
             if only_connected:
                 connected = self.get_connected_structures({key: structure})
                 base = Base(structure.uuid, connected)
-                all_bases.append(base)
             else:
                 base = self.get_base_at(structure.location.as_map_coords(self.map), radius, structure.owner.tribe_id, structure)
 
             for structure in base.structures.values():
                 visited_structures.append(structure.uuid)
 
-            ArkSaveLogger.api_log(f"Parsed base at {'Unknown' if base.location is None else base.keystone.location.as_map_coords(self.map)} with {len(base.structures)} structures, owner: {base.owner}")
+            
+            if base is not None and len(base.structures) >= min_structures:
+                all_bases.append(base)
+                ArkSaveLogger.api_log(f"Parsed base at {'Unknown' if base.location is None else base.keystone.location.as_map_coords(self.map)} with {len(base.structures)} structures, owner: {base.owner}")
 
         return all_bases
 

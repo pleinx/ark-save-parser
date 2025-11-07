@@ -38,6 +38,7 @@ class EmbeddedCryopodData:
 
                 if len(bts) != 0:
                     is_legacy = ArkBinaryParser.is_legacy_compressed_data(bts)
+
                     ArkSaveLogger.parser_log(f"Unembedding cryopod data, size: {len(bts)} bytes, legacy: {is_legacy}")
                     ParserClass: type[ArkBinaryParser] | type[LegacyArkBinaryParser] = LegacyArkBinaryParser if is_legacy else ArkBinaryParser
                     parser: ArkBinaryParser = ParserClass.from_deflated_data(bts)
@@ -110,6 +111,20 @@ class EmbeddedCryopodData:
                         raise e
                     parser.save_context.generate_unknown = False
 
+                    props_to_purge = ['ItemQuantity', 'ItemStatValues', 'bAllowRemovalFromInventory', 'SteamUserItemID', 'CustomItemName', 'OriginalItemDropLocation', 'EggGenderOverride', 'ItemCustomClass', 'EggDinoAncestors', \
+                                      'NextSpoilingTime', 'ClusterSpoilingTimeUTC', 'CustomItemDatas', 'EggNumberMutationsApplied', 'EggNumberOfLevelUpPointsApplied', 'bHideFromInventoryDisplay', 'CustomItemColors', 'CustomCosmeticAuthVars', \
+                                      'CraftQueue', 'ExpirationTimeUTC', 'bIsBlueprint', 'bAllowRemovalFromSteamInventory', 'NextCraftCompletionTime', 'EggDinoGeneTraits', 'bFromSteamInventory', 'EggDinoAncestorsMale', 'bIsRepairing', \
+                                      'EggColorSetIndices', 'ItemColorID', 'SlotIndex', 'bIsFoodRecipe', 'bIsInitialItem', 'OwnerPlayerDataId', 'LastSpoilingTime', 'CustomCosmeticModSkinVariantID', 'EggRandomMutationsFemale', \
+                                      'ItemProfileVersion', 'PreSkinItemColorID', 'bIsCustomRecipe', 'AssociatedDinoID2', 'CustomCosmeticModSkinReplacementID', 'bIsFromAllClustersInventory', 'bDoApplyOriginalColorsWhenUnskinned', \
+                                      'UploadEarliestValidTime', 'EggTamedIneffectivenessModifier', 'AssociatedDinoID1', 'WeaponClipAmmo', 'EggRandomMutationsMale']
+                                      
+                    new_props = []
+                    for prop in obj.properties:
+                        if prop.name not in props_to_purge:
+                            new_props.append(prop)
+                    obj.properties = new_props
+                    obj.blueprint = obj.blueprint.replace("BlueprintGeneratedClass ", "")
+                    
                     return obj
                 return None 
             else:
@@ -139,9 +154,17 @@ class Cryopod(InventoryItem):
         self.dino = None
         self.saddle = None
         self.costume = None
-        # ArkSaveLogger.debug_log(f"Parsing cryopod {uuid}")
         custom_item_data = self.object.get_array_property_value("CustomItemDatas")
-        self.embedded_data = EmbeddedCryopodData(custom_item_data[0]) if len(custom_item_data) > 0 else None
+
+        dino_data = custom_item_data[0]
+        # Check for pelayoris cryopod mod data
+        if "Mod_C" in self.object.blueprint:
+            dino_data = custom_item_data[2] if len(custom_item_data) > 2 else None
+            # no dino if length of custom data is less than 3, empty??
+            if dino_data is None:
+                return
+
+        self.embedded_data = EmbeddedCryopodData(dino_data) if len(custom_item_data) > 0 else None
 
         if self.embedded_data is None:
             self.dino = None

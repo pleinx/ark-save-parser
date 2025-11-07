@@ -129,6 +129,7 @@ class ParsedObjectBase:
             ArkSaveLogger.error_log("This object has no binary associated with it, cannot update object")
             return
 
+        from ..ark_game_object import ArkGameObject
         self.object = ArkGameObject(uuid=self.object.uuid, blueprint=self.object.blueprint, binary_reader=self.binary)
         self.__init_props__()
 
