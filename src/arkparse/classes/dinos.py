@@ -58,7 +58,7 @@ class Abberant:
            titanboa, raptor, baryonyx, direbear, scorpion, anglerfish, spino, 
            equus, manta, araneo, electrophorus, moschops, diplodocus, megalania, 
            ovis, paraceratherium, sarco, dimorphodon, fasolasuchus, gigantoraptor, 
-           trilobite, sabertooth_salmon, meganeura]
+           trilobite, sabertooth_salmon, meganeura, polar_bear]
 
 class PaleoAlphas:
     alpha_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Alpha/EVO_Alpha_Rex_Character_BP.EVO_Alpha_Rex_Character_BP_C"
