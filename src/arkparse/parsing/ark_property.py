@@ -33,6 +33,7 @@ from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 from arkparse.parsing.struct.ark_painting_key_value import ArkPaintingKeyValue
 from arkparse.parsing.struct.ark_dino_order_id import ArkDinoOrderID
 from arkparse.parsing.struct.ark_tribe_alliance import ArkTribeAlliance
+from arkparse.parsing.struct.ark_tribe_rank_group import ArkTribeRankGroup
 
 from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.ark_set import ArkSet
@@ -96,6 +97,7 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.ArkPaintingKeyValue: lambda bb, ds: ArkPaintingKeyValue(bb),
     ArkStructType.ArkDinoOrderID: lambda bb, ds: ArkDinoOrderID(bb),
     ArkStructType.ArkTribeAlliance: lambda bb, ds: ArkTribeAlliance(bb),
+    ArkStructType.ArkTribeRankGroup: lambda bb, ds: ArkTribeRankGroup(bb),
 }
 
 # Flags driving how a primitive value is read
@@ -514,12 +516,12 @@ class ArkProperty:
                     UNSUPPORTED_STRUCTS.append(struct_type)
                 
                 # uncomment the lines below if you want to make objects of unknown structs
-                # ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
-                # bb.structured_print(to_default_file=True)
-                # bb.store()
-                # ArkSaveLogger.error_log(f"Unsupported struct type {struct_type} in array")
-                # ArkSaveLogger.open_hex_view(True)
-                # raise ValueError(f"Unsupported struct type {struct_type}")
+                ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
+                bb.structured_print(to_default_file=True)
+                bb.store()
+                ArkSaveLogger.error_log(f"Unsupported struct type {struct_type} in array")
+                ArkSaveLogger.open_hex_view(True)
+                raise ValueError(f"Unsupported struct type {struct_type}")
 
         ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size} as property list")
         # Fallback: struct as property list

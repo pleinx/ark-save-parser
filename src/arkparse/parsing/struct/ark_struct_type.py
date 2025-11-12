@@ -25,6 +25,7 @@ from .ark_painting_key_value import ArkPaintingKeyValue
 from .ark_tracked_actor_id_category_pair import ArkTrackedActorIdCategoryPair
 from .ark_dino_order_id import ArkDinoOrderID
 from .ark_tribe_alliance import ArkTribeAlliance
+from .ark_tribe_rank_group import ArkTribeRankGroup
 
 class ArkStructType(Enum):
     LinearColor = "LinearColor"
@@ -51,6 +52,7 @@ class ArkStructType(Enum):
     ArkPaintingKeyValue = "PaintingKeyValue"
     ArkDinoOrderID = "DinoOrderID"
     ArkTribeAlliance = "TribeAlliance"
+    ArkTribeRankGroup = "TribeRankGroup"
 
     # Static constructor mapping for ArkStructType
     
@@ -89,6 +91,7 @@ class ArkStructType(Enum):
             "PaintingKeyValue": lambda data: ArkPaintingKeyValue(data),
             "DinoOrderID": lambda data: ArkDinoOrderID(data),
             "TribeAlliance": lambda data: ArkTribeAlliance(data),
+            "TribeRankGroup": lambda data: ArkTribeRankGroup(data),
         }
         self.constructor = _constructors.get(type_name)
 
