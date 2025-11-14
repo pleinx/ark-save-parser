@@ -54,13 +54,13 @@ def build_argparser() -> argparse.ArgumentParser:
         help='Exporttypen, kommasepariert. Erlaubt: "players,structures,tamed,wild" oder "all"',
     )
     # Parallel-Flag
-    p.add_argument("--parallel", type=int, default=0, choices=(0, 1), help="0=seriell, 1=parallel (Einmal-Prozesse)")
+    p.add_argument("--parallel", type=int, default=1, choices=(0, 1), help="0=seriell, 1=parallel (Einmal-Prozesse, default)")
     # Wild-spezifische Parameter
     p.add_argument("--max-level", type=int, default=150, help="Levelcap für normale Wild-Dinos")
     p.add_argument("--max-level-bionic", type=int, default=180, help="Levelcap für Bionic/TEK Wild-Dinos")
     # Tamed-spezifisch
-    p.add_argument("--withcryo", type=int, default=0, choices=(0, 1),
-                   help="1 = Cryopod-Dinos einbeziehen beim Tamed-Export, 0 = ohne Cryos (Default). Für andere Typen ignoriert.")
+    p.add_argument("--withcryo", type=int, default=1, choices=(0, 1),
+                   help="1 = Cryopod-Dinos einbeziehen beim Tamed-Export, 1 = mit Cryos (Default). Für andere Typen ignoriert.")
     return p
 
 # ---------- Configuration ----------
