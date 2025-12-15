@@ -31,6 +31,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 from zoneinfo import ZoneInfo
 import multiprocessing as mp
+from arkparse.object_model.structures import StructureWithInventory
+from pprint import pprint
 
 # arkparse
 from arkparse.saves.asa_save import AsaSave
@@ -294,8 +296,7 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
 
 # ---------- Exporter: Structures ----------
 
-def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple[str, int]:
-    structure_api = StructureApi(save)
+def export_structures(structure_api: StructureApi, export_folder: Path, save_path: Path) -> Tuple[str, int]:
     map_folder, map_key = get_map_key_from_savepath(save_path)
     ark_map = MAP_NAME_MAPPING.get(map_key)
 
@@ -362,8 +363,7 @@ def _extract_added_stat_values(stat_string: str) -> Dict[str, int]:
     return result
 
 # ---------- Exporter: Tamed ----------
-
-def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo: bool) -> Tuple[str, int]:
+def export_tamed(save: AsaSave, structure_api: StructureApi, export_folder: Path, save_path: Path, with_cryo: bool) -> Tuple[str, int]:
     dino_api = DinoApi(save)
     map_folder = save_path.parent.name
     map_key = save_path.stem
@@ -398,6 +398,21 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
         if (tribe_id == 2000000000 and dino_json.get("TargetingTeam")) or tribe_id is None:
             tribe_id = dino_json.get("TargetingTeam")
 
+        is_cryo = bool(getattr(dino, "is_cryopodded", False))
+
+        # Override tribe_id if the dino was transferred
+        # print(vars(container.owner))
+        if(is_cryo):
+            container: StructureWithInventory = structure_api.get_container_of_inventory(dino.cryopod.owner_inv_uuid)
+            if container:
+                tribe_id = container.owner.tribe_id
+                loc = container.owner.properties.location
+                if loc is not None:
+                    ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
+                    coords = loc.as_map_coords(ark_map) if ark_map else None
+                    lat = getattr(coords, "lat", 0.0) if coords else 0.0
+                    lon = getattr(coords, "long", 0.0) if coords else 0.0
+
         # Stats (wild/tamed/mut)
         stats_entry: Dict[str, int] = {}
         for prefix, field in STAT_NAME_MAP.items():
@@ -424,7 +439,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             "lvl": getattr(getattr(dino, "stats", None), "current_level", None),
             "lat": lat,
             "lon": lon,
-            "cryo": bool(getattr(dino, "is_cryopodded", False)),
+            "cryo": is_cryo,
             "ccc": ccc,
             "dinoid": str(dino_id),
             "isMating": False,
@@ -586,12 +601,14 @@ def child_worker(t: str, save_path: Path, export_folder: Path, max_level: int, m
     try:
         export_folder.mkdir(parents=True, exist_ok=True)
         save = AsaSave(save_path)
+        structure_api = StructureApi(save)
+
         if t == "tamed":
-            fname, cnt = export_tamed(save, export_folder, save_path, bool(with_cryo_flag))
+            fname, cnt = export_tamed(save, structure_api, export_folder, save_path, bool(with_cryo_flag))
         elif t == "players":
             fname, cnt = export_players(save, export_folder, save_path)
         elif t == "structures":
-            fname, cnt = export_structures(save, export_folder, save_path)
+            fname, cnt = export_structures(structure_api, export_folder, save_path)
         elif t == "wild":
             fname, cnt = export_wild(save, export_folder, save_path, max_level, max_level_bionic)
         else:
