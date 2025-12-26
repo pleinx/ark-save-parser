@@ -157,15 +157,17 @@ class Cryopod(InventoryItem):
         self.costume = None
         custom_item_data = self.object.get_array_property_value("CustomItemDatas")
 
-        dino_data = custom_item_data[0]
-        # Check for pelayoris cryopod mod data
-        if "Mod_C" in self.object.blueprint:
-            dino_data = custom_item_data[2] if len(custom_item_data) > 2 else None
-            # no dino if length of custom data is less than 3, empty??
-            if dino_data is None:
-                return
+        dino_data = None
+        if custom_item_data is not None and len(custom_item_data) > 0:
+            dino_data = custom_item_data[0]
+            # Check for pelayoris cryopod mod data
+            if "Mod_C" in self.object.blueprint:
+                dino_data = custom_item_data[2] if len(custom_item_data) > 2 else None
+                # no dino if length of custom data is less than 3, empty??
+                if dino_data is None:
+                    return
 
-        self.embedded_data = EmbeddedCryopodData(dino_data) if len(custom_item_data) > 0 else None
+        self.embedded_data = EmbeddedCryopodData(dino_data) if dino_data is not None else None
 
         if self.embedded_data is None:
             self.dino = None
@@ -184,87 +186,11 @@ class Cryopod(InventoryItem):
         if saddle_obj is not None:
             self.saddle = Saddle.from_object(saddle_obj)
             if self.saddle is not None:
-                if self.saddle.id_ is not None:
-                    # Generate a UUID for this saddle.
-                    custom_uuid: str = Cryopod.generate_uuid_from_item_id(self.saddle.id_)
-                    # Ensure generated UUID is valid.
-                    if Cryopod.is_valid_generated_uuid_for_item_id(self.saddle.id_, custom_uuid):
-                        # Assign the generated UUID to this saddle.
-                        self.saddle.object.uuid = UUID(custom_uuid)
-                # Update quantity to 1 (for some reason parsing saddle from cryopod sets the quantity to 0).
-                self.saddle.quantity = 1 # TODO: Remove this line once saddle parsing properly sets quantity.
                 # Associate save to the saddle.
                 self.saddle.save = save
 
     def is_empty(self):
         return self.dino is None
-
-    @staticmethod
-    def generate_uuid_from_item_id(item_id: ArkItemNetId) -> str:
-        if item_id is None:
-            return "00000000000000000000000000000000"
-
-        id1_str: str = f"{item_id.id1}"
-        id2_str: str = f"{item_id.id2}"
-        id1_len: int = len(id1_str)
-        id2_len: int = len(id2_str)
-        generated_id: str = f"{id1_len}0000{id2_len}0000{id1_str}{id2_str}"
-
-        postfix_len: int = 32 - len(generated_id)
-        postfix: str = ""
-        for i in range(postfix_len):
-            postfix += "0"
-
-        generated_id = f"{generated_id}{postfix}"
-        if len(generated_id) != 32:
-            return "00000000000000000000000000000000"
-
-        return generated_id
-
-    @staticmethod
-    def get_item_id_from_generated_uuid(uuid_str: str) -> Optional[Tuple[int, int]]:
-        if uuid_str is None or len(uuid_str) != 32:
-            return None
-
-        try:
-            id1_delimiter_pos: int = uuid_str.find("0000")
-            if id1_delimiter_pos == -1:
-                return None
-            id1_delimiter_pos_check: int = uuid_str.find("00000") # Case where id1 length is 10 (so we have an extra 0)
-            if id1_delimiter_pos == id1_delimiter_pos_check:
-                id1_delimiter_pos += 1
-            id1_len: int = int(uuid_str[:id1_delimiter_pos])
-
-            id2_delimiter_pos: int = uuid_str.find("0000", id1_delimiter_pos + 4)
-            if id2_delimiter_pos == -1:
-                return None
-            id2_delimiter_pos_check: int = uuid_str.find("00000", id1_delimiter_pos + 4) # Case where id2 length is 10 (so we have an extra 0)
-            if id2_delimiter_pos == id2_delimiter_pos_check:
-                id2_delimiter_pos += 1
-            id2_len: int = int(uuid_str[(id1_delimiter_pos + 4):id2_delimiter_pos])
-
-            id1_stt = (id2_delimiter_pos + 4)
-            id1_str: str = uuid_str[id1_stt:(id1_stt + id1_len)]
-
-            id2_stt = (id1_stt + id1_len)
-            id2_str: str = uuid_str[id2_stt:(id2_stt + id2_len)]
-
-            return int(id1_str), int(id2_str)
-        except:
-            return None
-
-    @staticmethod
-    def is_valid_generated_uuid_for_item_id(item_id: ArkItemNetId, uuid_str: str) -> bool:
-        if item_id is None or uuid_str is None or len(uuid_str) != 32:
-            return False
-        if "00000000000000000000000000000000" in uuid_str:
-            return False
-        item_ids: Optional[Tuple[int, int]] = Cryopod.get_item_id_from_generated_uuid(uuid_str)
-        if item_ids is None:
-            return False
-        if item_id.id1 == item_ids[0] and item_id.id2 == item_ids[1]:
-            return True
-        return False
 
     def __str__(self):
         if self.is_empty():

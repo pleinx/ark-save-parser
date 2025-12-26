@@ -7,6 +7,8 @@ from arkparse.saves.asa_save import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing import ArkBinaryParser
 from .dino import Dino
+from ...logging import ArkSaveLogger
+
 
 class BabyStage(Enum):
     BABY = "Baby"
@@ -36,13 +38,16 @@ class Baby(Dino):
 
     @staticmethod
     def from_object(dino_obj: ArkGameObject, status_obj: ArkGameObject, baby: "Baby" = None):
+        b: Baby = None
         if baby is not None:
             b = baby
-        else:
-            b: Baby = Baby()
+            Dino.from_object(dino_obj, status_obj, b)
+        elif dino_obj is not None:
+            b = Baby()
             b.object = dino_obj
             b.__init_props__()
-
-        Baby.from_object(dino_obj, status_obj, b)
+            Dino.from_object(dino_obj, status_obj, b)
+        else:
+            ArkSaveLogger.error_log(f"Cannot create Baby object from None.")
 
         return b
