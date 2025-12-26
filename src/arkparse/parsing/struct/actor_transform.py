@@ -156,6 +156,19 @@ class MapCoordinateParameters:
             self.playable_max_x = 9847.0
             self.playable_max_y = 9770.0
             self.playable_max_z = 12500.0
+        elif map == ArkMap.LOST_COLONY:
+            self.origin_min_x = -408000.0
+            self.origin_min_y = -408000.0
+            self.origin_min_z = -15000.0
+            self.origin_max_x = 408000.0
+            self.origin_max_y = 408000.0
+            self.origin_max_z = 54695.0
+            self.playable_min_x = -408000.0
+            self.playable_min_y = -408000.0
+            self.playable_min_z = -15000.0
+            self.playable_max_x = 408000.0
+            self.playable_max_y = 408000.0
+            self.playable_max_z = 54695.0
         else: # Fallback to MinimapData_Base, this is the default data if not overridden by the map (used by The Island for example).
             self.origin_min_x = -342900.0
             self.origin_min_y = -342900.0
