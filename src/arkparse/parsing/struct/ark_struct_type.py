@@ -5,6 +5,7 @@ from .ark_color import ArkColor
 from .ark_linear_color import ArkLinearColor
 from .ark_quat import ArkQuat
 from .ark_rotator import ArkRotator
+from .ark_tribe_rank_group import ArkTribeRankGroup
 from .ark_vector import ArkVector
 from .ark_unique_net_id_repl import ArkUniqueNetIdRepl
 from .ark_vector_bool_pair import ArkVectorBoolPair
@@ -51,6 +52,7 @@ class ArkStructType(Enum):
     ArkPaintingKeyValue = "PaintingKeyValue"
     ArkDinoOrderID = "DinoOrderID"
     ArkTribeAlliance = "TribeAlliance"
+    ArkTribeRankGroup = "TribeRankGroup"
 
     # Static constructor mapping for ArkStructType
     
@@ -89,6 +91,7 @@ class ArkStructType(Enum):
             "PaintingKeyValue": lambda data: ArkPaintingKeyValue(data),
             "DinoOrderID": lambda data: ArkDinoOrderID(data),
             "TribeAlliance": lambda data: ArkTribeAlliance(data),
+            "TribeRankGroup": lambda data: ArkTribeRankGroup(data),
         }
         self.constructor = _constructors.get(type_name)
 
