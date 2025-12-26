@@ -28,12 +28,12 @@ class InventoryItem(ParsedObjectBase):
             self.id_ = self.object.get_property_value("ItemID")
             self.quantity = self.object.get_property_value("ItemQuantity", default=1)
             owner_in: ObjectReference = self.object.get_property_value("OwnerInventory", default=ObjectReference())
-            self.owner_inv_uuid = None
-            if owner_in is not None and owner_in.value is not None:
-                try:
-                    self.owner_inv_uuid = UUID(owner_in.value)
-                except TypeError:
+            try:
+                self.owner_inv_uuid = UUID(owner_in.value)
+            except TypeError:
+                if owner_in.value is not None:
                     ArkSaveLogger.error_log(f"Invalid UUID for OwnerInventory: {owner_in.value}")
+                self.owner_inv_uuid = None
         else:
             ArkSaveLogger.warning_log("InventoryItem object is None, cannot initialize properties")
 
@@ -65,9 +65,11 @@ class InventoryItem(ParsedObjectBase):
     def set_quantity(self, quantity: int):
         self.quantity = quantity
         prop = self.object.find_property("ItemQuantity")
-        self.binary.replace_u32(prop, quantity)
-
-        self.update_binary()
+        if prop is not None:
+            self.binary.replace_u32(prop, quantity)
+            self.update_binary()
+        else:
+            ArkSaveLogger.error_log(f"Cannot set quantity for InventoryItem {self.object.uuid}, property not found")
 
     def get_inventory(self):
         if self.owner_inv_uuid is None:

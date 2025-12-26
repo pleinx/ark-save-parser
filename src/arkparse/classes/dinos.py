@@ -248,6 +248,7 @@ class Paleo:
     legacy_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Legacy/EVO_Legacy_Rex_Character_BP.EVO_Legacy_Rex_Character_BP_C"
     rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Paleo/EVO_Paleo_Rex_Character_BP.EVO_Paleo_Rex_Character_BP_C"
     mosa = "/PA_EVO_Pack_02/Dinos/EVO_Mosa/Paleo/EVO_Paleo_Mosa_Character_BP.EVO_Paleo_Mosa_Character_BP_C"
+    mosa2 = "/PA_EVO_Pack_02/Dinos/EVO_Mosa/EVO_Mosa_Character_BP.EVO_Mosa_Character_BP_C"
     deinotherium = "/PA_Ascension/Dinos/PaleoDeinotherium/Paleo_DeinotheriumASA_Character_BP.Paleo_DeinotheriumASA_Character_BP_C"
 
     all_bps = [yuti, fasola, gigantoraptor, kentro, megalosaur, moschops,

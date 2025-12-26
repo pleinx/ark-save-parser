@@ -74,6 +74,9 @@ class Base:
             "nr_of_turrets": self.nr_of_turrets,
         }
     
+    def __str__(self):
+        return f"Base(keystone={self.keystone.object.uuid}, owner={self.owner}, nr_of_structures={len(self.structures)}, nr_of_turrets={self.nr_of_turrets})"
+    
     def __count_turrets(self):
         count = 0
         for _, structure in self.structures.items():
@@ -174,7 +177,7 @@ class Base:
             generator.update_binary()
             generator.inventory.update_binary()
 
-            ArkSaveLogger.objects_log(f"\n")
+            ArkSaveLogger.objects_log("\n")
 
         return len(generators)
     
@@ -192,7 +195,7 @@ class Base:
                 generators.append(structure)
         return generators
     
-    def set_stack_sizes(self, advanced_rifle_bullet: int = 100, element: int = 100, element_shard: int = 1000, gasoline: int = 10):
+    def set_stack_sizes(self, advanced_rifle_bullet: int = 100, element: int = 100, element_shard: int = 1000, gasoline: int = 100):
         self.stack_sizes[Classes.resources.Crafted.gasoline] = gasoline
         self.stack_sizes[Classes.resources.Basic.element] = element
         self.stack_sizes[Classes.equipment.ammo.advanced_rifle_bullet] = advanced_rifle_bullet
@@ -232,6 +235,7 @@ class Base:
             return
 
         keep = list(previous_items.keys())[0]
+        keep_item = previous_items[keep]
         ArkSaveLogger.objects_log(f"Keeping item {keep} in inventory {structure.object.uuid} while adding new items, total original items: {len(previous_items)}")
 
         try:
@@ -243,17 +247,25 @@ class Base:
 
             num_full_stacks = quantity // stack_size
             remainder = quantity % stack_size
+            keep_reused = False
             if remainder == 0:
                 remainder = stack_size
                 num_full_stacks = num_full_stacks - 1
 
             ArkSaveLogger.objects_log(f"Adding {num_full_stacks} full stacks of {item_class} ({stack_size} each) and remainder {remainder} to inventory {structure.object.uuid}")
 
-            if remainder > 0:
+            if keep_item.object.blueprint == item_class:
+                ArkSaveLogger.objects_log(f"Reusing kept item {keep_item.object.uuid} for one of the full stacks")
+                keep_item: Resource = keep_item
+                if keep_item.object.find_property("ItemQuantity") is not None:
+                    keep_item.set_quantity(remainder)
+                    keep_reused = True
+
+            if remainder > 0 and not keep_reused:
                 stack = self.__create_stack_item(save, item_class, remainder, structure.object.uuid)
                 structure.add_item(stack.object.uuid)
 
-            if keep is not None:
+            if keep is not None and not keep_reused:
                 ArkSaveLogger.objects_log(f"Removing last original item {keep} in inventory {structure.object.uuid}")
                 structure.inventory.remove_item(keep)
                 save.remove_obj_from_db(keep)
