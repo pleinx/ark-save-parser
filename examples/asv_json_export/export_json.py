@@ -23,6 +23,7 @@ import ast
 import json
 import os
 import re
+import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -31,7 +32,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 from zoneinfo import ZoneInfo
 import multiprocessing as mp
-from arkparse.object_model.structures import StructureWithInventory
 from pprint import pprint
 
 # arkparse
@@ -41,6 +41,25 @@ from arkparse.api.player_api import PlayerApi
 from arkparse.api.dino_api import DinoApi, Dino, TamedDino, TamedBaby
 from arkparse.api import StructureApi
 from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
+from arkparse.object_model.structures import StructureWithInventory
+from arkparse.parsing import GameObjectReaderConfiguration
+
+# Fast JSON (required)
+import orjson  # type: ignore
+
+
+def get_mp_context():
+    """
+    Windows: spawn (Pflicht)
+    Linux/Unix: fork (schneller), fallback spawn falls fork nicht verfügbar ist.
+    """
+    if sys.platform.startswith("win"):
+        return mp.get_context("spawn")
+    try:
+        return mp.get_context("fork")
+    except ValueError:
+        return mp.get_context("spawn")
+
 
 # ---------- CLI ----------
 
@@ -78,6 +97,7 @@ MAP_NAME_MAPPING: Dict[str, ArkMap] = {
     "TheCenter_WP": ArkMap.THE_CENTER,
     "Astraeos_WP": ArkMap.ASTRAEOS,
     "Valguero_WP": ArkMap.VALGUERO,
+    "LostColony_WP": ArkMap.LOST_COLONY,
 }
 
 STAT_NAME_MAP = {
@@ -110,11 +130,55 @@ def ensure_export_folder(base_output: Path, serverkey: str) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     return out
 
+def _orjson_default(o: Any):
+    if isinstance(o, (UUID, Path)):
+        return str(o)
+    return str(o)
+
 def atomic_write_json(obj: Any, target: Path, export_folder: Path) -> None:
-    with NamedTemporaryFile("w", delete=False, encoding="utf-8", dir=str(export_folder), suffix=".tmp") as tf:
-        json.dump(obj, tf, ensure_ascii=False, separators=(",", ":"))
-        tmp_name = tf.name
-    os.replace(tmp_name, target)
+    """
+    CIFS-robustes atomic write (orjson-only):
+    - Temp file IM Zielordner (target.parent) anlegen (wichtig bei SMB/CIFS)
+    - orjson für schnelle Serialisierung
+    - Fallback-Strategie, falls os.replace() auf CIFS zickt
+    """
+    target = Path(target)
+    target_parent = target.parent
+    target_parent.mkdir(parents=True, exist_ok=True)
+
+    tmp_name: Optional[str] = None
+    try:
+        # Fast path: bytes (orjson)
+        with NamedTemporaryFile("wb", delete=False, dir=str(target_parent), suffix=".tmp") as tf:
+            data = orjson.dumps(
+                obj,
+                option=orjson.OPT_NON_STR_KEYS,  # safe; erlaubt z.B. int-keys
+                default=_orjson_default,
+            )
+            tf.write(data)
+            tf.write(b"\n")
+            tmp_name = tf.name
+
+        # Primary attempt
+        try:
+            os.replace(tmp_name, str(target))
+        except Exception:
+            # CIFS fallback: remove target first then replace
+            try:
+                if target.exists():
+                    target.unlink()
+            except Exception:
+                pass
+            os.replace(tmp_name, str(target))
+
+    finally:
+        # Wenn replace erfolgreich war, existiert tmp nicht mehr.
+        # Wenn vorher was schief ging, räumen wir auf.
+        if tmp_name and os.path.exists(tmp_name):
+            try:
+                os.unlink(tmp_name)
+            except Exception:
+                pass
 
 def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
     """Gibt (map_folder, map_key) zurück"""
@@ -296,7 +360,8 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
 
 # ---------- Exporter: Structures ----------
 
-def export_structures(structure_api: StructureApi, export_folder: Path, save_path: Path) -> Tuple[str, int]:
+def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple[str, int]:
+    structure_api = StructureApi(save)
     map_folder, map_key = get_map_key_from_savepath(save_path)
     ark_map = MAP_NAME_MAPPING.get(map_key)
 
@@ -363,8 +428,26 @@ def _extract_added_stat_values(stat_string: str) -> Dict[str, int]:
     return result
 
 # ---------- Exporter: Tamed ----------
-def export_tamed(save: AsaSave, structure_api: StructureApi, export_folder: Path, save_path: Path, with_cryo: bool) -> Tuple[str, int]:
+def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo: bool) -> Tuple[str, int]:
     dino_api = DinoApi(save)
+
+    # Read all possible cryopod storages to override later the right tribe_id (transfer-bug) and coords
+    structure_api = StructureApi(save)
+    possible_cryopod_storages = ['CryoFridge_C', 'IceBox_C']
+    config = GameObjectReaderConfiguration(blueprint_name_filter=lambda name: name is not None and any(cls in name for cls in possible_cryopod_storages))
+    storages = structure_api.get_all(config)
+
+    inventory_map: Dict[UUID, Dict[str, Any]] = {}
+    for key, storage in storages.items():
+        if not isinstance(storage, StructureWithInventory):
+            continue
+
+        if storage.owner.tribe_id is not None and storage.owner.properties.location is not None:
+            inventory_map[storage.inventory_uuid] = {
+                "tribe_id": storage.owner.tribe_id,
+                "location": storage.owner.properties.location,
+            }
+
     map_folder = save_path.parent.name
     map_key = save_path.stem
     ark_map = MAP_NAME_MAPPING.get(map_key)
@@ -401,12 +484,12 @@ def export_tamed(save: AsaSave, structure_api: StructureApi, export_folder: Path
         is_cryo = bool(getattr(dino, "is_cryopodded", False))
 
         # Override tribe_id if the dino was transferred
-        # print(vars(container.owner))
         if(is_cryo):
-            container: StructureWithInventory = structure_api.get_container_of_inventory(dino.cryopod.owner_inv_uuid)
-            if container:
-                tribe_id = container.owner.tribe_id
-                loc = container.owner.properties.location
+            if dino.cryopod.owner_inv_uuid and dino.cryopod.owner_inv_uuid in inventory_map:
+                map_entry = inventory_map[dino.cryopod.owner_inv_uuid]
+                tribe_id = map_entry["tribe_id"]
+                loc = map_entry["location"]
+
                 if loc is not None:
                     ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
                     coords = loc.as_map_coords(ark_map) if ark_map else None
@@ -441,7 +524,6 @@ def export_tamed(save: AsaSave, structure_api: StructureApi, export_folder: Path
             "lon": lon,
             "cryo": is_cryo,
             "ccc": ccc,
-            "dinoid": str(dino_id),
             "isMating": False,
             "isNeutered": False,
             "isClone": False,
@@ -539,7 +621,6 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
                 "c4": colors[4],
                 "c5": colors[5],
                 "ccc": ccc,
-                "dinoid": str(dino_id),
                 "tameable": True,
                 "trait": str(dino_json.get("GeneTraits", "") or ""),
             }
@@ -601,14 +682,13 @@ def child_worker(t: str, save_path: Path, export_folder: Path, max_level: int, m
     try:
         export_folder.mkdir(parents=True, exist_ok=True)
         save = AsaSave(save_path)
-        structure_api = StructureApi(save)
 
         if t == "tamed":
-            fname, cnt = export_tamed(save, structure_api, export_folder, save_path, bool(with_cryo_flag))
+            fname, cnt = export_tamed(save, export_folder, save_path, bool(with_cryo_flag))
         elif t == "players":
             fname, cnt = export_players(save, export_folder, save_path)
         elif t == "structures":
-            fname, cnt = export_structures(structure_api, export_folder, save_path)
+            fname, cnt = export_structures(save, export_folder, save_path)
         elif t == "wild":
             fname, cnt = export_wild(save, export_folder, save_path, max_level, max_level_bionic)
         else:
@@ -637,7 +717,7 @@ def main() -> None:
 
     if args.parallel == 1 and len(requested) > 1:
         # Paralleler Modus: Einmal-Prozesse, die sich nach Fertigstellung direkt beenden
-        ctx = mp.get_context("spawn")  # Windows-sicher
+        ctx = get_mp_context()
         result_q: mp.Queue = ctx.Queue()
 
         # Prozesse in priorisierter Reihenfolge starten
@@ -669,6 +749,7 @@ def main() -> None:
     else:
         # Seriell: Save einmal laden und wiederverwenden (ressourcenschonend)
         save = AsaSave(save_path)
+
         for t in requested:
             t0 = time()
             if t == "tamed":
@@ -692,6 +773,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # Wichtig für Windows (spawn)
     mp.freeze_support()
     main()
