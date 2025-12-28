@@ -1,6 +1,6 @@
 import logging
 from uuid import UUID
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from arkparse import AsaSave
 from arkparse.object_model.ark_game_object import ArkGameObject
@@ -8,6 +8,7 @@ from arkparse.object_model.equipment.saddle import Saddle
 from arkparse.object_model.dinos.tamed_dino import TamedDino
 from arkparse.parsing import ArkBinaryParser
 from arkparse.object_model.misc.inventory_item import InventoryItem
+from arkparse.parsing.struct import ArkItemNetId
 from arkparse.parsing.struct.ark_custom_item_data import ArkCustomItemData
 from arkparse.logging import ArkSaveLogger
 from arkparse.parsing.ark_property import ArkProperty
@@ -156,15 +157,17 @@ class Cryopod(InventoryItem):
         self.costume = None
         custom_item_data = self.object.get_array_property_value("CustomItemDatas")
 
-        dino_data = custom_item_data[0]
-        # Check for pelayoris cryopod mod data
-        if "Mod_C" in self.object.blueprint:
-            dino_data = custom_item_data[2] if len(custom_item_data) > 2 else None
-            # no dino if length of custom data is less than 3, empty??
-            if dino_data is None:
-                return
+        dino_data = None
+        if custom_item_data is not None and len(custom_item_data) > 0:
+            dino_data = custom_item_data[0]
+            # Check for pelayoris cryopod mod data
+            if "Mod_C" in self.object.blueprint:
+                dino_data = custom_item_data[2] if len(custom_item_data) > 2 else None
+                # no dino if length of custom data is less than 3, empty??
+                if dino_data is None:
+                    return
 
-        self.embedded_data = EmbeddedCryopodData(dino_data) if len(custom_item_data) > 0 else None
+        self.embedded_data = EmbeddedCryopodData(dino_data) if dino_data is not None else None
 
         if self.embedded_data is None:
             self.dino = None
@@ -178,14 +181,16 @@ class Cryopod(InventoryItem):
             self.dino.save = save
             self.dino._location.in_cryopod = True
 
+        # Parse saddle if any.
         saddle_obj = self.embedded_data.get_saddle_obj()
-        
         if saddle_obj is not None:
-            self.saddle = Saddle.from_object(saddle_obj)  
-            self.saddle.save = save
+            self.saddle = Saddle.from_object(saddle_obj)
+            if self.saddle is not None:
+                # Associate save to the saddle.
+                self.saddle.save = save
 
     def is_empty(self):
-        return self.dino is None 
+        return self.dino is None
 
     def __str__(self):
         if self.is_empty():
