@@ -38,6 +38,7 @@ from arkparse.parsing.ark_property_container import ArkPropertyContainer
 from arkparse.parsing.ark_set import ArkSet
 
 from .ark_value_type import ArkValueType
+from .struct.ark_tribe_rank_group import ArkTribeRankGroup
 from ..enums.ark_enum import ArkEnumValue
 
 UNSUPPORTED_STRUCTS: List[str] = []
@@ -96,6 +97,7 @@ _STRUCT_READERS: Dict[ArkStructType, Callable[["ArkBinaryParser", int], Any]] = 
     ArkStructType.ArkPaintingKeyValue: lambda bb, ds: ArkPaintingKeyValue(bb),
     ArkStructType.ArkDinoOrderID: lambda bb, ds: ArkDinoOrderID(bb),
     ArkStructType.ArkTribeAlliance: lambda bb, ds: ArkTribeAlliance(bb),
+    ArkStructType.ArkTribeRankGroup: lambda bb, ds: ArkTribeRankGroup(bb),
 }
 
 # Flags driving how a primitive value is read
