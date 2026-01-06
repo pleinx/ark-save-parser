@@ -433,7 +433,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 
     # Read all possible cryopod storages to override later the right tribe_id (transfer-bug) and coords
     structure_api = StructureApi(save)
-    possible_cryopod_storages = ['CryoFridge_C', 'IceBox_C']
+    possible_cryopod_storages = ['CryoFridge_C']
     config = GameObjectReaderConfiguration(blueprint_name_filter=lambda name: name is not None and any(cls in name for cls in possible_cryopod_storages))
     storages = structure_api.get_all(config)
 
@@ -466,22 +466,21 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
         dino_class_short = getattr(dino, "tamed_name", "") or ""
         dino_class = dino_json.get("ItemArchetype").split(".")[-1] or dino_class_short
 
+        is_cryo = bool(getattr(dino, "is_cryopodded", False))
+
         # Position (keine Weltposition bei Cryo)
         loc = _tamed_location(dino)
-        if loc is not None and not getattr(dino, "is_cryopodded", False):
+        ccc, lat, lon = "", 0.0, 0.0
+        if loc is not None and not is_cryo:
             ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
             coords = loc.as_map_coords(ark_map) if ark_map else None
             lat = getattr(coords, "lat", 0.0) if coords else 0.0
             lon = getattr(coords, "long", 0.0) if coords else 0.0
-        else:
-            ccc, lat, lon = "", 0.0, 0.0
 
         tribe_id = _tamed_owner_field(dino, "tamer_tribe_id")
         tamer_name = _tamed_owner_field(dino, "tamer_string")
         if (tribe_id == 2000000000 and dino_json.get("TargetingTeam")) or tribe_id is None:
             tribe_id = dino_json.get("TargetingTeam")
-
-        is_cryo = bool(getattr(dino, "is_cryopodded", False))
 
         # Override tribe_id if the dino was transferred
         if(is_cryo):
@@ -583,12 +582,8 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
         if not wild_within_caps(dino_class, lvl, cap_normal, cap_bionic):
             continue
 
-        if getattr(dino, "is_cryopodded", False) or not getattr(dino, "location", None):
-            coords = (0.0, 0.0)
-            ccc = ""
-        else:
-            (lat, lon), ccc = resolve_coords_xyz_to_map(dino, ark_map)
-            coords = (lat, lon)
+        (lat, lon), ccc = resolve_coords_xyz_to_map(dino, ark_map)
+        coords = (lat, lon)
 
         s = dino.stats
         colors = safe_color_indices(dino_json.get("ColorSetIndices"))

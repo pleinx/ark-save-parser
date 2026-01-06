@@ -21,6 +21,8 @@ class SaveConnection:
     faulty_objects = 0
 
     def __init__(self, save_context: SaveContext, path: Path = None, contents: bytes = None, read_only: bool = False):
+        self.connection = None
+        self.sqlite_db = None
 
         # create temp copy of file
         temp_save_path = TEMP_FILES_DIR / (str(uuid.uuid4()) + ".ark")
@@ -368,7 +370,7 @@ class SaveConnection:
 
         ArkSaveLogger.enter_struct("GameObjects")
 
-        with self.connection as conn:   
+        with self.connection as conn:
             cursor = conn.execute(query)
             for row in cursor:
                 if row_index < 0:
@@ -398,7 +400,7 @@ class SaveConnection:
 
                 if class_name not in objects:
                     objects.append(class_name)
-                
+
                 if obj_uuid not in self.parsed_objects.keys():
                     ark_game_object = None
                     found = False
@@ -426,12 +428,12 @@ class SaveConnection:
 
                     if found:
                         game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
-        
+
         if self.faulty_objects > 0:
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
             ArkSaveLogger.error_log(f"{self.faulty_objects} objects could not be parsed, if possible, please report this to the developers.")
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, False)
-        
+
         return game_objects
 
     def reset_caching(self):
@@ -471,12 +473,12 @@ class SaveConnection:
                     byte_buffer.structured_print(to_default_file=True)
                     ArkSaveLogger.error_log(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
                     reraise = True
-                
+
                 ArkSaveLogger.warning_log(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
                 byte_buffer.structured_print(to_default_file=True)
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
-            
+
             ArkSaveLogger.error_log("Reparsing with logging:")
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
             try:
@@ -489,5 +491,5 @@ class SaveConnection:
                 raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
         finally:
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
-            
+
         return None
