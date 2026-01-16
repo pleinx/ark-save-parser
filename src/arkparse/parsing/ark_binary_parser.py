@@ -171,6 +171,7 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
             names = self.find_names(no_print=True)
             self.position = 0
             printed = 0
+            line = "("
 
             while self.has_more():
                 if self.position >= len(self.byte_buffer):
@@ -198,13 +199,19 @@ class ArkBinaryParser(PropertyParser, PropertyReplacer):
                             self.__structured_print_string_property(to_file=to_file)
                             continue            
                 if not in_names:
-                    self.__structured_print_print(f"{self.read_byte():02x} ", to_file, end="")
+                    byte = self.read_byte()
+                    if 32 <= byte <= 126:  # printable ASCII range
+                        line += f"{chr(byte)}"
+                    else:
+                        line += "."
+                    self.__structured_print_print(f"{byte:02x} ", to_file, end="")
                     printed += 1
 
                     if printed == 4:
-                        self.__structured_print_print("", to_file)
+                        self.__structured_print_print(f"{line})", to_file)
                         self.__structured_print_print(f"{self.position}: ", to_file, end="")
                         printed = 0  
+                        line = "("  
 
             self.position = current_position
             self.__structured_print_print(" === End of structured print === ", to_file)
