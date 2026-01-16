@@ -11,7 +11,7 @@ from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
 from .ark_value_type import ArkValueType
 from collections import deque
-from arkparse.utils.temp_files import TEMP_FILES_DIR
+from arkparse.utils.tm_files import TEMP_FILES_DIR
 
 if TYPE_CHECKING:
     from arkparse import AsaSave
