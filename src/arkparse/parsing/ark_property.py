@@ -516,12 +516,12 @@ class ArkProperty:
                     UNSUPPORTED_STRUCTS.append(struct_type)
                 
                 # uncomment the lines below if you want to make objects of unknown structs
-                ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
-                bb.structured_print(to_default_file=True)
-                bb.store()
-                ArkSaveLogger.error_log(f"Unsupported struct type {struct_type} in array")
-                ArkSaveLogger.open_hex_view(True)
-                raise ValueError(f"Unsupported struct type {struct_type}")
+                # ArkSaveLogger.parser_log(f"Reading struct {struct_type} as array")
+                # bb.structured_print(to_default_file=True)
+                # bb.store()
+                # ArkSaveLogger.error_log(f"Unsupported struct type {struct_type} in array")
+                # ArkSaveLogger.open_hex_view(True)
+                # raise ValueError(f"Unsupported struct type {struct_type}")
 
         ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size} as property list")
         # Fallback: struct as property list
