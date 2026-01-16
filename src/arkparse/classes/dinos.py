@@ -48,8 +48,7 @@ class Abberant:
     trilobite = "/Game/PrimalEarth/Dinos/Trilobite/Trilobite_Character_Aberrant.Trilobite_Character_Aberrant_C"
     sabertooth_salmon = "/Game/PrimalEarth/Dinos/Salmon/Salmon_Character_Aberrant.Salmon_Character_Aberrant_C"
     meganeura = "/Game/PrimalEarth/Dinos/Dragonfly/Dragonfly_Character_BP_Aberrant.Dragonfly_Character_BP_Aberrant_C"
-    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
-
+    
     all_bps = [carbonemys, pteranodon, castoroides, nameless, carnotaurus, 
            arthropluera, diplocaulus, dodo, ankylosaurus, dimetrodon, 
            cnidaria, lystrosaurus, purlovia, piranha, coelacanth, beelzebufo, 
@@ -58,7 +57,7 @@ class Abberant:
            titanboa, raptor, baryonyx, direbear, scorpion, anglerfish, spino, 
            equus, manta, araneo, electrophorus, moschops, diplodocus, megalania, 
            ovis, paraceratherium, sarco, dimorphodon, fasolasuchus, gigantoraptor, 
-           trilobite, sabertooth_salmon, meganeura, polar_bear]
+           trilobite, sabertooth_salmon, meganeura]
 
 class PaleoAlphas:
     alpha_rex = "/PA_EVO_Pack_01/Dinos/EVO_Rex/Alpha/EVO_Alpha_Rex_Character_BP.EVO_Alpha_Rex_Character_BP_C"
@@ -211,6 +210,7 @@ class NonTameable:
     enforcer = "/Game/Extinction/Dinos/Enforcer/Enforcer_Character_BP.Enforcer_Character_BP_C"
     scout = "/Game/Extinction/Dinos/Scout/Scout_Character_BP.Scout_Character_BP_C"
     defence_unit = "/Game/Extinction/Dinos/Tank/Defender_Character_BP.Defender_Character_BP_C"
+    polar_bear = "/Game/PrimalEarth/Dinos/Direbear/Direbear_Character_Polar.Direbear_Character_Polar_C"
     iceworm = "/Game/ASA/Dinos/Iceworm/Iceworm_Character_Minion_BP_smaller.Iceworm_Character_Minion_BP_smaller_C"
     tek_giga = "/Game/PrimalEarth/Dinos/Giganotosaurus/BionicGigant_Character_BP.BionicGigant_Character_BP_C"
     leedsichthys = "/Game/PrimalEarth/Dinos/Leedsichthys/Leedsichthys_Character_BP.Leedsichthys_Character_BP_C"
@@ -222,9 +222,9 @@ class NonTameable:
     all_bps = [
         lamprey, lightbug, meganeura, surface_reaper, surface_nameless
         , titanomyrma, titanomyrma_flyer, cnidaria, coelacanth,
-        coelacanth_ocean, leech, leech_diseased, piranha,
+        coelacanth_ocean, leech, leech_diseased, piranha, 
         sabertooth_salmon, trilobite, death_worm, jugbug_oil, jugbug_water,
-        enforcer, scout, defence_unit, iceworm, tek_giga,
+        enforcer, scout, defence_unit, polar_bear, iceworm, tek_giga,
         leedsichthys, yeti
     ] + corrupted.all_bps + alpha.all_bps + event.all_bps
 
@@ -318,6 +318,7 @@ class Dinos:
     megalania = "/Game/PrimalEarth/Dinos/Megalania/Megalania_Character_BP.Megalania_Character_BP_C"
     megalodon = "/Game/PrimalEarth/Dinos/Megalodon/Megalodon_Character_BP.Megalodon_Character_BP_C"
     megalosaurus = "/Game/PrimalEarth/Dinos/Megalosaurus/Megalosaurus_Character_BP.Megalosaurus_Character_BP_C"
+    megaraptor = "/Game/ASA/Dinos/Megaraptor/ValMegaraptor_Character_BP.ValMegaraptor_Character_BP_C"
     megatherium = "/Game/PrimalEarth/Dinos/Megatherium/Megatherium_Character_BP.Megatherium_Character_BP_C"
     mosasaurus = "/Game/PrimalEarth/Dinos/Mosasaurus/Mosa_Character_BP.Mosa_Character_BP_C"
     moschops = "/Game/PrimalEarth/Dinos/Moschops/Moschops_Character_BP.Moschops_Character_BP_C"
@@ -393,15 +394,15 @@ class Dinos:
         giganotosaurus, hyaenodon, iguanodon,
         kairuku, kaprosuchus, kentrosaurus,
         liopleurodon, lystrosaurus,
-        mammoth, manta,megalania, megalodon,megalosaurus, 
-        megatherium,mosasaurus, moschops,oviraptor, pachy,
-        pachyrhinosaurus, parasaur,paraceratherium, pegomastax,
-        phiomia, plesiosaur,procoptodon, purlovia,raptor, rex,
-        sabertooth, sarco,brontosaurus, pulmonoscorpius,ovis, 
-        araneo,baby_araneo , spino ,megaloceros , terrorBird ,
-        therizinosaurus , thylacoleo ,beelzebufo , trike ,
-        troodon , carbonemys ,tusoteuthis , woolly_rhino ,
-        titanosaur , morellatops ,mantis , rock_golem ,thorny_dragon,
+        mammoth, manta, megalania, megalodon, megalosaurus, megaraptor, 
+        megatherium, mosasaurus, moschops, oviraptor, pachy,
+        pachyrhinosaurus, parasaur, paraceratherium, pegomastax,
+        phiomia, plesiosaur, procoptodon, purlovia,raptor, rex,
+        sabertooth, sarco, brontosaurus, pulmonoscorpius, ovis, 
+        araneo, baby_araneo, spino, megaloceros, terrorBird,
+        therizinosaurus, thylacoleo, beelzebufo, trike,
+        troodon, carbonemys, tusoteuthis, woolly_rhino,
+        titanosaur, morellatops, mantis, rock_golem, thorny_dragon,
         dreadnoughtus, maelizard, shastasaurus, gacha, gasbag,
         managarmr, tek_raptor, tek_rex, tek_stego,
         velonosaur, yutyrannus, tek_parasaur, queen_bee,
