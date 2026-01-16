@@ -10,7 +10,7 @@ from ._property_parser import PropertyParser
 from ._property_replacer import PropertyReplacer
 from arkparse.parsing.ark_value_type import ArkValueType
 from collections import deque
-from arkparse.utils.temp_files import TEMP_FILES_DIR
+from arkparse.utils.tm_files import TEMP_FILES_DIR
 
 COMPRESSED_BYTES_NAME_CONSTANTS = {
         0: "TribeName",
