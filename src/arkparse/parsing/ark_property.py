@@ -170,12 +170,16 @@ class ArkProperty:
         name_position = byte_buffer.get_position()
         value_position = 0
         byte_buffer.save_context.generate_unknown = True
+
         key = byte_buffer.read_name()
         byte_buffer.save_context.generate_unknown = False
 
         if key is None or key == "None":
-            ArkSaveLogger.parser_log("Exiting struct (None marker)")
+            ArkSaveLogger.parser_log("Exiting struct (None marker) (pos = " + str(byte_buffer.get_position()) + ")")
             ArkSaveLogger.exit_struct()
+
+            if byte_buffer.peek_int() == 0:
+                byte_buffer.skip_bytes(4)
             return None
 
         value_type = byte_buffer.read_value_type_by_name()
@@ -410,7 +414,7 @@ class ArkProperty:
             prop = ArkProperty(key, type_, position, 0, struct_array)
             if bb.position != data_start_position + data_size:
                 ArkSaveLogger.warning_log(
-                    f"Array read incorrectly, bytes left to read: {data_start_position + data_size - bb.position}"
+                    f"Array read incorrectly, bytes left to read: {data_start_position + data_size - bb.position}, current position: {bb.position}"
                 )
                 ArkSaveLogger.warning_log(f"Skipping to the end of the struct, type: {array_content_type}")
                 bb.set_position(data_start_position + data_size)
@@ -523,7 +527,7 @@ class ArkProperty:
                 # ArkSaveLogger.open_hex_view(True)
                 # raise ValueError(f"Unsupported struct type {struct_type}")
 
-        ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size} as property list")
+        ArkSaveLogger.parser_log(f"Reading struct {struct_type} with data size {data_size} as property list at position {bb.get_position()}")
         # Fallback: struct as property list
         position = bb.get_position()
         props = ArkProperty.read_struct_properties(bb)
@@ -587,3 +591,6 @@ class ArkProperty:
         if bb.get_position() != start + size:
             remaining = bb.read_bytes(start + size - bb.get_position())
             ArkSaveLogger.parser_log(f"{label} read incorrectly, bytes left to read: {remaining}")
+
+    def __str__(self):
+        return f"ArkProperty(name={self.name}, type={self.type}, value={self.value})"

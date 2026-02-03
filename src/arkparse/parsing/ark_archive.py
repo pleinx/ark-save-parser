@@ -85,3 +85,6 @@ class ArkArchive:
 
     def get_object_by_index(self, index: int) -> ArkObject:
         return self.objects[index]
+    
+    def __str__(self):
+        return f"ArkArchive(objects={len(self.objects)})" + "\n" + "\n".join([str(obj) for obj in self.objects])

@@ -62,3 +62,6 @@ class ArkObject(ArkPropertyContainer):
             vector=vector,
             rotator=rotator
         )
+    
+    def __str__(self):
+        return f"ArkObject(class_name={self.class_name}, uuid={self.uuid}, properties_offset={self.properties_offset})" + "\n" + super().to_string()

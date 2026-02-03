@@ -9,6 +9,11 @@ if TYPE_CHECKING:
 from arkparse.logging import ArkSaveLogger
 
 T = TypeVar('T')
+PRINT_DEPTH = 0
+
+def set_print_depth(depth: int) -> None:
+    global PRINT_DEPTH
+    PRINT_DEPTH = depth
 
 @dataclass
 class ArkPropertyContainer:
@@ -120,3 +125,33 @@ class ArkPropertyContainer:
         for ark_property in self.properties:
             all_properties.append(ark_property.to_json_obj())
         return { "properties": all_properties }
+
+    def to_string(self, parent_indent: str = "", depth: int = 0) -> str:
+        props_str = ""
+
+        if PRINT_DEPTH > 0 and depth > PRINT_DEPTH:
+            return f"{parent_indent}... (truncated at depth {PRINT_DEPTH})"
+        
+        for prop in self.properties:
+            if isinstance(prop.value, ArkPropertyContainer):
+                props_str += f"{parent_indent}{prop.name} ({prop.type}) (pos={prop.position}):\n"
+                props_str += prop.value.to_string(parent_indent + "  ", depth=depth + 1) + "\n"
+            elif prop.type == "Array":
+                props_str += f"{parent_indent}{prop.name} ({prop.type}) (pos={prop.position}): ["
+                ind = 0
+                if len(prop.value) == 0:
+                    props_str += "]\n"
+                    continue
+                else:
+                    props_str += "\n"
+                for item in prop.value:
+                    props_str += f"{parent_indent}  [{ind}]: "
+                    ind += 1
+                    if isinstance(item, ArkPropertyContainer):
+                        props_str += item.to_string(parent_indent + "  ", depth=depth) + "\n"
+                    else:
+                        props_str += f"{str(item)}\n"
+                props_str += f"{parent_indent}]\n"
+            else:
+                props_str += f"{parent_indent}{str(prop)}\n"
+        return props_str.rstrip()
