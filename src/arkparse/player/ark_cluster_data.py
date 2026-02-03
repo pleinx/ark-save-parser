@@ -2,6 +2,9 @@ from pathlib import Path
 
 from arkparse.object_model.ark_game_object import ArkGameObject
 from arkparse.parsing.ark_archive import ArkArchive
+from arkparse.object_model.cluster_data.cluster_data_dino import ClusterDataDino
+
+from arkparse.api import EquipmentApi, DinoApi, StackableApi
 
 class ClusterData:
     def __init__(self, path: Path, uuid: str):
@@ -9,10 +12,29 @@ class ClusterData:
         self._uuid = uuid
         self._archive_object: ArkArchive = self._parse()
         self._ark_data = self._archive_object.get_object_by_class("/Script/ShooterGame.ArkCloudInventoryData")
+        if self._ark_data is None:
+            self._ark_data = self._archive_object.get_object_by_class("/Script/ShooterGame.PrimalLocalProfile")
+            self._ark_data = self._ark_data.get_property_value("MyArkData", None)
         self._ark_data_items: list[ArkGameObject] = self._ark_data.get_property_value("ArkItems", [])
+        self._uploaded_dinos: list[ArkGameObject] = self._ark_data.get_property_value("ArkTamedDinosData", [])
 
+        self.dinos: list[ClusterDataDino] = []
+
+        print(f"\n=== ArkItems for cluster data {self._uuid}: ===")
         for item in self._ark_data_items:
-            print(item.get_property_value("ItemArchetype").value)
+            bp = item.get_property_value("ItemArchetype").value
+            if DinoApi.is_appicable_bp(bp):
+                print(f"Dino item with archetype: {bp}")
+            elif EquipmentApi.is_appicable_bp(bp):
+                print(f"Equipment item with archetype: {bp}")
+            else:
+                print(f"Other item with archetype: {bp}")
+
+            
+        print(f"\n=== Uploaded Dinos for cluster data {self._uuid}: ===")
+        for dino in self._uploaded_dinos:
+            dino_data = ClusterDataDino(dino, len(self.dinos))
+            self.dinos.append(dino_data)
 
     def _check_exists(self):
         path_exists = self._path.exists()

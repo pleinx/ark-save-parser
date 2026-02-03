@@ -39,6 +39,8 @@ class ArkGameObject(ArkPropertyContainer):
 
     def __init__(self, uuid: Optional[UUID] = None, blueprint: Optional[str] = None, binary_reader: Optional[ArkBinaryParser|LegacyArkBinaryParser] = None, from_custom_bytes: bool = False, no_header: bool = False):
         self.parser_type = ArkProperty if (isinstance(binary_reader, ArkBinaryParser) or binary_reader is None) else LegacyArkProperty
+        self.uuid = uuid
+        self.blueprint = blueprint
         super().__init__()
         if binary_reader:
             ArkSaveLogger.set_file(binary_reader, "debug.bin")
@@ -97,7 +99,7 @@ class ArkGameObject(ArkPropertyContainer):
                         ArkSaveLogger.parser_log(f"Properties offset: {self.properties_offset}")
                         binary_reader.validate_uint32(0)
 
-                if not from_custom_bytes: 
+                if not from_custom_bytes:
                     self.read_properties(binary_reader, self.parser_type, binary_reader.size())
                     
                     if  binary_reader.size() - binary_reader.position >= 20:
@@ -111,7 +113,9 @@ class ArkGameObject(ArkPropertyContainer):
                             raise Exception("Unknown data left")
                         
                 if no_header:
-                    self.blueprint = self.get_property_value("ItemArchetype").value
+                    bp_ref = self.get_property_value("ItemArchetype", None)
+                    if bp_ref is not None:
+                        self.blueprint = bp_ref.value
             except Exception as e:
                 ArkSaveLogger.error_log(f"Error while reading object {self.blueprint} ({self.uuid}): {e}")
                 ArkSaveLogger.set_file(binary_reader, "debug.bin")

@@ -134,18 +134,18 @@ class StatValues:
     
     def to_string_all(self):
         stats = [
-            f"health={self.health}",
-            f"stamina={self.stamina}",
-            f"torpidity={self.torpidity}",
-            f"oxygen={self.oxygen}",
-            f"food={self.food}",
-            f"water={self.water}",
-            f"temperature={self.temperature}",
-            f"weight={self.weight}",
-            f"melee_damage={self.melee_damage}",
-            f"movement_speed={self.movement_speed}",
-            f"fortitude={self.fortitude}",
-            f"crafting_speed={self.crafting_speed}",
+            f"health={self.health:.2f}",
+            f"stamina={self.stamina:.2f}",
+            f"torpidity={self.torpidity:.2f}",
+            f"oxygen={self.oxygen:.2f}",
+            f"food={self.food:.2f}",
+            f"water={self.water:.2f}",
+            f"temperature={self.temperature:.2f}",
+            f"weight={self.weight:.2f}",
+            f"melee_damage={self.melee_damage:.2f}",
+            f"movement_speed={self.movement_speed:.2f}",
+            f"fortitude={self.fortitude:.2f}",
+            f"crafting_speed={self.crafting_speed:.2f}",
         ]
         return f"Statvalues(points added)([{', '.join(stats)}])"
     

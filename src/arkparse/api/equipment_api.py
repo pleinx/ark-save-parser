@@ -16,6 +16,13 @@ from arkparse.classes.equipment import Equipment as EqClasses
 from .general_api import GeneralApi
 
 class EquipmentApi(GeneralApi):
+    _DEFAULT_CONFIG = GameObjectReaderConfiguration(
+            blueprint_name_filter=lambda name: name is not None and \
+                        (("Weapons" in name and "PrimalItemAmmo" not in name) or \
+                            "Armor" in name or \
+                            name in EqClasses.all_bps)
+    )
+
     class Classes:
         WEAPON = Weapon
         SADDLE = Saddle
@@ -23,15 +30,13 @@ class EquipmentApi(GeneralApi):
         SHIELD = Shield
 
     def __init__(self, save: AsaSave):
-        config = GameObjectReaderConfiguration(
-            blueprint_name_filter=lambda name: name is not None and \
-                                               (("Weapons" in name and "PrimalItemAmmo" not in name) or \
-                                                 "Armor" in name or \
-                                                 name in EqClasses.all_bps)
-                                                 
-        )
+        config = EquipmentApi._DEFAULT_CONFIG
         super().__init__(save, config)
         self.parsed_objects: Dict[UUID, Equipment] = {}
+
+    @staticmethod
+    def is_appicable_bp(blueprint: str) -> bool:
+        return EquipmentApi._DEFAULT_CONFIG.blueprint_name_filter(blueprint)
 
     def __get_cls_filter(self, cls: "EquipmentApi.Classes"):
         if cls == self.Classes.WEAPON:

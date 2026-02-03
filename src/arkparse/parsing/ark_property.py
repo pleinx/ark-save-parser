@@ -117,7 +117,6 @@ _SIMPLE_SPECS: Dict[ArkValueType, _Spec] = {
     ArkValueType.UInt32: _Spec(True, False, lambda bb: bb.read_uint32()),
     ArkValueType.UInt64: _Spec(True, False, lambda bb: bb.read_uint64()),
     ArkValueType.Int64: _Spec(True, False, lambda bb: bb.read_int64()),
-    ArkValueType.String: _Spec(True, False, lambda bb: bb.read_string()),
     ArkValueType.SoftObject: _Spec(True, False, lambda bb: ArkProperty.read_soft_object_property_value(bb)),
 
     ArkValueType.Name: _Spec(False, True, lambda bb: bb.read_name()),
@@ -126,6 +125,7 @@ _SIMPLE_SPECS: Dict[ArkValueType, _Spec] = {
     ArkValueType.Object: _Spec(False, True, lambda bb: ObjectReference(bb)),
     ArkValueType.UInt16: _Spec(False, True, lambda bb: bb.read_uint16()),
     ArkValueType.Int16: _Spec(False, True, lambda bb: bb.read_short()),
+    ArkValueType.String: _Spec(False, True, lambda bb: bb.read_string()),
 }
 
 _LOGGABLE_COMPLEX = {ArkValueType.Struct, ArkValueType.Array, ArkValueType.Map, ArkValueType.Set}
@@ -175,7 +175,7 @@ class ArkProperty:
         byte_buffer.save_context.generate_unknown = False
 
         if key is None or key == "None":
-            ArkSaveLogger.parser_log("Exiting struct (None marker) (pos = " + str(byte_buffer.get_position()) + ")")
+            ArkSaveLogger.parser_log("Exiting struct (None marker) (pos = " + str(byte_buffer.get_position()) + " (hex: " + hex(byte_buffer.get_position()) + "))")
             ArkSaveLogger.exit_struct()
 
             if byte_buffer.peek_int() == 0:

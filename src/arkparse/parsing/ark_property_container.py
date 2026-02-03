@@ -49,6 +49,20 @@ class ArkPropertyContainer:
             if isinstance(property.value, ArkPropertyContainer):
                 property: ArkPropertyContainer
                 property.value.print_properties()
+            elif property.type == "Array":
+                max_items = 10
+                ArkSaveLogger.info_log(f"Array Property ({property.type}) ({property.position}): {property.name} = [")
+                for i, item in enumerate(property.value):
+                    if i >= max_items:
+                        ArkSaveLogger.info_log(f"  ... and {len(property.value) - max_items} more items")
+                        break
+                    if isinstance(item, ArkPropertyContainer):
+                        ArkSaveLogger.info_log(f"  [{i}]: {{")
+                        item.print_properties()
+                        ArkSaveLogger.info_log(f"  }}")
+                    else:
+                        ArkSaveLogger.info_log(f"  [{i}]: {item}")
+                ArkSaveLogger.info_log("]")
             else:
                 property: ArkProperty = property
                 ArkSaveLogger.info_log(f"Property ({property.type}) ({property.position}): {property.name} = {property.value}")
@@ -144,13 +158,17 @@ class ArkPropertyContainer:
                     continue
                 else:
                     props_str += "\n"
-                for item in prop.value:
+                max_prints = 10
+                prints = min(len(prop.value), max_prints)
+                for item in prop.value[:prints]:
                     props_str += f"{parent_indent}  [{ind}]: "
                     ind += 1
                     if isinstance(item, ArkPropertyContainer):
                         props_str += item.to_string(parent_indent + "  ", depth=depth) + "\n"
                     else:
                         props_str += f"{str(item)}\n"
+                if len(prop.value) > max_prints:
+                    props_str += f"{parent_indent}  ... and {len(prop.value) - max_prints} more items\n"
                 props_str += f"{parent_indent}]\n"
             else:
                 props_str += f"{parent_indent}{str(prop)}\n"

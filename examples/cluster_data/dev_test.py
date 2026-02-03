@@ -12,7 +12,13 @@ def get_files(path: Path) -> list[Path]:
 files = get_files(Path().cwd())
 for file in files:
     ArkSaveLogger.info_log(f"Found file: {file.name}")
-    cluster_data = ClusterData(Path().cwd(), "0002f51f4f73416b9e0b873a2c2a69f8")
+    cluster_data = ClusterData(Path().cwd(), file.name)
 
+# ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ALL, True)
+
+# data = Path("./00027906d14846019887ee674cdcf0e1").read_bytes()
+# data = Path("./00027906d14846019887ee674cdcf0e1_uploaded_dino2").read_bytes()
+# data = Path("./00027906d14846019887ee674cdcf0e1_uploaded_dino").read_bytes()
+# cluster_data = ArkArchive(data, from_store=False)
 # set_print_depth(2)
 # print(cluster_data)

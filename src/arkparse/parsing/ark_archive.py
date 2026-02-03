@@ -70,6 +70,7 @@ class ArkArchive:
             except Exception as e:
                 ArkSaveLogger.error_log(f"Error reading properties for object \'{obj.class_name}\' at {self.data.get_position()}: {e}")
                 self.data.structured_print()
+                raise e
             ArkSaveLogger.exit_struct()
 
         ArkSaveLogger.exit_struct()

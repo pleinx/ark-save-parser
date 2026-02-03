@@ -36,6 +36,11 @@ class DinoApi:
         self.all_objects = None
         self.parsed_dinos: Dict[UUID, Dino] = {}
         self.parsed_cryopods: Dict[UUID, Cryopod] = {}
+
+    @staticmethod
+    def is_appicable_bp(blueprint: str) -> bool:
+        return DinoApi._DEFAULT_CONFIG.blueprint_name_filter(blueprint)
+
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         reuse = False
 

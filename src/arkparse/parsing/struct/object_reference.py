@@ -21,6 +21,10 @@ class ObjectReference:
     value: any
 
     def __init__(self, reader: "ArkBinaryParser" = None):
+        reader.set_position(reader.position - 5)
+        data_size = reader.read_uint32()
+        reader.skip_bytes(1)  # Skip the byte we backed up for size reading
+
         if reader is None:
             self.value = None
             return
@@ -56,7 +60,12 @@ class ObjectReference:
             self.value = reader.read_int()
         elif object_type == 1:
             self.type = ObjectReference.TYPE_PATH
-            self.value = reader.read_string()
+            if data_size == 4:
+                self.value = "NONE"
+                # input("DEBUG: Read NONE path object reference")
+            else:
+                self.value = reader.read_string()
+
         else:
             reader.skip_bytes(-4)
             self.type = ObjectReference.TYPE_PATH_NO_TYPE
