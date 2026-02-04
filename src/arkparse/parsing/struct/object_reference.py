@@ -21,13 +21,13 @@ class ObjectReference:
     value: any
 
     def __init__(self, reader: "ArkBinaryParser" = None):
-        reader.set_position(reader.position - 5)
-        data_size = reader.read_uint32()
-        reader.skip_bytes(1)  # Skip the byte we backed up for size reading
-
         if reader is None:
             self.value = None
             return
+        
+        reader.set_position(reader.position - 5)
+        data_size = reader.read_uint32()
+        reader.skip_bytes(1)  # Skip the byte we backed up for size reading
 
         # If the save context has a name table, handle accordingly
         if reader.save_context.has_name_table() and not reader.in_cryopod:
