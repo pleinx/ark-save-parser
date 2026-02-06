@@ -44,10 +44,6 @@ from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
 from arkparse.object_model.structures import StructureWithInventory
 from arkparse.parsing import GameObjectReaderConfiguration
 
-# Fast JSON (required)
-import orjson  # type: ignore
-
-
 def get_mp_context():
     """
     Windows: spawn (Pflicht)
@@ -130,11 +126,6 @@ def ensure_export_folder(base_output: Path, serverkey: str) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     return out
 
-def _orjson_default(o: Any):
-    if isinstance(o, (UUID, Path)):
-        return str(o)
-    return str(o)
-
 def atomic_write_json(obj: Any, target: Path, export_folder: Path) -> None:
     """
     CIFS-robustes atomic write (orjson-only):
@@ -148,15 +139,15 @@ def atomic_write_json(obj: Any, target: Path, export_folder: Path) -> None:
 
     tmp_name: Optional[str] = None
     try:
-        # Fast path: bytes (orjson)
-        with NamedTemporaryFile("wb", delete=False, dir=str(target_parent), suffix=".tmp") as tf:
-            data = orjson.dumps(
+        with NamedTemporaryFile("w", encoding="utf-8", delete=False, dir=str(target_parent), suffix=".tmp") as tf:
+            json.dump(
                 obj,
-                option=orjson.OPT_NON_STR_KEYS,  # safe; erlaubt z.B. int-keys
-                default=_orjson_default,
+                tf,
+                ensure_ascii=False,
+                default=json_default,
+                separators=(",", ":"),
             )
-            tf.write(data)
-            tf.write(b"\n")
+            tf.write("\n")
             tmp_name = tf.name
 
         # Primary attempt
@@ -433,7 +424,8 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 
     # Read all possible cryopod storages to override later the right tribe_id (transfer-bug) and coords
     structure_api = StructureApi(save)
-    possible_cryopod_storages = ['CryoFridge_C']
+    # possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C', 'IceBox_C', 'StorageBox_Large_C', 'LinkedStorage_C', 'StorageBox_Small_C', 'StorageBox_Huge_C']
+    possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C']
     config = GameObjectReaderConfiguration(blueprint_name_filter=lambda name: name is not None and any(cls in name for cls in possible_cryopod_storages))
     storages = structure_api.get_all(config)
 
