@@ -178,7 +178,7 @@ class ArkProperty:
             ArkSaveLogger.parser_log("Exiting struct (None marker) (pos = " + str(byte_buffer.get_position()) + " (hex: " + hex(byte_buffer.get_position()) + "))")
             ArkSaveLogger.exit_struct()
 
-            if byte_buffer.peek_int() == 0:
+            if byte_buffer.size() - byte_buffer.position >= 4 and byte_buffer.peek_int() == 0:
                 byte_buffer.skip_bytes(4)
             return None
 
@@ -532,7 +532,7 @@ class ArkProperty:
         position = bb.get_position()
         props = ArkProperty.read_struct_properties(bb)
         if bb.get_position() != position + data_size and not in_array:
-            ArkSaveLogger.warning_log("WARNING: Struct reading position mismatch for type", struct_type)
+            ArkSaveLogger.warning_log(f"WARNING: Struct reading position mismatch for type {struct_type}")
             ArkSaveLogger.warning_log(
                 f"StructType: {struct_type}, DataSize: {data_size}, Position: {position}, CurrentPosition: {bb.get_position()}"
             )
