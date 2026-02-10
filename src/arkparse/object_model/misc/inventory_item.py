@@ -96,7 +96,7 @@ class InventoryItem(ParsedObjectBase):
 
     def to_json_obj(self, include_owner_inv_uuid=True):
         # Grab already set properties
-        json_obj = { "UUID": self.object.uuid.__str__(), "ItemQuantity": self.quantity }
+        json_obj = { "UUID": self.object.uuid.__str__(), "ItemQuantity": self.quantity if self.quantity is not None else 1 }
         if self.id_ is not None:
             json_obj["ItemID"] = self.id_.to_json_obj()
         if include_owner_inv_uuid and self.owner_inv_uuid is not None:
@@ -115,7 +115,8 @@ class InventoryItem(ParsedObjectBase):
                         "ItemQuantity" not in prop.name and \
                         "ItemID" not in prop.name and \
                         "OwnerInventory" not in prop.name and \
-                        "CustomItemDatas" not in prop.name:
+                        "CustomItemDatas" not in prop.name and \
+                        "ArkTributeItem" not in prop.name:
                     json_obj[prop.name] = self.object.get_property_value(prop.name)
 
         return json_obj

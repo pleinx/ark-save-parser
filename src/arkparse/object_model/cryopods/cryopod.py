@@ -201,6 +201,8 @@ class Cryopod(InventoryItem):
         else:
             self.type = self.CryopodType.NORMAL
 
+        super().__init_props__()
+
 
     def __init__(self, uuid: UUID = None, save: AsaSave = None):
         super().__init__(uuid, save=save)

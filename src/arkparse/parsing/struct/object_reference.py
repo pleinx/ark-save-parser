@@ -60,8 +60,8 @@ class ObjectReference:
             self.value = reader.read_int()
         elif object_type == 1:
             self.type = ObjectReference.TYPE_PATH
-            if data_size == 4:
-                self.value = "NONE"
+            if reader.peek_name() == "ItemArchetype" and data_size == 4:
+                self.value = "NONE"  # Not sure why...
                 # input("DEBUG: Read NONE path object reference")
             else:
                 self.value = reader.read_string()

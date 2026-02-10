@@ -61,6 +61,7 @@ class ClusterDataItem:
         return {
             "Version": self.version,
             "UploadTime": self.upload_time,
-            "Item": self.item.to_json_obj()
+            "Item": self.item.to_json_obj(),
+            "blueprint": self.item.object.blueprint
         }
 

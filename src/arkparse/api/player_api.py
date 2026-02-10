@@ -166,7 +166,7 @@ class PlayerApi:
         ArkSaveLogger.api_log("Parsing player and tribe data from files")
         self.__update_files(bypass_inventory)
 
-        self._get_cluster_data_from_directory(cluster_data_dir) if cluster_data_dir is not None else None
+        self._get_cluster_data_from_directory(cluster_data_dir)
 
     def __del__(self):
         ArkSaveLogger.api_log("Stopping PlayerApi")
@@ -184,6 +184,14 @@ class PlayerApi:
                 blueprint_name_filter=lambda name: name is not None and name in pawn_bps,
             )
             self.pawns = self.save.get_game_objects(config)
+    
+    def __find_cluster_data_file_in_save_dir(self, player: ArkPlayer) -> Optional[Path]:
+        if self.save is not None and self.save.save_dir is not None:
+            expected_file_name = f"{player.unique_id}"
+            expected_path = self.save.save_dir / expected_file_name
+            if expected_path.exists():
+                return expected_path
+        return None
 
     def __store_as_file(self, data: bytes, file_name: str):
         output_dir = TEMP_FILES_DIR
@@ -215,13 +223,21 @@ class PlayerApi:
         for path in directory.glob("*.arktribe"):
             self.tribe_paths.append(path)
     
-    def _get_cluster_data_from_directory(self, directory: Path) -> Optional["ClusterData"]:
+    def _get_cluster_data_from_directory(self, directory: Path = None) -> Optional["ClusterData"]:
         from arkparse.object_model.cluster_data.ark_cluster_data import ClusterData
         def get_files(path: Path) -> list[Path]:
             return [f for f in path.iterdir() if (f.is_file() and not f.name.endswith(".py"))]
 
         all_data = {}
-        files = get_files(directory)
+        files = get_files(directory) if directory is not None else []
+
+        if len(files) == 0:
+            directory = self.save.save_dir if self.save is not None else None
+            for player in self.players:
+                path = self.__find_cluster_data_file_in_save_dir(player)
+                if path is not None:
+                    files.append(path)
+
         for file in files:
             ArkSaveLogger.info_log(f"Found file: {file.name}")
             cluster_data = ClusterData(directory, file.name)
@@ -354,6 +370,13 @@ class PlayerApi:
         if player.unique_id in self.cluster_data:
             return self.cluster_data[player.unique_id]
         return None
+    
+    def get_players_with_cluster_data(self):
+        players_with_data = []
+        for player in self.players:
+            if self.get_cluster_data(player) is not None:
+                players_with_data.append(player)
+        return players_with_data
     
     def get_player_with(self, stat: int, stat_type: int = StatType.HIGHEST):
         istat = self.__get_stat(stat)
