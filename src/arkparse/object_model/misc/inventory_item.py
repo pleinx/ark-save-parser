@@ -1,6 +1,8 @@
 import json
 from typing import Optional
 
+from arkparse.parsing.ark_property_container import ArkPropertyContainer
+
 from ..ark_game_object import ArkGameObject
 from uuid import UUID
 from arkparse.parsing import ArkBinaryParser
@@ -84,6 +86,13 @@ class InventoryItem(ParsedObjectBase):
     #     from .inventory import Inventory # placed here to avoid circular import
     #     inv: Inventory = self.get_inventory(save)
     #     return inv.
+
+    @staticmethod
+    def from_object(obj: ArkGameObject):
+        item = InventoryItem()
+        item.object = obj
+        item.__init_props__()
+        return item
 
     def to_json_obj(self, include_owner_inv_uuid=True):
         # Grab already set properties

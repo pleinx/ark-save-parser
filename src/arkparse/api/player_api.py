@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
 from pathlib import Path
 from uuid import UUID
 
@@ -16,6 +16,9 @@ from arkparse.logging import ArkSaveLogger
 from arkparse.object_model.misc.dino_owner import DinoOwner
 from arkparse.object_model.misc.object_owner import ObjectOwner
 from arkparse.object_model.ark_game_object import ArkGameObject
+
+if TYPE_CHECKING:
+    from arkparse.object_model.cluster_data.ark_cluster_data import ClusterData
 
 class _TribeAndPlayerData:
     HEADER_OFFSET_ADJUSTMENT = 4
@@ -121,12 +124,13 @@ class PlayerApi:
         OBJECT = 0
         DINO = 1
 
-    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False, pawn_objects: Optional[list[ArkGameObject]] = None, force_legacy_store: bool = False):
+    def __init__(self, save: AsaSave, ignore_error: bool = False, no_pawns: bool = False, bypass_inventory: bool = False, pawn_objects: Optional[list[ArkGameObject]] = None, force_legacy_store: bool = False, cluster_data_dir: Optional[Path] = None):
         self.players: List[ArkPlayer] = []
         self.tribes: List[ArkTribe] = []
         self.tribe_to_player_map: Dict[int, List[ArkPlayer]] = {}
         self.save: AsaSave = save
         self.pawns: Optional[Dict[UUID, ArkGameObject]] = None
+        self.cluster_data: Optional[Dict[str, "ClusterData"]] = {}
 
         self.profile_paths: List[Path] = []
         self.tribe_paths: List[Path] = []
@@ -161,6 +165,8 @@ class PlayerApi:
 
         ArkSaveLogger.api_log("Parsing player and tribe data from files")
         self.__update_files(bypass_inventory)
+
+        self._get_cluster_data_from_directory(cluster_data_dir) if cluster_data_dir is not None else None
 
     def __del__(self):
         ArkSaveLogger.api_log("Stopping PlayerApi")
@@ -208,6 +214,20 @@ class PlayerApi:
             self.profile_paths.append(path)
         for path in directory.glob("*.arktribe"):
             self.tribe_paths.append(path)
+    
+    def _get_cluster_data_from_directory(self, directory: Path) -> Optional["ClusterData"]:
+        from arkparse.object_model.cluster_data.ark_cluster_data import ClusterData
+        def get_files(path: Path) -> list[Path]:
+            return [f for f in path.iterdir() if (f.is_file() and not f.name.endswith(".py"))]
+
+        all_data = {}
+        files = get_files(directory)
+        for file in files:
+            ArkSaveLogger.info_log(f"Found file: {file.name}")
+            cluster_data = ClusterData(directory, file.name)
+            all_data[file.name] = cluster_data
+
+        self.cluster_data = all_data
 
     def __update_files(self, bypass_inventory: bool):
         new_players: Dict[int, ArkPlayer] = {}
@@ -325,6 +345,14 @@ class PlayerApi:
         for t in self.tribes:
             if t.tribe_id == tribe_id:
                 return t
+        return None
+    
+    def get_cluster_data(self, player: ArkPlayer):
+        if self.cluster_data is None:
+            return None
+        
+        if player.unique_id in self.cluster_data:
+            return self.cluster_data[player.unique_id]
         return None
     
     def get_player_with(self, stat: int, stat_type: int = StatType.HIGHEST):

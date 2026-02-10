@@ -267,3 +267,6 @@ class ArkGameObject(ArkPropertyContainer):
                 short = short[len(strip):]
 
         return short
+    
+    def __str__(self):
+            return f"ArkGameObject(UUID: {self.uuid}, Blueprint: {self.blueprint}, Location: {self.location}, Properties: {len(self.properties)} properties)"

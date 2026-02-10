@@ -1,10 +1,9 @@
 from pathlib import Path
 
 from arkparse.object_model.ark_game_object import ArkGameObject
+from arkparse.object_model.cluster_data.cluster_data_item import ClusterDataItem
 from arkparse.parsing.ark_archive import ArkArchive
 from arkparse.object_model.cluster_data.cluster_data_dino import ClusterDataDino
-
-from arkparse.api import EquipmentApi, DinoApi, StackableApi
 
 class ClusterData:
     def __init__(self, path: Path, uuid: str):
@@ -19,19 +18,12 @@ class ClusterData:
         self._uploaded_dinos: list[ArkGameObject] = self._ark_data.get_property_value("ArkTamedDinosData", [])
 
         self.dinos: list[ClusterDataDino] = []
+        self.items: list[ClusterDataItem] = []
 
-        print(f"\n=== ArkItems for cluster data {self._uuid}: ===")
         for item in self._ark_data_items:
-            bp = item.get_property_value("ItemArchetype").value
-            if DinoApi.is_appicable_bp(bp):
-                print(f"Dino item with archetype: {bp}")
-            elif EquipmentApi.is_appicable_bp(bp):
-                print(f"Equipment item with archetype: {bp}")
-            else:
-                print(f"Other item with archetype: {bp}")
+            item = ClusterDataItem(item, len(self._ark_data_items))
+            self.items.append(item)
 
-            
-        print(f"\n=== Uploaded Dinos for cluster data {self._uuid}: ===")
         for dino in self._uploaded_dinos:
             dino_data = ClusterDataDino(dino, len(self.dinos))
             self.dinos.append(dino_data)

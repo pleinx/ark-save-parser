@@ -5,7 +5,7 @@ class Saddles:
     ceratosaurus: str = "/Game/ASA/Dinos/Ceratosaurus/Dinos/Saddle/PrimalItemArmor_CeratosaurusSaddle_ASA.PrimalItemArmor_CeratosaurusSaddle_ASA_C"
     deinosuchus: str = "/Game/ASA/Dinos/Deinosuchus/Saddle/PrimalItemArmor_Deinosuchus_Saddle_ASA.PrimalItemArmor_Deinosuchus_Saddle_ASA_C"
     fasolasuchus: str = "/Game/ASA/Dinos/Fasolasuchus/PrimalItemArmor_FasolaSaddle.PrimalItemArmor_FasolaSaddle_C"
-    gigantoraptor: str = "/Game/ASA/Dinos/Gigantoraptor/PrimalItemArmor_GigantoraptorSaddle.PrimalItemArmor_GigantoraptorSaddle_C"
+    gigantoraptor_ASA: str = "/Game/ASA/Dinos/Gigantoraptor/PrimalItemArmor_GigantoraptorSaddle.PrimalItemArmor_GigantoraptorSaddle_C"
     shastasaurus: str = "/Game/ASA/Dinos/Shastasaurus/PrimalItemArmor_ShastaSaddle_Submarine.PrimalItemArmor_ShastaSaddle_Submarine_C"
     xiphactinus: str = "/Game/ASA/Dinos/Xiphactinus/Dinos/Saddle/PrimalItemArmor_XiphSaddle_ASA.PrimalItemArmor_XiphSaddle_ASA_C"
     helicoprion: str = "/Game/ASA/Dinos/Helicoprion/Saddle/PrimalItemArmor_Helicoprion.PrimalItemArmor_Helicoprion_C"
@@ -108,7 +108,7 @@ class Saddles:
     velonosaur: str = "/Game/Extinction/CoreBlueprints/Items/Saddle/PrimalItemArmor_SpindlesSaddle.PrimalItemArmor_SpindlesSaddle_C"
     gigantoraptor: str = "/Gigantoraptor/Gigantoraptor/PrimalItemArmor_GigantoraptorSaddle.PrimalItemArmor_GigantoraptorSaddle_C"
 
-    all_bps = [yi_ling, archelon, ceratosaurus, deinosuchus, fasolasuchus, gigantoraptor, 
+    all_bps = [yi_ling, archelon, ceratosaurus, deinosuchus, fasolasuchus, gigantoraptor_ASA, 
                shastasaurus, xiphactinus, saddle_cart_btt, rockdrake_btt, allo, ankylo, 
                argentavis, arthro, baryonyx, basilo, castoroides, carcha, carno, chalico, 
                daeodon, diplodocus, dire_bear, doedi, dolphin, dunkleosteus, equus, gallimimus, 

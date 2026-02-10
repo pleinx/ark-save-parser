@@ -186,7 +186,7 @@ class DinoStats(ParsedObjectBase):
         return s
 
     def __str__(self):
-        return f"DinoStats(level={self.current_level})"
+        return f"DinoStats(level={self.current_level}; base_level={self.base_level}; Added levels={self.added_stat_points.get_level()}; Mutated levels={self.mutated_stat_points.get_level()}; Imprinting={self._percentage_imprinted:.2f}%)"
     
     def get(self, stat: ArkStat, base: bool = False, mutated: bool = False):
         if base and mutated:

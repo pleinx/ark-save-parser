@@ -18,7 +18,7 @@ class StackableApi(GeneralApi):
     )
 
     @staticmethod
-    def is_appicable_bp(blueprint: str) -> bool:
+    def is_applicable_bp(blueprint: str) -> bool:
         return StackableApi._DEFAULT_CONFIG.blueprint_name_filter(blueprint)
 
     def __init__(self, save: AsaSave):

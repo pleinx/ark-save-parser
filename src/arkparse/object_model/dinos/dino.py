@@ -77,6 +77,7 @@ class Dino(ParsedObjectBase):
             d.__init_props__()
 
         d.stats = DinoStats.from_object(status_obj)
+        d.stats.object = status_obj
 
         return d
     
