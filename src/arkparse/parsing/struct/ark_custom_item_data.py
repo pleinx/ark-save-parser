@@ -44,6 +44,8 @@ class ArkCustomItemData:
     custom_data_name: str = None
     custom_data_soft_classes: list[str] = None
 
+    skins: list[str] = None
+
     def __init__(self, ark_binary_data: "ArkBinaryParser"):
         total_size = self.__read_header(ark_binary_data)
         data_start = ark_binary_data.position
@@ -55,6 +57,7 @@ class ArkCustomItemData:
         self.painting_id_map = []
         self.painting_revision_map = []
         self.custom_data_soft_classes = []
+        self.skins = []
 
         self.doubles = self.__read_custom_data_doubles(ark_binary_data)
         self.strings = self.__read_custom_data_strings(ark_binary_data)
@@ -63,6 +66,7 @@ class ArkCustomItemData:
             self.objects = self.__read_custom_data_objects(ark_binary_data)
         self.classes = self.__read_custom_data_classes(ark_binary_data)
         self.names = self.__read_custom_data_names(ark_binary_data)
+        
         if ark_binary_data.peek_name() == "UniquePaintingIdMap":  # check if UniquePaintingIdMap is present
             self.painting_id_map = self.__read_painting_id_map(ark_binary_data)
         if ark_binary_data.peek_name() == "PaintingRevisionMap":  # check if PaintingRevisionMap is present
@@ -70,6 +74,17 @@ class ArkCustomItemData:
         self.custom_data_name = self.__read_custom_data_name(ark_binary_data)
         if ark_binary_data.peek_name() == "CustomDataSoftClasses":  # check if CustomDataSoftClasses is present
             self.custom_data_soft_classes = self.__read_custom_data_soft_classes(ark_binary_data)
+
+        # Check for any extra strings
+        # if ark_binary_data.peek_name() != "None":
+        #     skins_length = ark_binary_data.read_uint32()
+        #     ark_binary_data.validate_byte(0)
+        #     nr_of_strings = ark_binary_data.read_uint32()
+        #     for _ in range(nr_of_strings):
+        #         bp = ark_binary_data.read_string()
+        #         shorthand = ark_binary_data.read_string()
+        #         ark_binary_data.validate_uint32(0)
+        #         self.skins.append([bp, shorthand])
 
         ark_binary_data.validate_name("None")        
 
@@ -302,16 +317,21 @@ class ArkCustomItemData:
         ark_binary_data.validate_uint32(1)
         ark_binary_data.validate_name("SoftObjectProperty")
         ark_binary_data.validate_uint32(0)
-        ark_binary_data.read_uint32()
+        data_size = ark_binary_data.read_uint32()
         ark_binary_data.validate_byte(0)
 
-        nr_of_values = ark_binary_data.read_uint32()
+        if data_size == 4:
+            ark_binary_data.validate_uint32(0)
+            return []
+
+        ark_binary_data.read_uint32()
         soft_classes = []
 
-        for _ in range(nr_of_values):
+        while ark_binary_data.peek_int() != 0:
             obj_name = ark_binary_data.read_name()
-            ark_binary_data.validate_uint32(0)
             soft_classes.append(obj_name)
+        
+        ark_binary_data.validate_uint32(0)
 
         return soft_classes
 
