@@ -228,6 +228,12 @@ class DinoApi:
 
         return tamed_dinos
     
+    def get_owned_by_tribe(self, tribe_id: int, include_cryopodded: bool = True) -> Dict[UUID, TamedDino]:
+        dinos = self.get_all_tamed(include_cryopodded=include_cryopodded)
+        tribe_dinos = {k: v for k, v in dinos.items() if v.owner is not None and v.owner.target_team == tribe_id}
+
+        return tribe_dinos
+    
     def get_all_of_at_least_level(self, level: int) -> Dict[UUID, Dino]:
         dinos = self.get_all()
         level_dinos = {k: v for k, v in dinos.items() if v.stats.current_level >= level}
