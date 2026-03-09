@@ -16,7 +16,7 @@ from arkparse.parsing import ArkBinaryParser
 from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.parsing.struct.actor_transform import MapCoords, ActorTransform
-from arkparse.enums import ArkMap, ArkStat
+from arkparse.enums import ArkMap, ArkStat, ArkDinoTrait
 from arkparse.utils import TEMP_FILES_DIR, ImportFile
 from arkparse.logging import ArkSaveLogger
 from arkparse.classes.dinos import Dinos
@@ -228,6 +228,12 @@ class DinoApi:
 
         return tamed_dinos
     
+    def get_owned_by_tribe(self, tribe_id: int, include_cryopodded: bool = True) -> Dict[UUID, TamedDino]:
+        dinos = self.get_all_tamed(include_cryopodded=include_cryopodded)
+        tribe_dinos = {k: v for k, v in dinos.items() if v.owner is not None and v.owner.target_team == tribe_id}
+
+        return tribe_dinos
+    
     def get_all_of_at_least_level(self, level: int) -> Dict[UUID, Dino]:
         dinos = self.get_all()
         level_dinos = {k: v for k, v in dinos.items() if v.stats.current_level >= level}
@@ -269,6 +275,7 @@ class DinoApi:
 
     def get_all_filtered(self, level_lower_bound: int = None, level_upper_bound: int = None, 
                          class_names: List[str] = None, 
+                         traits: List[ArkDinoTrait] = None,
                          tamed: bool = None, 
                          include_cryopodded: bool = True, only_cryopodded: bool = False, 
                          stat_minimum: int = None, stats: List[ArkStat] = None) -> Dict[UUID, Dino]:
@@ -306,6 +313,10 @@ class DinoApi:
         if class_names is not None:
             filtered_dinos = {k: v for k, v in filtered_dinos.items() if v.object.blueprint in class_names}
             ArkSaveLogger.api_log(f"Class - Filtered to {len(filtered_dinos)} dinos")
+
+        if traits is not None:
+            filtered_dinos = {k: v for k, v in filtered_dinos.items() if any(t.trait in traits for t in v.gene_traits)}
+            ArkSaveLogger.api_log(f"Traits - Filtered to {len(filtered_dinos)} dinos")
 
         if tamed is not None:
             if tamed:

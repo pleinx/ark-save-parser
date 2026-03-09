@@ -131,7 +131,11 @@ class DlcDinos:
     doggo = "/Game/Packs/Wasteland/Dinos/Doggo/Doggo_Character_BP.Doggo_Character_BP_C"
     veilwyn = "/Game/LostColony/Dinos/YoungIceFox/YoungIceFox_DinoCompanion_Character_BP.YoungIceFox_DinoCompanion_Character_BP_C"
     elderclaw = "/Game/ASA/Dinos/SpiritBear/SpiritBear_Character_BP.SpiritBear_Character_BP_C"
-    all_bps = [firemane, archelon, dread_mare, oasisaur, train, helper_bot, zeppelin, doggo, veilwyn, elderclaw]
+    solwyn = "/Game/LostColony/Dinos/AngelFox/AngelFox_Character_BP.AngelFox_Character_BP_C"
+    malwyn = "/Game/LostColony/Dinos/SnowDragon/SnowDragon_Character_BP.SnowDragon_Character_BP_C"
+    ossidon = "/Game/LostColony/Dinos/SnowMonster/SnowMonster_Character_BP.SnowMonster_Character_BP_C"
+    gloon = "/Game/LostColony/Dinos/LostChargePet/LostCharge_LanternPet_Char_BP.LostCharge_LanternPet_Char_BP_C"
+    all_bps = [firemane, archelon, dread_mare, oasisaur, train, helper_bot, zeppelin, doggo, veilwyn, elderclaw, solwyn, malwyn, ossidon, gloon]
 
 class ShoulderPets:
     glowtail = "/Game/Aberration/Dinos/LanternLizard/LanternLizard_Character_BP.LanternLizard_Character_BP_C"

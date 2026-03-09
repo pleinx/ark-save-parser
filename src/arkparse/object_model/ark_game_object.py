@@ -259,7 +259,7 @@ class ArkGameObject(ArkPropertyContainer):
             except Exception as e:
                 ArkSaveLogger.error_log(f"Error reading class name for object {obj_uuid}: {e}")
                 reader.structured_print(to_default_file=True)
-                input("Press Enter to continue...")
+                # input("Press Enter to continue...")
                 class_name = "UnknownClass"
                 
         return class_name, string_name
