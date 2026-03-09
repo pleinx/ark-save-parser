@@ -24,12 +24,12 @@ class StructureApi:
             reader_config = GameObjectReaderConfiguration(
                 blueprint_name_filter=lambda name: name is not None \
                                                    and "Structures" in name \
-                                                   and not "PrimalItemStructure_" in name \
+                                                   and (not "PrimalItemStructure_" in name or "PrimalItemStructure_ASR" in name) \
                                                    and not "/Skins/" in name \
                                                    and not "PrimalInventory" in name \
                                                    and not "/TreasureMap/" in name \
                                                 #    and not "Tileset" in name \
-                                                   and not "PrimalItemStructureSkin" in name
+                                                   and not "PrimalItemStructureSkin" in name \
                                                    and not "PrimalItemResource" in name \
                                                    and not "/TrainCarts/" in name \
             )

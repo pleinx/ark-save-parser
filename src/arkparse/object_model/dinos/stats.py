@@ -273,6 +273,13 @@ class DinoStats(ParsedObjectBase):
             self.binary.replace_float(prop, 999999999999999999999)
             self.update_binary()
 
+    def feed(self):
+        prop = self.object.find_property("CurrentStatusValues", ArkStat.FOOD.value)
+        if prop is not None:
+            # Set food to a hugely high value, effectively feeding the dino since it is capped at max food which is not directly retrievable
+            self.binary.replace_float(prop, 999999999999999999999)
+            self.update_binary()
+
     def set_levels(self, levels: int, stat: ArkStat):
         prop = self.object.find_property("NumberOfLevelUpPointsApplied", stat.value)
         if prop is not None:

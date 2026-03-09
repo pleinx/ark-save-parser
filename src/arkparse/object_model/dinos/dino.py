@@ -267,6 +267,9 @@ class Dino(ParsedObjectBase):
     def heal(self):
         self.stats.heal()
 
+    def feed(self):
+        self.stats.feed()
+
     def disable_wandering(self):
         """
         Disables the wandering behavior of the dino.

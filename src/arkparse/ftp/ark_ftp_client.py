@@ -74,6 +74,7 @@ class _FtpArkMap:
     ISLAND = {"folder": "TheIsland"}
     ABERRATION = {"folder": "Aberration"}
     RAGNAROK = {"folder": "Ragnarok"}
+    LOST_COLONY = {"folder": "LostColony"}
 
 class INI:
         ENGINE= "Engine.ini"
@@ -145,6 +146,8 @@ class ArkFtpClient:
             self.map = _FtpArkMap.ABERRATION
         elif map == ArkMap.RAGNAROK:
             self.map = _FtpArkMap.RAGNAROK
+        elif map == ArkMap.LOST_COLONY:
+            self.map = _FtpArkMap.LOST_COLONY
         else:
             raise ValueError(f"Map {map} is not supported, but you can add itin this file")
 
