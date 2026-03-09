@@ -423,7 +423,6 @@ class ArkProperty:
                 ArkSaveLogger.warning_log(f"Skipping to the end of the struct, type: {array_content_type}")
                 bb.set_position(data_start_position + data_size)
                 bb.structured_print(to_default_file=True)
-                input("Press Enter to continue...")
                 ArkSaveLogger.open_hex_view(True)
 
             # if array_content_type == "PrimalCharacterStatusValueModifier":

@@ -17,12 +17,13 @@ from ...utils.json_utils import DefaultJsonEncoder
 
 @dataclass
 class Inventory(ParsedObjectBase):
-    items: Dict[UUID, InventoryItem]
+    _items: Dict[UUID, InventoryItem]
+    item_classes: Dict[UUID, str]
     started_empty: bool = False
     def __init__(self, uuid: UUID, save: AsaSave = None):
         super().__init__(uuid, save=save)
-        self.items = {}
-
+        self._items = {}
+        self.item_classes = {}
         if self.object is None:
             ArkSaveLogger.error_log(f"Inventory object with UUID {uuid} could not be loaded from save, not found")
             return
@@ -30,17 +31,39 @@ class Inventory(ParsedObjectBase):
         item_arr = self.object.get_array_property_value("InventoryItems")
         for item in item_arr:
             item_uuid = UUID(item.value)
-            item = InventoryItem(item_uuid, save=save)
-            if item.object is None:
-                ArkSaveLogger.warning_log(f"Inventory item {item_uuid} could not be loaded from save, not found")
-            else:
-                is_engram = item.object.get_property_value("bIsEngram")
-                if is_engram is None or not is_engram:
-                    self.items[item_uuid] = item
+            item_class = self.save.get_class_of_uuid(item_uuid)
+            self.item_classes[item_uuid] = item_class
+
+    @property
+    def items(self) -> Dict[UUID, InventoryItem]:
+        if len(self._items) != len(self.item_classes):
+            self._items = {}
+            item_arr = self.object.get_array_property_value("InventoryItems")
+            for item in item_arr:
+                item_uuid = UUID(item.value)
+                if item_uuid not in self._items.keys():
+                    self._items[item_uuid] = InventoryItem(item_uuid, self.save)
+        return self._items
 
     @property
     def number_of_items(self):
         return len(self.items)
+    
+    def get_items_of_class(self, class_name: str) -> Dict[UUID, InventoryItem]:
+        result = {}
+        for item_uuid, item_class in self.item_classes.items():
+            if item_class == class_name:
+                result[item_uuid] = self.get_item(item_uuid)
+        return result
+    
+    def get_item(self, uuid: UUID) -> InventoryItem:
+        if uuid in self.item_classes.keys():
+            if uuid in self._items.keys():
+                return self._items[uuid]
+            else:
+                item = InventoryItem(uuid, self.save)
+                self._items[uuid] = item
+                return item
 
     def add_item(self, item: UUID, store: bool = True):
         if len(self.items) == 0:

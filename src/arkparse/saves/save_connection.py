@@ -19,6 +19,8 @@ class SaveConnection:
     nr_parsed = 0
     faulty_objects = 0
 
+    failed_parses: Dict[str, int] = {}
+
     def __init__(self, save_context: SaveContext, path: Path = None, contents: bytes = None, read_only: bool = False):
 
         # create temp copy of file
@@ -112,6 +114,12 @@ class SaveConnection:
     def close(self):
         if self.connection:
             self.connection.close()
+
+    def get_class_of_uuid(self, obj_uuid: uuid.UUID) -> Optional[str]:
+        bin = self.get_game_obj_binary(obj_uuid)
+        reader = ArkBinaryParser(bin, self.save_context)
+        class_name, string_name = ArkGameObject.read_name(obj_uuid, reader)
+        return class_name
 
     def list_all_items_in_db(self):
         query = "SELECT key, value FROM game"
@@ -402,6 +410,14 @@ class SaveConnection:
                     ArkSaveLogger.exit_struct()
                     continue
 
+                if SaveConnection.failed_parses.get(class_name, 0) >= 5:
+                    if SaveConnection.failed_parses[class_name] == 5:
+                        ArkSaveLogger.warning_log(f"Skipping parsing of class {class_name} due to previous errors")
+                    SaveConnection.failed_parses[class_name] += 1
+                    ArkSaveLogger.exit_struct()
+                    self.faulty_objects += 1
+                    continue
+
                 if class_name not in objects:
                     objects.append(class_name)
                 
@@ -482,14 +498,18 @@ class SaveConnection:
             else:
                 byte_buffer.structured_print(to_default_file=True)
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
-            
-            ArkSaveLogger.error_log("Reparsing with logging:")
-            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
-            try:
-                ArkGameObject(obj_uuid, class_name, byte_buffer)
-            except Exception as _:
-                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
-                ArkSaveLogger.open_hex_view(True)
+
+            SaveConnection.failed_parses[class_name] = SaveConnection.failed_parses.get(class_name, 0) + 1
+            ArkSaveLogger.warning_log(f"Failed parses for this class: {SaveConnection.failed_parses[class_name]}")
+
+            if SaveConnection.failed_parses[class_name] == 1:
+                ArkSaveLogger.error_log("Reparsing with logging:")
+                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
+                try:
+                    ArkGameObject(obj_uuid, class_name, byte_buffer)
+                except Exception as _:
+                    ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+                    ArkSaveLogger.open_hex_view(True)
 
             if reraise:
                 raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")

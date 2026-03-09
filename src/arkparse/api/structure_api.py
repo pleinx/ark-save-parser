@@ -108,6 +108,7 @@ class StructureApi:
 
         structures = {}
 
+        ArkSaveLogger.api_log(f"Parsing structure objects into structure models, total objects to parse: {len(objects)}")
         for key, obj in objects.items():
             obj : ArkGameObject = obj
             if obj is None:
@@ -306,10 +307,7 @@ class StructureApi:
     def get_all_with_inventory(self) -> Dict[UUID, StructureWithInventory]:
         structures = self.get_all()
         result = {}
-
-        for key, obj in structures.items():
-            if isinstance(obj, StructureWithInventory):
-                result[key] = obj
+        result = {key: obj for key, obj in structures.items() if isinstance(obj, StructureWithInventory)}
 
         return result
     
