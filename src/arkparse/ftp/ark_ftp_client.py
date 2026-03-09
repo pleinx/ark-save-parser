@@ -149,7 +149,7 @@ class ArkFtpClient:
         elif map == ArkMap.LOST_COLONY:
             self.map = _FtpArkMap.LOST_COLONY
         else:
-            raise ValueError(f"Map {map} is not supported, but you can add itin this file")
+            raise ValueError(f"Map {map} is not supported, but you can add it in this file")
 
     def _check_map(self, map: dict):
         if map is None and self.map is None:

@@ -49,8 +49,14 @@ class ArkSaveLogger:
     @staticmethod
     def parser_log(message: str):
         struct_header = ""
+        max = 15
+        curr = 0
         for struct in ArkSaveLogger.current_struct_path:
             struct_header += f"[{struct}]"
+            curr += 1
+            if curr >= max:
+                struct_header += "[...]"
+                break
         ArkSaveLogger.__log(struct_header + message, ArkSaveLogger.LogTypes.PARSER, ArkSaveLogger.LogColors.CYAN)
 
     @staticmethod

@@ -28,7 +28,7 @@ class EquipmentWithArmor(EquipmentWithDurability):
             return 20
         elif bp in ArmorBps.desert.all_bps:
             return 40
-        elif bp in ArmorBps.fur.all_bps:
+        elif bp in ArmorBps.fur.all_bps or bp in ArmorBps.arctic.all_bps:
             return 40
         elif bp in ArmorBps.cloth.all_bps:
             return 10
