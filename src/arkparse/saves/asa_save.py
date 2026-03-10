@@ -58,6 +58,9 @@ class AsaSave:
             return False
         return True
 
+    def get_class_of_uuid(self, obj_uuid: uuid.UUID) -> Optional[str]:
+        return self.save_connection.get_class_of_uuid(obj_uuid)
+
     def _get_game_time_params(self):
         config: GameObjectReaderConfiguration = GameObjectReaderConfiguration()
         config.blueprint_name_filter = lambda name: name is not None and "daycycle" in name.lower()

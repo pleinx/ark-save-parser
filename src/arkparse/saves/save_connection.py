@@ -19,9 +19,9 @@ class SaveConnection:
     nr_parsed = 0
     faulty_objects = 0
 
+    failed_parses: Dict[str, int] = {}
+
     def __init__(self, save_context: SaveContext, path: Path = None, contents: bytes = None, read_only: bool = False):
-        self.connection = None
-        self.sqlite_db = None
 
         # create temp copy of file
         temp_save_path = TEMP_FILES_DIR / (str(uuid.uuid4()) + ".ark")
@@ -114,6 +114,12 @@ class SaveConnection:
     def close(self):
         if self.connection:
             self.connection.close()
+
+    def get_class_of_uuid(self, obj_uuid: uuid.UUID) -> Optional[str]:
+        bin = self.get_game_obj_binary(obj_uuid)
+        reader = ArkBinaryParser(bin, self.save_context)
+        class_name, string_name = ArkGameObject.read_name(obj_uuid, reader)
+        return class_name
 
     def list_all_items_in_db(self):
         query = "SELECT key, value FROM game"
@@ -356,7 +362,10 @@ class SaveConnection:
             return self.parsed_objects[obj_uuid]
         bin = self.get_game_obj_binary(obj_uuid)
         reader = ArkBinaryParser(bin, self.save_context)
-        obj = SaveConnection.parse_as_predefined_object(obj_uuid, reader.read_name(), reader)
+
+        class_name, string_name = ArkGameObject.read_name(obj_uuid, reader)
+
+        obj = SaveConnection.parse_as_predefined_object(obj_uuid, class_name, reader)
 
         if obj:
             self.parsed_objects[obj_uuid] = obj
@@ -377,7 +386,7 @@ class SaveConnection:
 
         ArkSaveLogger.enter_struct("GameObjects")
 
-        with self.connection as conn:
+        with self.connection as conn:   
             cursor = conn.execute(query)
             for row in cursor:
                 if row_index < 0:
@@ -394,20 +403,24 @@ class SaveConnection:
 
                 byte_buffer = ArkBinaryParser(row[1], self.save_context)
                 ArkSaveLogger.set_file(byte_buffer, "game_object.bin")
-                try:
-                    class_name = byte_buffer.read_name()
-                except Exception as e:
-                    ArkSaveLogger.error_log(f"Error reading class name for object {obj_uuid}: {e}")
-                    class_name = "UnknownClass"
+                class_name, string_name =  ArkGameObject.read_name(obj_uuid, byte_buffer)
                 ArkSaveLogger.enter_struct(class_name)
 
                 if reader_config.blueprint_name_filter and not reader_config.blueprint_name_filter(class_name):
                     ArkSaveLogger.exit_struct()
                     continue
 
+                if SaveConnection.failed_parses.get(class_name, 0) >= 5:
+                    if SaveConnection.failed_parses[class_name] == 5:
+                        ArkSaveLogger.warning_log(f"Skipping parsing of class {class_name} due to previous errors")
+                    SaveConnection.failed_parses[class_name] += 1
+                    ArkSaveLogger.exit_struct()
+                    self.faulty_objects += 1
+                    continue
+
                 if class_name not in objects:
                     objects.append(class_name)
-
+                
                 if obj_uuid not in self.parsed_objects.keys():
                     ark_game_object = None
                     found = False
@@ -435,12 +448,12 @@ class SaveConnection:
 
                     if found:
                         game_objects[obj_uuid] = self.parsed_objects[obj_uuid]
-
+        
         if self.faulty_objects > 0:
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, True)
             ArkSaveLogger.error_log(f"{self.faulty_objects} objects could not be parsed, if possible, please report this to the developers.")
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.ERROR, False)
-
+        
         return game_objects
 
     def reset_caching(self):
@@ -480,23 +493,27 @@ class SaveConnection:
                     byte_buffer.structured_print(to_default_file=True)
                     ArkSaveLogger.error_log(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
                     reraise = True
-
+                
                 ArkSaveLogger.warning_log(f"Error parsing object {obj_uuid} of type {class_name}, skipping...")
             else:
                 byte_buffer.structured_print(to_default_file=True)
                 ArkSaveLogger.warning_log(f"Error parsing non-standard object of type {class_name}")
 
-            ArkSaveLogger.error_log("Reparsing with logging:")
-            ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
-            try:
-                ArkGameObject(obj_uuid, class_name, byte_buffer)
-            except Exception as _:
-                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
-                ArkSaveLogger.open_hex_view(True)
+            SaveConnection.failed_parses[class_name] = SaveConnection.failed_parses.get(class_name, 0) + 1
+            ArkSaveLogger.warning_log(f"Failed parses for this class: {SaveConnection.failed_parses[class_name]}")
+
+            if SaveConnection.failed_parses[class_name] == 1:
+                ArkSaveLogger.error_log("Reparsing with logging:")
+                ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, True)
+                try:
+                    ArkGameObject(obj_uuid, class_name, byte_buffer)
+                except Exception as _:
+                    ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
+                    ArkSaveLogger.open_hex_view(True)
 
             if reraise:
                 raise Exception(f"Error parsing object {obj_uuid} of type {class_name}: {e}")
         finally:
             ArkSaveLogger.set_log_level(ArkSaveLogger.LogTypes.PARSER, False)
-
+            
         return None
