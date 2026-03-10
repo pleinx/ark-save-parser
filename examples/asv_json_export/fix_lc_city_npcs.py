@@ -4,7 +4,7 @@ from arkparse.saves.asa_save import AsaSave
 from arkparse.parsing import GameObjectReaderConfiguration
 
 print(Path.cwd())
-save_path = Path.cwd() / "examples" / "asv_json_export" / "LostColony_WP.ark"
+save_path = Path.cwd() / "examples" / "asv_json_export" / "LC_FIX" / "LostColony_WP.ark"
 save = AsaSave(save_path)
 
 class_ = ["/Game/LostColony/CoreBlueprints/Patrols/NPCZoneManager_Patrols.NPCZoneManager_Patrols_C"]
@@ -16,4 +16,4 @@ for key, obj in objects.items():
 
 print(f"Found and removed {len(objects)} objects with class {class_}")
 
-save.store_db( Path.cwd() / "examples" / "asv_json_export" / "LostColony_WP_modified.ark")
+save.store_db( Path.cwd() / "examples" / "asv_json_export" / "LC_FIX" / "LostColony_WP_fixed.ark")
