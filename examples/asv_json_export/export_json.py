@@ -448,6 +448,15 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
     # possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C', 'IceBox_C', 'StorageBox_Large_C', 'LinkedStorage_C', 'StorageBox_Small_C', 'StorageBox_Huge_C']
     possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C']
     config = GameObjectReaderConfiguration(blueprint_name_filter=lambda name: name is not None and any(cls in name for cls in possible_cryopod_storages))
+
+#     config = GameObjectReaderConfiguration(
+#         blueprint_name_filter=lambda name: name is not None and (
+#             any(s in name for s in {"CryoFridge_C", "CryoHospital_Base_C"}) or
+#             any(c in name for c in {"PrimalItem_WeaponEmptyCryopod_C"})
+#         ),
+#         property_names=["OwnerName", "TargetingTeam", "OriginalPlacedTimeStamp", "BoxName", "InventoryUUID"]
+#     )
+
     storages = structure_api.get_all(config)
 
     inventory_map: Dict[UUID, Dict[str, Any]] = {}
