@@ -33,6 +33,7 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 import multiprocessing as mp
 from pprint import pprint
+from datetime import datetime, timedelta
 
 # arkparse
 from arkparse.saves.asa_save import AsaSave
@@ -176,17 +177,20 @@ def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
     return save_path.parent.name, save_path.stem
 
 def asa_login_to_mysql_local(ts: float | int | None, tz_name: str = "Europe/Berlin") -> Optional[str]:
-    if ts is None:
+    if not ts:
         return None
     try:
         x = float(ts)
-    except Exception:
+        # Cisco ASA REST-API Epoch: 01.01.2018 00:00:00 UTC
+        asa_base = datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC"))
+
+        # Berechnung
+        dt = asa_base + timedelta(seconds=x)
+        dt_local = dt.astimezone(ZoneInfo(tz_name))
+
+        return dt_local.strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
         return None
-    if x > 1e11:  # ms-Heuristik
-        x /= 1000.0
-    dt = EPOCH_LOGIN + timedelta(seconds=x)
-    dt_local = dt.astimezone(ZoneInfo(tz_name))
-    return dt_local.strftime("%Y-%m-%d %H:%M:%S")
 
 def is_active_within_months(login_time: float | int | None, months: int = 2) -> bool:
     if login_time is None:
@@ -312,6 +316,22 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
     for p in getattr(player_api, "players", []):
         if p.tribe is None:
             continue
+
+        map_key = save_path.stem
+        ark_map = MAP_NAME_MAPPING.get(map_key)
+        if ark_map is None:
+            raise ValueError(f"Unknown map key '{map_key}' for tamed export")
+
+        lat = 0.0
+        lon = 0.0
+        ccc = ""
+        loc = p.location
+        if loc is not None:
+            ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
+            coords = loc.as_map_coords(ark_map) if ark_map else None
+            lat = getattr(coords, "lat", 0.0) if coords else 0.0
+            lon = getattr(coords, "long", 0.0) if coords else 0.0
+
         entry = {
             "playerid": str(p.id_),
             "steam": p.name,
@@ -320,8 +340,8 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
             "tribe": tribes_by_id.get(p.tribe),
             "sex": "Female" if p.config.is_female else "Male",
             "lvl": p.stats.level,
-            "lat": 0.0,
-            "lon": 0.0,
+            "lat": lat,
+            "lon": lon,
             "hp": p.stats.stats.health,
             "stam": p.stats.stats.stamina,
             "melee": p.stats.stats.melee_damage,
@@ -332,15 +352,16 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
             "oxy": p.stats.stats.oxygen,
             "craft": p.stats.stats.crafting_speed,
             "fort": p.stats.stats.fortitude,
-            "active": is_active_within_months(p.login_time, months=2),
-            "last_login": asa_login_to_mysql_local(p.login_time, tz_name="Europe/Berlin"),
-            "ccc": "0 0 0",
+#             "active": is_active_within_months(p.login_time, months=1),
+#             "last_login": asa_login_to_mysql_local(p.login_time, tz_name="Europe/Berlin"),
+#             "last_login_d": p.login_time,
+            "ccc": ccc,
             "steamid": str(p.unique_id),
-            "netAddress": p.ip_address,
+            "ip": p.ip_address,
             "achievements": [],
             "inventory": [],
             "deaths": int(p.nr_of_deaths),
-            "last_death": p.last_time_died,
+            # "last_death": p.last_time_died,
         }
         players.append(entry)
 
