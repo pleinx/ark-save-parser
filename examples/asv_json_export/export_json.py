@@ -529,6 +529,15 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 
         c0, c1, c2, c3, c4, c5 = pad_colors_literal_eval(dino_json.get("ColorSetIndices", "[]"))
 
+        traits_list = dino_json.get("GeneTraits", [])
+        extracted_traits = []
+
+        if isinstance(traits_list, list):
+            for t in traits_list:
+                trait_name = t.trait.name if hasattr(t.trait, "name") else str(t.trait)
+                trait_level = t.level + 1
+                extracted_traits.append(f"{trait_name} (Lvl {trait_level})")
+
         entry: Dict[str, Any] = {
             "id": str(dino_id),
             "tribeid": tribe_id,
@@ -549,7 +558,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             "isNeutered": False,
             "isClone": False,
             "maturation": float(getattr(dino, "percentage_matured", 100.0)) if isinstance(dino, TamedBaby) else "100",
-            "traits": [],
+            "traits": ", ".join(extracted_traits) if extracted_traits else [],
             "inventory": [],
             "is_wild_tamed": bool(is_wild_tamed(dino)),
             "tamedAtTime": parse_asa_stamp(dino_json.get("TamedTimeStamp")),
@@ -573,6 +582,17 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 # ---------- Exporter: Wild ----------
 
 def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal: int, cap_bionic: int) -> Tuple[str, int]:
+    TRASH_DINOS = {
+        'Coel_Character_BP_C',
+        'Ant_Character_BP_C',
+        'Salmon_Character_BP_C',
+        'Piranha_Character_BP_C',
+        'Dragonfly_Character_BP_C',
+        'FlyingAnt_Character_BP_C',
+        'Jugbug_Water_Character_BP_C',
+        'Jugbug_Oil_Character_BP_C'
+    }
+
     dino_api = DinoApi(save)
 
     # Für "map" im Payload: server_folder (= Elternordner mit *_a), fallback map_folder
@@ -592,13 +612,12 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
         if not isinstance(dino, Dino):
             continue
 
-        dino_json = dino.to_json_obj()
-
         lvl = dino.stats.base_level if dino.stats else None
+        dino_json = dino.to_json_obj()
+        dino_class = dino_json.get("ItemArchetype").split(".")[-1] or ""
 
-        dino_class_short = getattr(dino, "tamed_name", "") or ""
-        dino_class = dino_json.get("ItemArchetype").split(".")[-1] or dino_class_short
-
+        if dino_class in TRASH_DINOS:
+            continue
         if "_Corrupt" in dino_class:
             continue
         if not wild_within_caps(dino_class, lvl, cap_normal, cap_bionic):
@@ -614,6 +633,15 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
             int_id = int_id if -(2**63) <= int_id < 2**63 else None
         except Exception:
             int_id = None
+
+        traits_list = dino_json.get("GeneTraits", [])
+        extracted_traits = []
+
+        if isinstance(traits_list, list):
+            for t in traits_list:
+                trait_name = t.trait.name if hasattr(t.trait, "name") else str(t.trait)
+                trait_level = t.level + 1
+                extracted_traits.append(f"{trait_name} (Lvl {trait_level})")
 
         out.append(
             {
@@ -639,7 +667,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
                 "c5": colors[5],
                 "ccc": ccc,
                 "tameable": True,
-                "trait": str(dino_json.get("GeneTraits", "") or ""),
+                "traits": ", ".join(extracted_traits) if extracted_traits else []
             }
         )
 
