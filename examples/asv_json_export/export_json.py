@@ -249,6 +249,56 @@ def safe_color_indices(raw: Any, length: int = 6) -> List[Optional[int]]:
                 return [None] * length
     return [None] * length
 
+def format_gene_traits(raw_traits: Any) -> List[str]:
+    if not isinstance(raw_traits, list):
+        return []
+
+    formatted_traits: List[str] = []
+    for raw_trait in raw_traits:
+        formatted_trait = format_gene_trait(raw_trait)
+        if formatted_trait:
+            formatted_traits.append(formatted_trait)
+    return formatted_traits
+
+def format_gene_trait(raw_trait: Any) -> Optional[str]:
+    if raw_trait is None:
+        return None
+
+    if isinstance(raw_trait, dict):
+        trait = (
+            raw_trait.get("trait")
+            or raw_trait.get("Trait")
+            or raw_trait.get("name")
+            or raw_trait.get("Name")
+            or raw_trait.get("value")
+            or raw_trait.get("Value")
+        )
+        level = raw_trait.get("level", raw_trait.get("Level"))
+    else:
+        trait = getattr(raw_trait, "trait", raw_trait)
+        level = getattr(raw_trait, "level", None)
+
+    if trait is None:
+        return None
+
+    trait_name = str(getattr(trait, "name", trait)).strip()
+    if not trait_name:
+        return None
+
+    match = re.fullmatch(r"(.+)\[(-?\d+)\]", trait_name)
+    if match:
+        trait_name = match.group(1)
+        if level is None:
+            level = int(match.group(2))
+
+    if level is None:
+        return trait_name
+
+    try:
+        return f"{trait_name} (Lvl {int(level) + 1})"
+    except (TypeError, ValueError):
+        return trait_name
+
 def pad_colors_literal_eval(color_indices: Any, length: int = 6) -> List[Optional[int]]:
     if isinstance(color_indices, str):
         try:
@@ -529,14 +579,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 
         c0, c1, c2, c3, c4, c5 = pad_colors_literal_eval(dino_json.get("ColorSetIndices", "[]"))
 
-        traits_list = dino_json.get("GeneTraits", [])
-        extracted_traits = []
-
-        if isinstance(traits_list, list):
-            for t in traits_list:
-                trait_name = t.trait.name if hasattr(t.trait, "name") else str(t.trait)
-                trait_level = t.level + 1
-                extracted_traits.append(f"{trait_name} (Lvl {trait_level})")
+        extracted_traits = format_gene_traits(dino_json.get("GeneTraits", []))
 
         entry: Dict[str, Any] = {
             "id": str(dino_id),
@@ -634,14 +677,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
         except Exception:
             int_id = None
 
-        traits_list = dino_json.get("GeneTraits", [])
-        extracted_traits = []
-
-        if isinstance(traits_list, list):
-            for t in traits_list:
-                trait_name = t.trait.name if hasattr(t.trait, "name") else str(t.trait)
-                trait_level = t.level + 1
-                extracted_traits.append(f"{trait_name} (Lvl {trait_level})")
+        extracted_traits = format_gene_traits(dino_json.get("GeneTraits", []))
 
         out.append(
             {
