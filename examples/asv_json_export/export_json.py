@@ -88,6 +88,7 @@ SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
 MAP_NAME_MAPPING: Dict[str, ArkMap] = {
     "Aberration_WP": ArkMap.ABERRATION,
     "Extinction_WP": ArkMap.EXTINCTION,
+    "Genesis_WP": ArkMap.GENESIS1,
     "TheIsland_WP": ArkMap.THE_ISLAND,
     "Ragnarok_WP": ArkMap.RAGNAROK,
     "ScorchedEarth_WP": ArkMap.SCORCHED_EARTH,
@@ -316,20 +317,22 @@ def pad_colors_literal_eval(color_indices: Any, length: int = 6) -> List[Optiona
     out += [None] * max(0, length - len(out))
     return out
 
-def resolve_coords_xyz_to_map(latlon_provider, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str]:
-    loc = getattr(latlon_provider, "location", None)
+def resolve_location_xyz_to_map(loc: Any, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str, str]:
     if not loc:
-        return (0.0, 0.0), ""
+        return (0.0, 0.0), "", ""
     ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
     if ark_map is None:
-        return (0.0, 0.0), ccc
+        return (0.0, 0.0), ccc, ""
     try:
         coords = loc.as_map_coords(ark_map)
         if coords is not None:
-            return (coords.lat, coords.long), ccc
+            return (coords.lat, coords.long), ccc, getattr(coords, "sub_map_name", None) or ""
     except Exception:
         pass
-    return (0.0, 0.0), ccc
+    return (0.0, 0.0), ccc, ""
+
+def resolve_coords_xyz_to_map(latlon_provider, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str, str]:
+    return resolve_location_xyz_to_map(getattr(latlon_provider, "location", None), ark_map)
 
 def wild_within_caps(dino_class: str, level: Optional[int], cap_normal: int, cap_bionic: int) -> bool:
     if level is None:
@@ -437,7 +440,7 @@ def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tu
             continue
 
         created = parse_asa_stamp(structure.object.get_property_value("OriginalPlacedTimeStamp", 0))
-        (lat, lon), ccc = resolve_coords_xyz_to_map(structure, ark_map)
+        (lat, lon), ccc, _ = resolve_coords_xyz_to_map(structure, ark_map)
 
         out.append(
             {
@@ -542,12 +545,9 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 
         # Position (keine Weltposition bei Cryo)
         loc = _tamed_location(dino)
-        ccc, lat, lon = "", 0.0, 0.0
+        ccc, lat, lon, biom = "", 0.0, 0.0, ""
         if loc is not None and not is_cryo:
-            ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
-            coords = loc.as_map_coords(ark_map) if ark_map else None
-            lat = getattr(coords, "lat", 0.0) if coords else 0.0
-            lon = getattr(coords, "long", 0.0) if coords else 0.0
+            (lat, lon), ccc, biom = resolve_location_xyz_to_map(loc, ark_map)
 
         tribe_id = _tamed_owner_field(dino, "tamer_tribe_id")
         tamer_name = _tamed_owner_field(dino, "tamer_string")
@@ -562,10 +562,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
                 loc = map_entry["location"]
 
                 if loc is not None:
-                    ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
-                    coords = loc.as_map_coords(ark_map) if ark_map else None
-                    lat = getattr(coords, "lat", 0.0) if coords else 0.0
-                    lon = getattr(coords, "long", 0.0) if coords else 0.0
+                    (lat, lon), ccc, biom = resolve_location_xyz_to_map(loc, ark_map)
 
         # Stats (wild/tamed/mut)
         stats_entry: Dict[str, int] = {}
@@ -595,6 +592,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             "lvl": getattr(getattr(dino, "stats", None), "current_level", None),
             "lat": lat,
             "lon": lon,
+            "biom": biom,
             "cryo": is_cryo,
             "ccc": ccc,
             "isMating": False,
@@ -666,7 +664,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
         if not wild_within_caps(dino_class, lvl, cap_normal, cap_bionic):
             continue
 
-        (lat, lon), ccc = resolve_coords_xyz_to_map(dino, ark_map)
+        (lat, lon), ccc, biom = resolve_coords_xyz_to_map(dino, ark_map)
         coords = (lat, lon)
 
         s = dino.stats
@@ -687,6 +685,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
                 "lvl": (s.base_level if s else None),
                 "lat": coords[0],
                 "lon": coords[1],
+                "biom": biom,
                 "hp": int(getattr(getattr(s, "base_stat_points", None), "health", 0) or 0),
                 "stam": int(getattr(getattr(s, "base_stat_points", None), "stamina", 0) or 0),
                 "melee": int(getattr(getattr(s, "base_stat_points", None), "melee_damage", 0) or 0),
