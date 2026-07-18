@@ -349,6 +349,36 @@ def asv_class_name(obj: Any) -> str:
     short_name = obj.get_short_name() if hasattr(obj, "get_short_name") else None
     return f"{short_name}_C" if short_name else ""
 
+def get_nested_property(container: Any, name: str, default: Any = None) -> Any:
+    if not hasattr(container, "properties"):
+        return default
+
+    for prop in container.properties:
+        if prop.name == name:
+            return prop.value
+    return default
+
+def get_market_sell_orders(structure: Any) -> Dict[str, Dict[str, Any]]:
+    orders_by_item_uuid: Dict[str, Dict[str, Any]] = {}
+    trade_data = structure.object.get_property_value("MyTradeData")
+    sell_orders = get_nested_property(trade_data, "SellOrders")
+    if not hasattr(sell_orders, "properties"):
+        return orders_by_item_uuid
+
+    for order in sell_orders.properties:
+        order_data = order.value
+        item_ref = get_nested_property(order_data, "OrderItemRef")
+        item_uuid = getattr(item_ref, "value", None)
+        if not item_uuid:
+            continue
+
+        orders_by_item_uuid[str(item_uuid)] = {
+            "seller": get_nested_property(order_data, "OwnerName"),
+            "price_per_unit": get_nested_property(order_data, "PricePerUnit"),
+        }
+
+    return orders_by_item_uuid
+
 def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
     if not isinstance(structure, StructureWithInventory):
         return []
@@ -361,14 +391,21 @@ def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
     except Exception:
         return []
 
+    sell_orders = get_market_sell_orders(structure)
     items: List[Dict[str, Any]] = []
     for item in inventory_items:
         item_obj = getattr(item, "object", None)
+        item_uuid = str(getattr(item_obj, "uuid", ""))
+        sell_order = sell_orders.get(item_uuid, {})
+        price_per_unit = sell_order.get("price_per_unit")
         items.append(
             {
-                "id": str(getattr(item_obj, "uuid", "")),
+                "id": item_uuid,
                 "item": asv_class_name(item),
                 "quantity": int(getattr(item, "quantity", 1) or 1),
+                "seller": sell_order.get("seller"),
+                "price_per_unit": price_per_unit,
+                "price_unit": "Hexagon" if price_per_unit is not None else None,
                 "blueprint": getattr(item_obj, "blueprint", "") or "",
             }
         )

@@ -1,0 +1,4 @@
+/Game/PrimalEarth/CoreBlueprints/NPCZoneManagerBlueprint_Cave.NPCZoneManagerBlueprint_Cave_C
+/Game/PrimalEarth/CoreBlueprints/NPCZoneManagerBlueprint_Land.NPCZoneManagerBlueprint_Land_C
+/Game/PrimalEarth/CoreBlueprints/NPCZoneManagerBlueprint_Water.NPCZoneManagerBlueprint_Water_C
+/Script/ShooterGame.NPCZoneManager
