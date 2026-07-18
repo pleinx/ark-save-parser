@@ -84,6 +84,7 @@ def build_argparser() -> argparse.ArgumentParser:
 # ---------- Configuration ----------
 
 SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
+STRUCTURE_INVENTORY_EXPORT_CLASSES = {"Market_C", "Bookshelf_C"}
 
 MAP_NAME_MAPPING: Dict[str, ArkMap] = {
     "Aberration_WP": ArkMap.ABERRATION,
@@ -344,6 +345,35 @@ def json_default(o: Any):
         return str(o)
     return str(o)
 
+def asv_class_name(obj: Any) -> str:
+    short_name = obj.get_short_name() if hasattr(obj, "get_short_name") else None
+    return f"{short_name}_C" if short_name else ""
+
+def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
+    if not isinstance(structure, StructureWithInventory):
+        return []
+
+    try:
+        inventory = structure.inventory
+        if inventory is None or getattr(inventory, "object", None) is None:
+            return []
+        inventory_items = list(inventory.items.values())
+    except Exception:
+        return []
+
+    items: List[Dict[str, Any]] = []
+    for item in inventory_items:
+        item_obj = getattr(item, "object", None)
+        items.append(
+            {
+                "id": str(getattr(item_obj, "uuid", "")),
+                "item": asv_class_name(item),
+                "quantity": int(getattr(item, "quantity", 1) or 1),
+                "blueprint": getattr(item_obj, "blueprint", "") or "",
+            }
+        )
+    return items
+
 # ---------- Exporter: Players ----------
 
 def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple[str, int]:
@@ -431,6 +461,7 @@ def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tu
     ark_map = MAP_NAME_MAPPING.get(map_key)
 
     out: List[Dict[str, Any]] = []
+    inventory_out: List[Dict[str, Any]] = []
     for structure in structure_api.get_all().values():
         owner_name = structure.object.get_property_value("OwnerName")
         if owner_name is None:
@@ -440,25 +471,47 @@ def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tu
             continue
 
         created = parse_asa_stamp(structure.object.get_property_value("OriginalPlacedTimeStamp", 0))
-        (lat, lon), ccc, _ = resolve_coords_xyz_to_map(structure, ark_map)
+        (lat, lon), ccc, biom = resolve_coords_xyz_to_map(structure, ark_map)
+        structure_id = str(structure.uuid)
+        structure_class = asv_class_name(structure)
 
-        out.append(
-            {
+        entry = {
+            "id": structure_id,
+            "tribeid": tribe_id,
+            "tribe": owner_name,
+            "struct": structure_class,
+            "name": structure.object.get_property_value("BoxName"),
+            "lat": lat,
+            "lon": lon,
+            "ccc": ccc,
+            "created": created,
+            "inventory": [],
+        }
+        if ark_map == ArkMap.GENESIS1:
+            entry["biom"] = biom
+
+        out.append(entry)
+
+        if structure_class in STRUCTURE_INVENTORY_EXPORT_CLASSES:
+            inventory_entry = {
+                "id": structure_id,
                 "tribeid": tribe_id,
                 "tribe": owner_name,
-                "struct": f"{structure.get_short_name()}_C",
+                "struct": structure_class,
                 "name": structure.object.get_property_value("BoxName"),
-                "lat": lat,
-                "lon": lon,
-                "ccc": ccc,
-                "created": created,
-                "inventory": [],
+                "items": export_structure_inventory_items(structure),
             }
-        )
+            if ark_map == ArkMap.GENESIS1:
+                inventory_entry["biom"] = biom
+            inventory_out.append(inventory_entry)
 
     payload = {"map": map_folder, "data": out}
     path = export_folder / "Structures.json"
     atomic_write_json(payload, path, export_folder)
+
+    inventory_payload = {"map": map_folder, "data": inventory_out}
+    inventory_path = export_folder / "StructuresInventory.json"
+    atomic_write_json(inventory_payload, inventory_path, export_folder)
     return ("Structures.json", len(out))
 
 # ---------- Hilfsfunktionen (Tamed) ----------

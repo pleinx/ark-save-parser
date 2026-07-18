@@ -36,6 +36,7 @@ args = parser.parse_args()
 MAP_NAME_MAPPING = {
     "Aberration_WP": ArkMap.ABERRATION,
     "Extinction_WP": ArkMap.EXTINCTION,
+    "Genesis_WP": ArkMap.GENESIS1,
     "TheIsland_WP": ArkMap.THE_ISLAND,
     "Ragnarok_WP": ArkMap.RAGNAROK,
     "ScorchedEarth_WP": ArkMap.SCORCHED_EARTH,
@@ -49,21 +50,21 @@ def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
     return save_path.parent.name, save_path.stem
 
 
-def resolve_coords(structure: Any, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str]:
-    """Return (lat, lon) and ccc string for a structure."""
+def resolve_coords(structure: Any, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str, str]:
+    """Return (lat, lon), ccc string, and biome for a structure."""
     if not getattr(structure, "location", None):
-        return (0.0, 0.0), ""
+        return (0.0, 0.0), "", ""
     loc = structure.location
     ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
     if ark_map is None:
-        return (0.0, 0.0), ccc
+        return (0.0, 0.0), ccc, ""
     try:
         coords = loc.as_map_coords(ark_map)
         if coords is not None:
-            return (coords.lat, coords.long), ccc
+            return (coords.lat, coords.long), ccc, getattr(coords, "sub_map_name", None) or ""
     except Exception:
-        return (0.0, 0.0), ccc
-    return (0.0, 0.0), ccc
+        return (0.0, 0.0), ccc, ""
+    return (0.0, 0.0), ccc, ""
 
 
 def parse_created(ts: Optional[str]) -> Optional[str]:
@@ -106,7 +107,7 @@ for structure in structure_api.get_all().values():
         continue
 
     created = parse_created(structure.object.get_property_value("OriginalPlacedTimeStamp", 0))
-    (lat, lon), ccc = resolve_coords(structure, ark_map)
+    (lat, lon), ccc, biom = resolve_coords(structure, ark_map)
 
     entry = {
         "tribeid": tribe_id,
@@ -119,6 +120,8 @@ for structure in structure_api.get_all().values():
         "created": created,
         "inventory": [],
     }
+    if ark_map == ArkMap.GENESIS1:
+        entry["biom"] = biom
     out_data.append(entry)
 
 # ---------- WRITE JSON (atomic) ----------
