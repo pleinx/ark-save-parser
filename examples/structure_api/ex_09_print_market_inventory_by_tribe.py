@@ -128,7 +128,7 @@ def main() -> None:
         markets_by_tribe[(tribe_id, tribe_name)].append(structure)
 
     if not markets_by_tribe:
-        print(f"Keine {MARKET_CLASS} Strukturen gefunden.")
+        print(f"No {MARKET_CLASS} structures found.")
         return
 
     for (tribe_id, tribe_name), markets in sorted(markets_by_tribe.items(), key=lambda entry: (entry[0][1], entry[0][0] or 0)):
@@ -136,21 +136,21 @@ def main() -> None:
 
         for market in sorted(markets, key=lambda m: str(m.uuid)):
             lat, lon = get_market_coords(market)
-            print(f"Markt Lat: {lat:.2f} Lon: {lon:.2f}")
+            print(f"Market Lat: {lat:.2f} Lon: {lon:.2f}")
             if DEBUG_MARKET_DATA:
                 debug_market_data(market)
 
             items = get_inventory_items(market)
             if not items:
-                print("- Keine Items")
+                print("- No items")
             else:
                 for item in items:
                     price = item["price_per_unit"]
                     if price is None:
-                        print(f"- {item['item']} x{item['quantity']} - kein SellOrder-Preis gefunden")
+                        print(f"- {item['item']} x{item['quantity']} - no sell order price found")
                     else:
                         seller = item["order_owner"] or "Unknown"
-                        print(f"- {item['item']} x{item['quantity']} - {price} Hexagons/Stk. ({item['total_price']} gesamt) - Seller: {seller}")
+                        print(f"- {item['item']} x{item['quantity']} - {price} Hexagons each ({item['total_price']} total) - Seller: {seller}")
 
         print()
 
