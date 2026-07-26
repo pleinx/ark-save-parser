@@ -85,6 +85,10 @@ def build_argparser() -> argparse.ArgumentParser:
 
 SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
 STRUCTURE_INVENTORY_EXPORT_CLASSES = {"Market_C", "Bookshelf_C"}
+DINO_CLASS_SEX_OVERRIDES = {
+    "Lumina_Character_BP_C": "Female",
+    "Umbra_Character_BP_C": "Male",
+}
 
 MAP_NAME_MAPPING: Dict[str, ArkMap] = {
     "Aberration_WP": ArkMap.ABERRATION,
@@ -349,6 +353,59 @@ def asv_class_name(obj: Any) -> str:
     short_name = obj.get_short_name() if hasattr(obj, "get_short_name") else None
     return f"{short_name}_C" if short_name else ""
 
+def debug_dump_property_container(label: str, container: Any) -> None:
+    print(f"[DEBUG][tamed] {label}", flush=True)
+    props = getattr(container, "properties", None)
+    if not props:
+        print("  <no properties>", flush=True)
+        return
+
+    for index, prop in enumerate(props):
+        prop_dump = {
+            "index": index,
+            "name": getattr(prop, "name", None),
+            "type": getattr(prop, "type", None),
+            "value": getattr(prop, "value", None),
+        }
+        print(json.dumps(prop_dump, indent=2, default=json_default), flush=True)
+
+def debug_dump_tamed_dino(loop_dino_id: Any, dino: Any) -> None:
+    dino_json = dino.to_json_obj()
+    dino_obj = getattr(dino, "object", None)
+    stats_obj = getattr(getattr(dino, "stats", None), "object", None)
+    cryopod = getattr(dino, "cryopod", None)
+    cryopod_obj = getattr(cryopod, "object", None)
+
+    summary = {
+        "loop_dino_id": str(loop_dino_id),
+        "dino_uuid": str(getattr(dino, "uuid", "")),
+        "type": type(dino).__name__,
+        "short_name": dino.get_short_name() if hasattr(dino, "get_short_name") else None,
+        "tamed_name": getattr(dino, "tamed_name", None),
+        "blueprint": getattr(dino_obj, "blueprint", None),
+        "is_female_attr": getattr(dino, "is_female", None),
+        "bIsFemale_property": dino_obj.get_property_value("bIsFemale", None) if dino_obj else None,
+        "bIsFemale_json": dino_json.get("bIsFemale"),
+        "gender_from_attr": "Female" if getattr(dino, "is_female", False) else "Male",
+        "is_cryopodded": getattr(dino, "is_cryopodded", None),
+        "cryopod_uuid": str(getattr(cryopod, "uuid", "")) if cryopod else None,
+        "cryopod_blueprint": getattr(cryopod_obj, "blueprint", None),
+        "cryopod_owner_inv_uuid": str(getattr(cryopod, "owner_inv_uuid", "")) if cryopod else None,
+    }
+
+    print("[DEBUG][tamed] SUMMARY", flush=True)
+    print(json.dumps(summary, indent=2, default=json_default), flush=True)
+    print("[DEBUG][tamed] DINO JSON", flush=True)
+    print(json.dumps(dino_json, indent=2, default=json_default), flush=True)
+    debug_dump_property_container("DINO OBJECT PROPERTIES", dino_obj)
+    debug_dump_property_container("STATUS OBJECT PROPERTIES", stats_obj)
+
+def resolve_dino_sex(dino: Any, dino_class: str) -> str:
+    override = DINO_CLASS_SEX_OVERRIDES.get(dino_class)
+    if override is not None:
+        return override
+    return "Female" if getattr(dino, "is_female", False) else "Male"
+
 def get_nested_property(container: Any, name: str, default: Any = None) -> Any:
     if not hasattr(container, "properties"):
         return default
@@ -588,8 +645,8 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 
     # Read all possible cryopod storages to override later the right tribe_id (transfer-bug) and coords
     structure_api = StructureApi(save)
-    possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C', 'IceBox_C', 'StorageBox_Large_C', 'LinkedStorage_C', 'StorageBox_Small_C', 'StorageBox_Huge_C']
-    #possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C']
+    #possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C', 'IceBox_C', 'StorageBox_Large_C', 'LinkedStorage_C', 'StorageBox_Small_C', 'StorageBox_Huge_C']
+    possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C']
     config = GameObjectReaderConfiguration(blueprint_name_filter=lambda name: name is not None and any(cls in name for cls in possible_cryopod_storages))
 
 #     config = GameObjectReaderConfiguration(
@@ -677,7 +734,7 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             "imprint": float(getattr(dino, "percentage_imprinted", 0.0) or 0.0),
             "creature": dino_class,
             "name": getattr(dino, "tamed_name", "") or "",
-            "sex": "Female" if getattr(dino, "is_female", False) else "Male",
+            "sex": resolve_dino_sex(dino, dino_class),
             "base": getattr(getattr(dino, "stats", None), "base_level", None),
             "lvl": getattr(getattr(dino, "stats", None), "current_level", None),
             "lat": lat,
@@ -771,7 +828,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
             {
                 "id": int_id if int_id is not None else str(dino_id),
                 "creature": dino_class,
-                "sex": "Female" if dino.is_female else "Male",
+                "sex": resolve_dino_sex(dino, dino_class),
                 "lvl": (s.base_level if s else None),
                 "lat": coords[0],
                 "lon": coords[1],
