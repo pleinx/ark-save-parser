@@ -53,7 +53,7 @@ _KNOWN_SPECIAL_CASES = [
     "/Game/Water/Vessels/Brig/BrigShipPlayerFollowingBP_Miniboss.BrigShipPlayerFollowingBP_Miniboss_C",
     "/Game/Water/Vessels/Sloop/SloopShipBP.SloopShipBP_C",
     "/Game/Dragontopia/Dragons/Eclipsar/Lumina/Lumina_Character_BP.Lumina_Character_BP_C",
-    "/Game/Dragontopia/Dragons/Eclipsar/Umbra/Umbra_Character_BP.Umbra_Character_BP_C",
+    "/Game/Dragontopia/Dragons/Eclipsar/Umbra/Umbra_Character_BP.Umbra_Character_BP_C"
 ]
 
 
