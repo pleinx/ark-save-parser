@@ -83,6 +83,20 @@ class DinoApi:
     def is_applicable_bp(blueprint: str) -> bool:
         return DinoApi._DEFAULT_CONFIG.blueprint_name_filter(blueprint)
 
+    @staticmethod
+    def _get_tamed_reader_config(include_cryopodded: bool = True, only_cryopodded: bool = False) -> GameObjectReaderConfiguration:
+        if only_cryopodded:
+            property_names = ["CustomItemDatas"]
+        else:
+            property_names = ["TamedTimeStamp", "TamingTeamID"]
+            if include_cryopodded:
+                property_names.append("CustomItemDatas")
+
+        return GameObjectReaderConfiguration(
+            blueprint_name_filter=lambda name: name is not None and DinoApi.is_applicable_bp(name),
+            property_names=property_names,
+        )
+
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         reuse = False
 
@@ -94,18 +108,18 @@ class DinoApi:
             config = self._DEFAULT_CONFIG
 
         objects = self.save.get_game_objects(config)
-        
+
         if reuse:
             self.all_objects = objects
 
         return objects
-    
+
     def get_by_uuid(self, uuid: UUID) -> Optional[Dino]:
         object = self.save.get_game_object_by_id(uuid)
 
         if object is None:
             return None
-        
+
         dino = None
         if "_Character_" in object.blueprint or (object.blueprint in _KNOWN_SPECIAL_CASES):
             if uuid in self.parsed_dinos:
@@ -122,7 +136,7 @@ class DinoApi:
         ArkSaveLogger.api_log("Retrieving all dinos from save...")
 
         objects = self.get_all_objects(config)
-        
+
         dinos = {}
 
         if self.all_objects and len(objects) != len(self.all_objects):
@@ -131,31 +145,31 @@ class DinoApi:
         # Classify objects into categories for parallel processing
         dino_objects_to_parse: List[Tuple[UUID, ArkGameObject, bool, bool]] = []  # (uuid, obj, is_tamed, is_baby)
         cryopod_objects_to_parse: List[Tuple[UUID, ArkGameObject]] = []  # (uuid, obj)
-        
+
         for key, obj in objects.items():
 
             if not only_cryopodded and (("_Character_" in obj.blueprint)  or (obj.blueprint in _KNOWN_SPECIAL_CASES)):
                 is_tamed = (obj.get_property_value("TamedTimeStamp") is not None) or (obj.get_property_value("TamingTeamID") is not None)
                 is_baby = obj.get_property_value("bIsBaby", False)
-                
+
                 if obj.uuid in self.parsed_dinos:
                     if (is_tamed and include_tamed) or (not is_tamed and include_wild):
                         dinos[key] = self.parsed_dinos[obj.uuid]
                 elif (is_tamed and include_tamed) or (not is_tamed and include_wild):
                     if not is_baby or include_babies:
                         dino_objects_to_parse.append((key, obj, is_tamed, is_baby))
-            
+
             elif ("PrimalItem_SCSCryopod" in obj.blueprint or "PrimalItem_WeaponEmptyCryopod" in obj.blueprint or "ItemDinoball.ItemDinoball_C" in obj.blueprint) and include_cryos and include_tamed:
                 if not obj.get_property_value("bIsEngram", default=False) and obj.get_property_value("CustomItemDatas") is not None:
                     if obj.uuid in self.parsed_cryopods:
                         self._collect_cached_cryopod(self.parsed_cryopods[obj.uuid], key, dinos, include_babies)
                     else:
                         cryopod_objects_to_parse.append((key, obj))
-        
+
         # Parse dinos - parallel when GIL is disabled
         if dino_objects_to_parse:
             self._parse_dinos_batch(dino_objects_to_parse, dinos, max_workers, bypass_inventory)
-        
+
         # Parse cryopods - parallel when GIL is disabled
         if cryopod_objects_to_parse:
             self._parse_cryopods_batch(cryopod_objects_to_parse, dinos, include_babies, max_workers)
@@ -276,20 +290,31 @@ class DinoApi:
                     filtered_dinos[key] = dino
 
         return filtered_dinos
-    
+
     def get_all_wild(self) -> Dict[UUID, Dino]:
         return self.get_all(include_cryos=False, include_tamed=False)
 
     def get_all_wild_tamables(self) -> Dict[UUID, Dino]:
         return {key: dino for key, dino in self.get_all_wild().items() if dino.get_short_name() + "_C" not in Dinos.non_tameable.all_bps}
-    
-    def get_all_tamed(self, include_cryopodded = True, only_cryopodded = False) -> Dict[UUID, TamedDino]:
-        all = self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True, include_babies=True, only_cryopodded=only_cryopodded)
+
+    def get_all_tamed(self, include_cryopodded=True, only_cryopodded=False) -> Dict[UUID, TamedDino]:
+        config = self._get_tamed_reader_config(
+            include_cryopodded=include_cryopodded,
+            only_cryopodded=only_cryopodded,
+        )
+        dinos = self.get_all(
+            config=config,
+            include_cryos=include_cryopodded,
+            include_wild=False,
+            include_tamed=True,
+            include_babies=True,
+            only_cryopodded=only_cryopodded,
+        )
 
         if only_cryopodded:
-            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino) and dino.cryopod is not None}
+            tamed = {key: dino for key, dino in dinos.items() if isinstance(dino, TamedDino) and dino.cryopod is not None}
         else:
-            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino)}
+            tamed = {key: dino for key, dino in dinos.items() if isinstance(dino, TamedDino)}
 
         if include_cryopodded:
             return tamed
