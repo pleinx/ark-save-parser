@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import configparser
+import hashlib
 import json
 import os
 import re
@@ -44,6 +46,7 @@ from arkparse.api import StructureApi
 from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
 from arkparse.object_model.structures import StructureWithInventory
 from arkparse.parsing import GameObjectReaderConfiguration
+from arkparse.parsing.struct.actor_transform import MapCoordinateParameters
 
 def get_mp_context():
     """
@@ -79,11 +82,20 @@ def build_argparser() -> argparse.ArgumentParser:
     # Tamed-spezifisch
     p.add_argument("--withcryo", type=int, default=1, choices=(0, 1),
                    help="1 = Cryopod-Dinos einbeziehen beim Tamed-Export, 1 = mit Cryos (Default). Für andere Typen ignoriert.")
+    p.add_argument("--output-mode", type=str, default="json",
+                   help='Ausgabeziel: "json", "db" oder "json,db" (DB aktuell nur für tamed)')
+    p.add_argument("--db-config", type=Path, default=None,
+                   help="Pfad zu db.ini für --output-mode=db")
+    p.add_argument("--debug", type=str, default="",
+                   help='Debug-Ausgaben, kommasepariert. Aktuell: "performance"')
     return p
 
 # ---------- Configuration ----------
 
 SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
+SUPPORTED_OUTPUT_MODES = {"json", "db"}
+SUPPORTED_DEBUG_MODES = {"performance"}
+DB_TAMED_TABLE_DEFAULT = "pix_ark_sa_tamed_arkparse"
 STRUCTURE_INVENTORY_EXPORT_CLASSES = {"Market_C", "Bookshelf_C"}
 DINO_CLASS_SEX_OVERRIDES = {
     "Lumina_Character_BP_C": "Female",
@@ -133,6 +145,109 @@ def ensure_export_folder(base_output: Path, serverkey: str) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     return out
 
+def parse_output_modes(mode_arg: str) -> set[str]:
+    parts = [p.strip().lower() for p in (mode_arg or "json").split(",") if p.strip()]
+    if not parts:
+        raise ValueError("--output-mode darf nicht leer sein")
+
+    modes = set(parts)
+    unknown = modes - SUPPORTED_OUTPUT_MODES
+    if unknown:
+        raise ValueError(f"Unbekannte --output-mode Werte: {', '.join(sorted(unknown))}. Erlaubt: json, db")
+    return modes
+
+def validate_output_modes(types: List[str], output_modes: set[str]) -> None:
+    if "db" not in output_modes:
+        return
+
+    if "json" not in output_modes:
+        unsupported = [t for t in types if t != "tamed"]
+        if unsupported:
+            raise ValueError(
+                "--output-mode=db unterstützt aktuell nur type=tamed. "
+                f"Nicht unterstützt: {', '.join(unsupported)}"
+            )
+
+def parse_debug_modes(debug_arg: str) -> set[str]:
+    parts = [p.strip().lower() for p in (debug_arg or "").split(",") if p.strip()]
+    if not parts:
+        return set()
+
+    modes = set(parts)
+    unknown = modes - SUPPORTED_DEBUG_MODES
+    if unknown:
+        raise ValueError(f"Unbekannte --debug Werte: {', '.join(sorted(unknown))}. Erlaubt: performance")
+    return modes
+
+def perf_enabled(debug_modes: Optional[set[str]]) -> bool:
+    return bool(debug_modes and "performance" in debug_modes)
+
+def perf_log(debug_modes: Optional[set[str]], scope: str, label: str, started_at: float, count: Optional[int] = None) -> None:
+    if not perf_enabled(debug_modes):
+        return
+
+    count_part = f" ({count} items)" if count is not None else ""
+    print(f"[PERF][{scope}] {label}: {time() - started_at:.3f}s{count_part}", flush=True)
+
+def perf_add(timings: Optional[Dict[str, float]], label: str, started_at: float) -> None:
+    if timings is None:
+        return
+    timings[label] = timings.get(label, 0.0) + (time() - started_at)
+
+def perf_log_breakdown(debug_modes: Optional[set[str]], scope: str, label: str, timings: Optional[Dict[str, float]]) -> None:
+    if not perf_enabled(debug_modes) or not timings:
+        return
+
+    for item_label, elapsed in sorted(timings.items(), key=lambda item: item[1], reverse=True):
+        print(f"[PERF][{scope}] {label}.{item_label}: {elapsed:.3f}s", flush=True)
+
+def _config_or_env(config: configparser.ConfigParser, key: str, env_name: str, default: Optional[str] = None) -> Optional[str]:
+    env_value = os.environ.get(env_name)
+    if env_value not in (None, ""):
+        return env_value
+    if config.has_option("database", key):
+        return config.get("database", key)
+    return default
+
+def load_db_options(config_path: Optional[Path]) -> Dict[str, Any]:
+    config = configparser.ConfigParser()
+    if config_path is not None:
+        if not config_path.exists():
+            raise FileNotFoundError(f"DB config nicht gefunden: {config_path}")
+        config.read(config_path, encoding="utf-8")
+
+    database = _config_or_env(config, "database", "ARK_DB_NAME")
+    user = _config_or_env(config, "user", "ARK_DB_USER")
+    password = _config_or_env(config, "password", "ARK_DB_PASSWORD", "")
+
+    missing = [name for name, value in (("database", database), ("user", user)) if not value]
+    if missing:
+        source = str(config_path) if config_path else "Environment"
+        raise ValueError(f"DB config unvollständig ({source}), fehlt: {', '.join(missing)}")
+
+    table = _config_or_env(config, "tamed_table", "ARK_DB_TAMED_TABLE", DB_TAMED_TABLE_DEFAULT)
+    if not re.fullmatch(r"[A-Za-z0-9_]+", table or ""):
+        raise ValueError(f"Ungültiger Tabellenname in DB config: {table!r}")
+
+    batch_size_raw = _config_or_env(config, "batch_size", "ARK_DB_BATCH_SIZE", "1000")
+    try:
+        batch_size = max(1, int(batch_size_raw or 1000))
+    except ValueError:
+        raise ValueError(f"Ungültige DB batch_size: {batch_size_raw!r}") from None
+
+    return {
+        "host": _config_or_env(config, "host", "ARK_DB_HOST", "127.0.0.1"),
+        "port": int(_config_or_env(config, "port", "ARK_DB_PORT", "3306") or 3306),
+        "database": database,
+        "user": user,
+        "password": password,
+        "charset": _config_or_env(config, "charset", "ARK_DB_CHARSET", "utf8mb4"),
+        "unix_socket": _config_or_env(config, "unix_socket", "ARK_DB_UNIX_SOCKET"),
+        "connect_timeout": int(_config_or_env(config, "connect_timeout", "ARK_DB_CONNECT_TIMEOUT", "10") or 10),
+        "tamed_table": table,
+        "batch_size": batch_size,
+    }
+
 def atomic_write_json(obj: Any, target: Path, export_folder: Path) -> None:
     """
     CIFS-robustes atomic write (orjson-only):
@@ -177,6 +292,156 @@ def atomic_write_json(obj: Any, target: Path, export_folder: Path) -> None:
                 os.unlink(tmp_name)
             except Exception:
                 pass
+
+def _connect_mariadb(db_options: Dict[str, Any]):
+    try:
+        import pymysql
+    except ImportError as exc:
+        raise RuntimeError(
+            "Für --output-mode=db wird PyMySQL benötigt. Installation z.B.: pip install pymysql"
+        ) from exc
+
+    connect_args = {
+        "host": db_options["host"],
+        "port": db_options["port"],
+        "user": db_options["user"],
+        "password": db_options["password"],
+        "database": db_options["database"],
+        "charset": db_options["charset"],
+        "autocommit": False,
+        "connect_timeout": db_options["connect_timeout"],
+    }
+    if db_options.get("unix_socket"):
+        connect_args["unix_socket"] = db_options["unix_socket"]
+
+    return pymysql.connect(**connect_args)
+
+def _chunked_rows(rows: List[Tuple[Any, ...]], size: int):
+    for start in range(0, len(rows), size):
+        yield rows[start:start + size]
+
+def build_tamed_db_rows(payload: Dict[str, Any], serverkey: str) -> List[Tuple[Any, ...]]:
+    rows: List[Tuple[Any, ...]] = []
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    for data in payload.get("data") or []:
+        if not isinstance(data, dict):
+            continue
+
+        try:
+            tribe_id = int(data.get("tribeid") or 0)
+        except (TypeError, ValueError):
+            tribe_id = 0
+
+        dino_id_value = data.get("id")
+        dino_id = "" if isinstance(dino_id_value, (dict, list, tuple)) or dino_id_value is None else str(dino_id_value).strip()
+
+        if tribe_id <= 0 or tribe_id == 2000000000 or dino_id == "":
+            continue
+
+        tame_id = "TID_" + hashlib.md5((dino_id + serverkey).encode("utf-8")).hexdigest()
+        sub_map_value = data.get("biom")
+        sub_map = "" if isinstance(sub_map_value, (dict, list, tuple)) or sub_map_value is None else str(sub_map_value).strip()
+        tamed_time = data.get("tamedAtTime") or now
+
+        try:
+            lvl = int(data.get("lvl") or 0)
+        except (TypeError, ValueError):
+            lvl = 0
+
+        rows.append(
+            (
+                tame_id,
+                dino_id,
+                tribe_id,
+                serverkey,
+                sub_map or None,
+                json.dumps(data, ensure_ascii=True, default=json_default, separators=(",", ":")),
+                str(data.get("creature") or ""),
+                str(data.get("sex") or ""),
+                lvl,
+                str(tamed_time),
+            )
+        )
+
+    return rows
+
+def write_tamed_mariadb(
+    payload: Dict[str, Any],
+    serverkey: str,
+    db_options: Dict[str, Any],
+    debug_modes: Optional[set[str]] = None,
+) -> int:
+    rows_started = time()
+    rows = build_tamed_db_rows(payload, serverkey)
+    perf_log(debug_modes, "db:tamed", "build rows", rows_started, len(rows))
+    if not payload.get("data"):
+        return 0
+    if not rows:
+        raise ValueError(f"Keine gültigen tamed DB-Zeilen für serverkey={serverkey}; breche DB-Sync sicherheitshalber ab")
+
+    table = f"`{db_options['tamed_table']}`"
+    insert_sql = f"""
+        INSERT INTO {table}(
+            `tamed_id`, `dino_id`, `tribe_id`, `server_key`, `sub_map`, `json_data`,
+            `creature`, `sex`, `lvl`, `last_update_date`, `created_date`
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            `dino_id` = VALUES(dino_id),
+            `tribe_id` = VALUES(tribe_id),
+            `server_key` = VALUES(server_key),
+            `sub_map` = VALUES(sub_map),
+            `json_data` = VALUES(json_data),
+            `creature` = VALUES(creature),
+            `sex` = VALUES(sex),
+            `lvl` = VALUES(lvl),
+            `last_update_date` = VALUES(last_update_date),
+            `created_date` = VALUES(created_date)
+    """
+
+    connect_started = time()
+    conn = _connect_mariadb(db_options)
+    perf_log(debug_modes, "db:tamed", "connect", connect_started)
+    try:
+        with conn.cursor() as cursor:
+            now_started = time()
+            cursor.execute("SELECT NOW()")
+            sync_started_at = cursor.fetchone()[0]
+            perf_log(debug_modes, "db:tamed", "select sync timestamp", now_started)
+            upsert_started = time()
+            upserted_rows = 0
+            chunk_count = 0
+            for chunk in _chunked_rows(rows, db_options["batch_size"]):
+                chunk_count += 1
+                upserted_rows += len(chunk)
+                cursor.executemany(insert_sql, [row[:9] + (sync_started_at, row[9]) for row in chunk])
+            perf_log(debug_modes, "db:tamed", f"upsert chunks={chunk_count}", upsert_started, upserted_rows)
+            cleanup_started = time()
+            cursor.execute(
+                f"DELETE FROM {table} WHERE `server_key` = %s AND (`last_update_date` IS NULL OR `last_update_date` < %s)",
+                (serverkey, sync_started_at),
+            )
+            perf_log(debug_modes, "db:tamed", "cleanup stale rows", cleanup_started, cursor.rowcount)
+        commit_started = time()
+        conn.commit()
+        perf_log(debug_modes, "db:tamed", "commit", commit_started)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return len(rows)
+
+def describe_export_target(export_type: str, filename: str, export_folder: Path, output_modes: set[str], db_options: Optional[Dict[str, Any]]) -> str:
+    targets: List[str] = []
+    if "json" in output_modes:
+        targets.append(str(export_folder / filename))
+    if "db" in output_modes and export_type == "tamed":
+        table = db_options["tamed_table"] if db_options else DB_TAMED_TABLE_DEFAULT
+        targets.append(f"MariaDB:{table}")
+    return " + ".join(targets) if targets else "(no output)"
 
 def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
     """Gibt (map_folder, map_key) zurück"""
@@ -335,6 +600,18 @@ def resolve_location_xyz_to_map(loc: Any, ark_map: Optional[ArkMap]) -> Tuple[Tu
     except Exception:
         pass
     return (0.0, 0.0), ccc, ""
+
+def resolve_location_xyz_to_map_cached(loc: Any, map_params: Optional[MapCoordinateParameters]) -> Tuple[Tuple[float, float], str, str]:
+    if not loc:
+        return (0.0, 0.0), "", ""
+    ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
+    if map_params is None:
+        return (0.0, 0.0), ccc, ""
+    try:
+        lat, lon, biom = map_params.transform_to(loc.x, loc.y, loc.z)
+        return (lat, lon), ccc, biom or ""
+    except Exception:
+        return (0.0, 0.0), ccc, ""
 
 def resolve_coords_xyz_to_map(latlon_provider, ark_map: Optional[ArkMap]) -> Tuple[Tuple[float, float], str, str]:
     return resolve_location_xyz_to_map(getattr(latlon_provider, "location", None), ark_map)
@@ -620,8 +897,8 @@ def _tamed_owner_field(dino: Any, field: str) -> Optional[Any]:
         return None
 
 def _tamed_location(dino: Any) -> Optional[Any]:
-    if not getattr(dino, "is_cryopodded", False) and getattr(dino, "location", None):
-        return dino.location
+    if not getattr(dino, "is_cryopodded", False):
+        return getattr(dino, "location", None)
     cryo_dino = getattr(getattr(dino, "cryopod", None), "dino", None)
     return getattr(cryo_dino, "location", None)
 
@@ -639,11 +916,77 @@ def _extract_added_stat_values(stat_string: str) -> Dict[str, int]:
                 continue
     return result
 
+def _dino_property(dino: Any, name: str, default: Any = None) -> Any:
+    obj = getattr(dino, "object", None)
+    if obj is None:
+        return default
+    return obj.get_property_value(name, default)
+
+def _dino_blueprint(dino: Any) -> str:
+    return getattr(getattr(dino, "object", None), "blueprint", "") or ""
+
+def _dino_class_name(dino: Any) -> str:
+    dino_class_short = getattr(dino, "tamed_name", "") or ""
+    blueprint = _dino_blueprint(dino)
+    return blueprint.split(".")[-1] or dino_class_short
+
+def _dino_color_set_indices(dino: Any) -> List[Optional[int]]:
+    if hasattr(dino, "get_color_set_indices"):
+        return dino.get_color_set_indices()
+    return []
+
+def _dino_gene_traits(dino: Any) -> List[str]:
+    gene_traits = getattr(dino, "gene_traits", None)
+    if gene_traits is None:
+        return []
+    return [str(trait) for trait in gene_traits]
+
+def _dino_stat_values(dino: Any) -> str:
+    stat_values = getattr(getattr(dino, "stats", None), "stat_values", None)
+    if stat_values is None:
+        return ""
+    return stat_values.to_string_all()
+
+def build_tamed_reader_config(with_cryo: bool) -> GameObjectReaderConfiguration:
+    property_names = ["TamedTimeStamp", "TamingTeamID"]
+    if with_cryo:
+        property_names.append("CustomItemDatas")
+
+    return GameObjectReaderConfiguration(
+        blueprint_name_filter=lambda name: name is not None and DinoApi.is_applicable_bp(name),
+        property_names=property_names,
+    )
+
+def get_all_tamed_narrow(dino_api: DinoApi, with_cryo: bool) -> Dict[UUID, TamedDino]:
+    dinos = dino_api.get_all(
+        config=build_tamed_reader_config(with_cryo),
+        include_cryos=with_cryo,
+        include_wild=False,
+        include_tamed=True,
+        include_babies=True,
+    )
+    tamed = {key: dino for key, dino in dinos.items() if isinstance(dino, TamedDino)}
+    if with_cryo:
+        return tamed
+    return {key: dino for key, dino in tamed.items() if getattr(dino, "cryopod", None) is None}
+
 # ---------- Exporter: Tamed ----------
-def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo: bool) -> Tuple[str, int]:
+def export_tamed(
+    save: AsaSave,
+    export_folder: Path,
+    save_path: Path,
+    with_cryo: bool,
+    output_modes: Optional[set[str]] = None,
+    serverkey: Optional[str] = None,
+    db_options: Optional[Dict[str, Any]] = None,
+    debug_modes: Optional[set[str]] = None,
+) -> Tuple[str, int]:
+    export_started = time()
+    output_modes = output_modes or {"json"}
     dino_api = DinoApi(save)
 
     # Read all possible cryopod storages to override later the right tribe_id (transfer-bug) and coords
+    storage_started = time()
     structure_api = StructureApi(save)
     #possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C', 'IceBox_C', 'StorageBox_Large_C', 'LinkedStorage_C', 'StorageBox_Small_C', 'StorageBox_Huge_C']
     possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C']
@@ -658,7 +1001,9 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
 #     )
 
     storages = structure_api.get_all(config)
+    perf_log(debug_modes, "tamed", "cryopod storage scan", storage_started, len(storages))
 
+    inventory_map_started = time()
     inventory_map: Dict[UUID, Dict[str, Any]] = {}
     for key, storage in storages.items():
         if not isinstance(storage, StructureWithInventory):
@@ -669,39 +1014,53 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
                 "tribe_id": storage.owner.tribe_id,
                 "location": storage.owner.properties.location,
             }
+    perf_log(debug_modes, "tamed", "cryopod inventory map", inventory_map_started, len(inventory_map))
 
     map_folder = save_path.parent.name
     map_key = save_path.stem
     ark_map = MAP_NAME_MAPPING.get(map_key)
     if ark_map is None:
         raise ValueError(f"Unknown map key '{map_key}' for tamed export")
+    map_params = MapCoordinateParameters(ark_map)
 
     tamed_out: List[Dict[str, Any]] = []
 
     # mit/ohne Cryo je nach Flag
-    for dino_id, dino in dino_api.get_all_tamed(with_cryo).items():
+    api_started = time()
+    all_tamed = get_all_tamed_narrow(dino_api, with_cryo)
+    perf_log(debug_modes, "tamed", "dino_api.get_all_tamed_narrow", api_started, len(all_tamed))
+
+    payload_started = time()
+    payload_timings: Optional[Dict[str, float]] = {} if perf_enabled(debug_modes) else None
+    for dino_id, dino in all_tamed.items():
+        segment_started = time()
         if not isinstance(dino, (TamedDino, TamedBaby)):
+            perf_add(payload_timings, "type_filter", segment_started)
             continue
 
-        dino_json = dino.to_json_obj()
-
-        dino_class_short = getattr(dino, "tamed_name", "") or ""
-        dino_class = dino_json.get("ItemArchetype").split(".")[-1] or dino_class_short
+        dino_class = _dino_class_name(dino)
 
         is_cryo = bool(getattr(dino, "is_cryopodded", False))
+        perf_add(payload_timings, "class_and_flags", segment_started)
 
         # Position (keine Weltposition bei Cryo)
-        loc = _tamed_location(dino)
+        segment_started = time()
+        loc = None if is_cryo else _tamed_location(dino)
         ccc, lat, lon, biom = "", 0.0, 0.0, ""
-        if loc is not None and not is_cryo:
-            (lat, lon), ccc, biom = resolve_location_xyz_to_map(loc, ark_map)
+        if loc is not None:
+            (lat, lon), ccc, biom = resolve_location_xyz_to_map_cached(loc, map_params)
+        perf_add(payload_timings, "location", segment_started)
 
+        segment_started = time()
         tribe_id = _tamed_owner_field(dino, "tamer_tribe_id")
         tamer_name = _tamed_owner_field(dino, "tamer_string")
-        if (tribe_id == 2000000000 and dino_json.get("TargetingTeam")) or tribe_id is None:
-            tribe_id = dino_json.get("TargetingTeam")
+        targeting_team = _dino_property(dino, "TargetingTeam")
+        if (tribe_id == 2000000000 and targeting_team) or tribe_id is None:
+            tribe_id = targeting_team
+        perf_add(payload_timings, "owner", segment_started)
 
         # Override tribe_id if the dino was transferred
+        segment_started = time()
         if(is_cryo):
             if dino.cryopod.owner_inv_uuid and dino.cryopod.owner_inv_uuid in inventory_map:
                 map_entry = inventory_map[dino.cryopod.owner_inv_uuid]
@@ -709,9 +1068,11 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
                 loc = map_entry["location"]
 
                 if loc is not None:
-                    (lat, lon), ccc, biom = resolve_location_xyz_to_map(loc, ark_map)
+                    (lat, lon), ccc, biom = resolve_location_xyz_to_map_cached(loc, map_params)
+        perf_add(payload_timings, "cryo_override", segment_started)
 
         # Stats (wild/tamed/mut)
+        segment_started = time()
         stats_entry: Dict[str, int] = {}
         for prefix, field in STAT_NAME_MAP.items():
             base = getattr(getattr(getattr(dino, "stats", None), "base_stat_points", None), field, 0)
@@ -720,23 +1081,45 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             stats_entry[f"{prefix}-w"] = int(base or 0)
             stats_entry[f"{prefix}-t"] = int(add or 0)
             stats_entry[f"{prefix}-m"] = int(mut or 0)
+        perf_add(payload_timings, "stats", segment_started)
 
-        c0, c1, c2, c3, c4, c5 = pad_colors_literal_eval(dino_json.get("ColorSetIndices", "[]"))
+        segment_started = time()
+        c0, c1, c2, c3, c4, c5 = pad_colors_literal_eval(_dino_color_set_indices(dino))
 
-        extracted_traits = format_gene_traits(dino_json.get("GeneTraits", []))
+        extracted_traits = format_gene_traits(_dino_gene_traits(dino))
+        perf_add(payload_timings, "colors_traits", segment_started)
+
+        segment_started = time()
+        tribe_name = _dino_property(dino, "TribeName", "") or ""
+        imprinter = _tamed_owner_field(dino, "imprinter") or ""
+        imprint = float(getattr(dino, "percentage_imprinted", 0.0) or 0.0)
+        tamed_name = getattr(dino, "tamed_name", "") or ""
+        sex = resolve_dino_sex(dino, dino_class)
+        dino_stats = getattr(dino, "stats", None)
+        base_level = getattr(dino_stats, "base_level", None)
+        current_level = getattr(dino_stats, "current_level", None)
+        maturation = float(getattr(dino, "percentage_matured", 100.0)) if isinstance(dino, TamedBaby) else "100"
+        tamed_at_time = parse_asa_stamp(_dino_property(dino, "TamedTimeStamp"))
+        mut_f = _dino_property(dino, "RandomMutationsFemale")
+        mut_m = _dino_property(dino, "RandomMutationsMale")
+        perf_add(payload_timings, "entry_properties", segment_started)
+
+        segment_started = time()
+        is_wild_tamed_value = bool(is_wild_tamed(dino))
+        perf_add(payload_timings, "is_wild_tamed", segment_started)
 
         entry: Dict[str, Any] = {
             "id": str(dino_id),
             "tribeid": tribe_id,
-            "tribe": dino_json.get("TribeName", "") or "",
+            "tribe": tribe_name,
             "tamer": tamer_name or "",
-            "imprinter": _tamed_owner_field(dino, "imprinter") or "",
-            "imprint": float(getattr(dino, "percentage_imprinted", 0.0) or 0.0),
+            "imprinter": imprinter,
+            "imprint": imprint,
             "creature": dino_class,
-            "name": getattr(dino, "tamed_name", "") or "",
-            "sex": resolve_dino_sex(dino, dino_class),
-            "base": getattr(getattr(dino, "stats", None), "base_level", None),
-            "lvl": getattr(getattr(dino, "stats", None), "current_level", None),
+            "name": tamed_name,
+            "sex": sex,
+            "base": base_level,
+            "lvl": current_level,
             "lat": lat,
             "lon": lon,
             "biom": biom,
@@ -745,26 +1128,38 @@ def export_tamed(save: AsaSave, export_folder: Path, save_path: Path, with_cryo:
             "isMating": False,
             "isNeutered": False,
             "isClone": False,
-            "maturation": float(getattr(dino, "percentage_matured", 100.0)) if isinstance(dino, TamedBaby) else "100",
+            "maturation": maturation,
             "traits": ", ".join(extracted_traits) if extracted_traits else [],
             "inventory": [],
-            "is_wild_tamed": bool(is_wild_tamed(dino)),
-            "tamedAtTime": parse_asa_stamp(dino_json.get("TamedTimeStamp")),
-            "mut-f": dino_json.get("RandomMutationsFemale"),
-            "mut-m": dino_json.get("RandomMutationsMale"),
+            "is_wild_tamed": is_wild_tamed_value,
+            "tamedAtTime": tamed_at_time,
+            "mut-f": mut_f,
+            "mut-m": mut_m,
             "c0": c0, "c1": c1, "c2": c2, "c3": c3, "c4": c4, "c5": c5,
         }
         entry.update(stats_entry)
 
-        stat_values = dino_json.get("StatValues", "")
+        segment_started = time()
+        stat_values = _dino_stat_values(dino)
         if stat_values:
             entry.update(_extract_added_stat_values(stat_values))
+        perf_add(payload_timings, "added_stat_values", segment_started)
 
         tamed_out.append(entry)
+    perf_log(debug_modes, "tamed", "build payload", payload_started, len(tamed_out))
+    perf_log_breakdown(debug_modes, "tamed", "build payload", payload_timings)
 
     payload = {"map": map_folder, "data": tamed_out}
     path = export_folder / "TamedDinos.json"
-    atomic_write_json(payload, path, export_folder)
+    if "json" in output_modes:
+        json_started = time()
+        atomic_write_json(payload, path, export_folder)
+        perf_log(debug_modes, "tamed", "write json", json_started, len(tamed_out))
+    if "db" in output_modes:
+        if not serverkey or db_options is None:
+            raise ValueError("DB Export für tamed benötigt serverkey und db_options")
+        write_tamed_mariadb(payload, serverkey, db_options, debug_modes)
+    perf_log(debug_modes, "tamed", "total export_tamed", export_started, len(tamed_out))
     return ("TamedDinos.json", len(tamed_out))
 
 # ---------- Exporter: Wild ----------
@@ -896,8 +1291,19 @@ def prioritize_types(types: List[str]) -> List[str]:
 
 # ---------- Child-Worker (eigener Prozess) ----------
 
-def child_worker(t: str, save_path: Path, export_folder: Path, max_level: int, max_level_bionic: int,
-                 with_cryo_flag: int, result_q: mp.Queue):
+def child_worker(
+    t: str,
+    save_path: Path,
+    export_folder: Path,
+    max_level: int,
+    max_level_bionic: int,
+    with_cryo_flag: int,
+    output_modes: set[str],
+    serverkey: str,
+    db_options: Optional[Dict[str, Any]],
+    debug_modes: set[str],
+    result_q: mp.Queue,
+):
     """
     Läuft in einem separaten Prozess:
       - öffnet ein eigenes AsaSave
@@ -908,10 +1314,12 @@ def child_worker(t: str, save_path: Path, export_folder: Path, max_level: int, m
     t0 = time()
     try:
         export_folder.mkdir(parents=True, exist_ok=True)
+        save_started = time()
         save = AsaSave(save_path)
+        perf_log(debug_modes, t, "load AsaSave", save_started)
 
         if t == "tamed":
-            fname, cnt = export_tamed(save, export_folder, save_path, bool(with_cryo_flag))
+            fname, cnt = export_tamed(save, export_folder, save_path, bool(with_cryo_flag), output_modes, serverkey, db_options, debug_modes)
         elif t == "players":
             fname, cnt = export_players(save, export_folder, save_path)
         elif t == "structures":
@@ -921,7 +1329,8 @@ def child_worker(t: str, save_path: Path, export_folder: Path, max_level: int, m
         else:
             raise ValueError(f"Unsupported export type: {t}")
         elapsed = time() - t0
-        result_q.put({"type": t, "ok": True, "file": str(export_folder / fname), "count": cnt, "elapsed": elapsed, "error": None})
+        target = describe_export_target(t, fname, export_folder, output_modes, db_options)
+        result_q.put({"type": t, "ok": True, "file": target, "count": cnt, "elapsed": elapsed, "error": None})
     except Exception as e:
         elapsed = time() - t0
         result_q.put({"type": t, "ok": False, "file": None, "count": 0, "elapsed": elapsed, "error": str(e)})
@@ -937,6 +1346,10 @@ def main() -> None:
 
     requested = parse_types(args.type)
     requested = prioritize_types(requested)
+    output_modes = parse_output_modes(args.output_mode)
+    debug_modes = parse_debug_modes(args.debug)
+    validate_output_modes(requested, output_modes)
+    db_options = load_db_options(args.db_config) if "db" in output_modes and "tamed" in requested else None
     export_folder = ensure_export_folder(args.output, args.serverkey)
     save_path = args.savegame
 
@@ -952,7 +1365,8 @@ def main() -> None:
         for t in requested:
             p = ctx.Process(
                 target=child_worker,
-                args=(t, save_path, export_folder, args.max_level, args.max_level_bionic, args.withcryo, result_q),
+                args=(t, save_path, export_folder, args.max_level, args.max_level_bionic, args.withcryo,
+                      output_modes, args.serverkey, db_options, debug_modes, result_q),
             )
             p.start()
             procs.append(p)
@@ -963,7 +1377,7 @@ def main() -> None:
             msg = result_q.get()  # blockiert bis ein Ergebnis kommt
             t = msg["type"]
             if msg["ok"]:
-                results.append((Path(msg["file"]).name, msg["count"]))
+                results.append((str(msg["file"]), msg["count"]))
                 print(f"[OK][{t}] Wrote {msg['count']:>6} entries in {msg['elapsed']:.2f} secs -> {msg['file']}")
             else:
                 print(f"[ERR][{t}] in {msg['elapsed']:.2f} secs -> {msg['error']}")
@@ -975,12 +1389,14 @@ def main() -> None:
 
     else:
         # Seriell: Save einmal laden und wiederverwenden (ressourcenschonend)
+        save_started = time()
         save = AsaSave(save_path)
+        perf_log(debug_modes, "main", "load AsaSave", save_started)
 
         for t in requested:
             t0 = time()
             if t == "tamed":
-                res = export_tamed(save, export_folder, save_path, bool(args.withcryo))
+                res = export_tamed(save, export_folder, save_path, bool(args.withcryo), output_modes, args.serverkey, db_options, debug_modes)
             elif t == "structures":
                 res = export_structures(save, export_folder, save_path)
             elif t == "players":
@@ -990,8 +1406,9 @@ def main() -> None:
             else:
                 raise ValueError(f"Unsupported export type: {t}")
             elapsed = time() - t0
-            results.append(res)
-            print(f"[OK][{t}] Wrote {res[1]:>6} entries in {elapsed:.2f} secs -> {export_folder / res[0]}")
+            target = describe_export_target(t, res[0], export_folder, output_modes, db_options)
+            results.append((target, res[1]))
+            print(f"[OK][{t}] Wrote {res[1]:>6} entries in {elapsed:.2f} secs -> {target}")
 
     # Zusammenfassung
     total_entries = sum(c for _, c in results)
