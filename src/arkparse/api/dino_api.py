@@ -83,6 +83,20 @@ class DinoApi:
     def is_applicable_bp(blueprint: str) -> bool:
         return DinoApi._DEFAULT_CONFIG.blueprint_name_filter(blueprint)
 
+    @staticmethod
+    def _get_tamed_reader_config(include_cryopodded: bool = True, only_cryopodded: bool = False) -> GameObjectReaderConfiguration:
+        if only_cryopodded:
+            property_names = ["CustomItemDatas"]
+        else:
+            property_names = ["TamedTimeStamp", "TamingTeamID"]
+            if include_cryopodded:
+                property_names.append("CustomItemDatas")
+
+        return GameObjectReaderConfiguration(
+            blueprint_name_filter=lambda name: name is not None and DinoApi.is_applicable_bp(name),
+            property_names=property_names,
+        )
+
     def get_all_objects(self, config: GameObjectReaderConfiguration = None) -> Dict[UUID, ArkGameObject]:
         reuse = False
 
@@ -282,14 +296,25 @@ class DinoApi:
 
     def get_all_wild_tamables(self) -> Dict[UUID, Dino]:
         return {key: dino for key, dino in self.get_all_wild().items() if dino.get_short_name() + "_C" not in Dinos.non_tameable.all_bps}
-    
-    def get_all_tamed(self, include_cryopodded = True, only_cryopodded = False) -> Dict[UUID, TamedDino]:
-        all = self.get_all(include_cryos=include_cryopodded, include_wild=False, include_tamed=True, include_babies=True, only_cryopodded=only_cryopodded)
+
+    def get_all_tamed(self, include_cryopodded=True, only_cryopodded=False) -> Dict[UUID, TamedDino]:
+        config = self._get_tamed_reader_config(
+            include_cryopodded=include_cryopodded,
+            only_cryopodded=only_cryopodded,
+        )
+        dinos = self.get_all(
+            config=config,
+            include_cryos=include_cryopodded,
+            include_wild=False,
+            include_tamed=True,
+            include_babies=True,
+            only_cryopodded=only_cryopodded,
+        )
 
         if only_cryopodded:
-            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino) and dino.cryopod is not None}
+            tamed = {key: dino for key, dino in dinos.items() if isinstance(dino, TamedDino) and dino.cryopod is not None}
         else:
-            tamed = {key: dino for key, dino in all.items() if isinstance(dino, TamedDino)}
+            tamed = {key: dino for key, dino in dinos.items() if isinstance(dino, TamedDino)}
 
         if include_cryopodded:
             return tamed
