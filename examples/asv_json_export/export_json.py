@@ -37,6 +37,11 @@ import multiprocessing as mp
 from pprint import pprint
 from datetime import datetime, timedelta
 
+try:
+    import orjson
+except ImportError:
+    orjson = None
+
 # arkparse
 from arkparse.saves.asa_save import AsaSave
 from arkparse.enums import ArkMap
@@ -83,7 +88,7 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--withcryo", type=int, default=1, choices=(0, 1),
                    help="1 = Cryopod-Dinos einbeziehen beim Tamed-Export, 1 = mit Cryos (Default). Für andere Typen ignoriert.")
     p.add_argument("--output-mode", type=str, default="json",
-                   help='Ausgabeziel: "json", "db" oder "json,db" (DB aktuell nur für tamed)')
+                   help='Ausgabeziel: "json", "db" oder "json,db" (DB aktuell für players, tamed und structures)')
     p.add_argument("--db-config", type=Path, default=None,
                    help="Pfad zu db.ini für --output-mode=db")
     p.add_argument("--debug", type=str, default="",
@@ -95,7 +100,11 @@ def build_argparser() -> argparse.ArgumentParser:
 SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
 SUPPORTED_OUTPUT_MODES = {"json", "db"}
 SUPPORTED_DEBUG_MODES = {"performance"}
+DB_SUPPORTED_TYPES = {"players", "tamed", "structures"}
+DB_PLAYERS_TABLE_DEFAULT = "pix_ark_sa_players"
 DB_TAMED_TABLE_DEFAULT = "pix_ark_sa_tamed_arkparse"
+DB_STRUCTURES_TABLE_DEFAULT = "pix_ark_sa_structures"
+DB_STRUCTURE_INVENTORIES_TABLE_DEFAULT = "pix_ark_sa_structure_inventories"
 STRUCTURE_INVENTORY_EXPORT_CLASSES = {"Market_C", "Bookshelf_C"}
 DINO_CLASS_SEX_OVERRIDES = {
     "Lumina_Character_BP_C": "Female",
@@ -140,6 +149,29 @@ EPOCH_LOGIN = datetime(2019, 1, 1, tzinfo=timezone.utc)  # für Player LoginTime
 
 # ---------- Utilities ----------
 
+def _orjson_options(append_newline: bool = False) -> int:
+    if orjson is None:
+        return 0
+
+    options = orjson.OPT_NON_STR_KEYS | orjson.OPT_PASSTHROUGH_DATETIME
+    if append_newline:
+        options |= orjson.OPT_APPEND_NEWLINE
+    return options
+
+def json_dumps_bytes(obj: Any, append_newline: bool = False, ensure_ascii: bool = False) -> bytes:
+    if orjson is not None:
+        return orjson.dumps(obj, default=json_default, option=_orjson_options(append_newline))
+
+    text = json.dumps(
+        obj,
+        ensure_ascii=ensure_ascii,
+        default=json_default,
+        separators=(",", ":"),
+    )
+    if append_newline:
+        text += "\n"
+    return text.encode("utf-8")
+
 def ensure_export_folder(base_output: Path, serverkey: str) -> Path:
     out = base_output / serverkey
     out.mkdir(parents=True, exist_ok=True)
@@ -161,10 +193,10 @@ def validate_output_modes(types: List[str], output_modes: set[str]) -> None:
         return
 
     if "json" not in output_modes:
-        unsupported = [t for t in types if t != "tamed"]
+        unsupported = [t for t in types if t not in DB_SUPPORTED_TYPES]
         if unsupported:
             raise ValueError(
-                "--output-mode=db unterstützt aktuell nur type=tamed. "
+                "--output-mode=db unterstützt aktuell nur type=players,tamed,structures. "
                 f"Nicht unterstützt: {', '.join(unsupported)}"
             )
 
@@ -209,6 +241,11 @@ def _config_or_env(config: configparser.ConfigParser, key: str, env_name: str, d
         return config.get("database", key)
     return default
 
+def _validate_table_name(table: Optional[str], label: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9_]+", table or ""):
+        raise ValueError(f"Ungültiger Tabellenname in DB config ({label}): {table!r}")
+    return str(table)
+
 def load_db_options(config_path: Optional[Path]) -> Dict[str, Any]:
     config = configparser.ConfigParser()
     if config_path is not None:
@@ -225,9 +262,22 @@ def load_db_options(config_path: Optional[Path]) -> Dict[str, Any]:
         source = str(config_path) if config_path else "Environment"
         raise ValueError(f"DB config unvollständig ({source}), fehlt: {', '.join(missing)}")
 
-    table = _config_or_env(config, "tamed_table", "ARK_DB_TAMED_TABLE", DB_TAMED_TABLE_DEFAULT)
-    if not re.fullmatch(r"[A-Za-z0-9_]+", table or ""):
-        raise ValueError(f"Ungültiger Tabellenname in DB config: {table!r}")
+    tamed_table = _validate_table_name(
+        _config_or_env(config, "tamed_table", "ARK_DB_TAMED_TABLE", DB_TAMED_TABLE_DEFAULT),
+        "tamed_table",
+    )
+    players_table = _validate_table_name(
+        _config_or_env(config, "players_table", "ARK_DB_PLAYERS_TABLE", DB_PLAYERS_TABLE_DEFAULT),
+        "players_table",
+    )
+    structures_table = _validate_table_name(
+        _config_or_env(config, "structures_table", "ARK_DB_STRUCTURES_TABLE", DB_STRUCTURES_TABLE_DEFAULT),
+        "structures_table",
+    )
+    structure_inventories_table = _validate_table_name(
+        _config_or_env(config, "structure_inventories_table", "ARK_DB_STRUCTURE_INVENTORIES_TABLE", DB_STRUCTURE_INVENTORIES_TABLE_DEFAULT),
+        "structure_inventories_table",
+    )
 
     batch_size_raw = _config_or_env(config, "batch_size", "ARK_DB_BATCH_SIZE", "1000")
     try:
@@ -244,7 +294,10 @@ def load_db_options(config_path: Optional[Path]) -> Dict[str, Any]:
         "charset": _config_or_env(config, "charset", "ARK_DB_CHARSET", "utf8mb4"),
         "unix_socket": _config_or_env(config, "unix_socket", "ARK_DB_UNIX_SOCKET"),
         "connect_timeout": int(_config_or_env(config, "connect_timeout", "ARK_DB_CONNECT_TIMEOUT", "10") or 10),
-        "tamed_table": table,
+        "players_table": players_table,
+        "tamed_table": tamed_table,
+        "structures_table": structures_table,
+        "structure_inventories_table": structure_inventories_table,
         "batch_size": batch_size,
     }
 
@@ -261,15 +314,8 @@ def atomic_write_json(obj: Any, target: Path, export_folder: Path) -> None:
 
     tmp_name: Optional[str] = None
     try:
-        with NamedTemporaryFile("w", encoding="utf-8", delete=False, dir=str(target_parent), suffix=".tmp") as tf:
-            json.dump(
-                obj,
-                tf,
-                ensure_ascii=False,
-                default=json_default,
-                separators=(",", ":"),
-            )
-            tf.write("\n")
+        with NamedTemporaryFile("wb", delete=False, dir=str(target_parent), suffix=".tmp") as tf:
+            tf.write(json_dumps_bytes(obj, append_newline=True))
             tmp_name = tf.name
 
         # Primary attempt
@@ -320,6 +366,118 @@ def _chunked_rows(rows: List[Tuple[Any, ...]], size: int):
     for start in range(0, len(rows), size):
         yield rows[start:start + size]
 
+def _safe_scalar(value: Any, default: str = "") -> str:
+    if value is None or isinstance(value, (dict, list, tuple)):
+        return default
+    return str(value).strip()
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+def _json_for_db(value: Any, ensure_ascii: bool = False) -> str:
+    return json_dumps_bytes(value, ensure_ascii=ensure_ascii).decode("utf-8")
+
+def build_players_db_rows(payload: Dict[str, Any], serverkey: str) -> List[Tuple[Any, ...]]:
+    rows: List[Tuple[Any, ...]] = []
+
+    for data in payload.get("data") or []:
+        if not isinstance(data, dict):
+            continue
+
+        steamid = _safe_scalar(data.get("steamid"))
+        if not steamid:
+            continue
+
+        rows.append(
+            (
+                steamid,
+                _safe_int(data.get("playerid")),
+                _safe_scalar(data.get("name")),
+                _json_for_db(data.get("achievements"), ensure_ascii=True),
+                _json_for_db(data.get("inventory"), ensure_ascii=True),
+                _safe_int(data.get("lvl")),
+                serverkey,
+                _safe_float(data.get("lat")),
+                _safe_float(data.get("lon")),
+            )
+        )
+
+    return rows
+
+def write_players_mariadb(
+    payload: Dict[str, Any],
+    serverkey: str,
+    db_options: Dict[str, Any],
+    debug_modes: Optional[set[str]] = None,
+) -> int:
+    rows_started = time()
+    rows = build_players_db_rows(payload, serverkey)
+    perf_log(debug_modes, "db:players", "build rows", rows_started, len(rows))
+
+    if not payload.get("data"):
+        return 0
+    if not rows:
+        raise ValueError(f"Keine gültigen players DB-Zeilen für serverkey={serverkey}; breche DB-Sync sicherheitshalber ab")
+
+    table = f"`{db_options['players_table']}`"
+    insert_sql = f"""
+        INSERT INTO {table}(
+            `player_id`, `player_ign_id`, `player_name`, `archivements_json`, `inventory_json`,
+            `level`, `server_key`, `lat`, `lon`, `last_update_date`, `created_date`
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            `player_ign_id` = VALUES(player_ign_id),
+            `server_key` = VALUES(server_key),
+            `player_name` = VALUES(player_name),
+            `level` = GREATEST(`level`, VALUES(level)),
+            `last_update_date` = VALUES(last_update_date)
+    """
+
+    connect_started = time()
+    conn = _connect_mariadb(db_options)
+    perf_log(debug_modes, "db:players", "connect", connect_started)
+    try:
+        with conn.cursor() as cursor:
+            now_started = time()
+            cursor.execute("SELECT NOW()")
+            sync_started_at = cursor.fetchone()[0]
+            perf_log(debug_modes, "db:players", "select sync timestamp", now_started)
+
+            upsert_started = time()
+            chunk_count = 0
+            for chunk in _chunked_rows(rows, db_options["batch_size"]):
+                chunk_count += 1
+                cursor.executemany(insert_sql, [row + (sync_started_at, sync_started_at) for row in chunk])
+            perf_log(debug_modes, "db:players", f"upsert chunks={chunk_count}", upsert_started, len(rows))
+
+            cleanup_started = time()
+            cursor.execute(
+                f"DELETE FROM {table} WHERE `server_key` = %s AND (`last_update_date` IS NULL OR `last_update_date` < %s)",
+                (serverkey, sync_started_at),
+            )
+            perf_log(debug_modes, "db:players", "cleanup stale rows", cleanup_started, cursor.rowcount)
+
+        commit_started = time()
+        conn.commit()
+        perf_log(debug_modes, "db:players", "commit", commit_started)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return len(rows)
+
 def build_tamed_db_rows(payload: Dict[str, Any], serverkey: str) -> List[Tuple[Any, ...]]:
     rows: List[Tuple[Any, ...]] = []
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -356,7 +514,7 @@ def build_tamed_db_rows(payload: Dict[str, Any], serverkey: str) -> List[Tuple[A
                 tribe_id,
                 serverkey,
                 sub_map or None,
-                json.dumps(data, ensure_ascii=True, default=json_default, separators=(",", ":")),
+                _json_for_db(data, ensure_ascii=True),
                 str(data.get("creature") or ""),
                 str(data.get("sex") or ""),
                 lvl,
@@ -434,13 +592,225 @@ def write_tamed_mariadb(
 
     return len(rows)
 
+def build_structures_db_rows(payload: Dict[str, Any], serverkey: str) -> List[Tuple[Any, ...]]:
+    rows: List[Tuple[Any, ...]] = []
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    for data in payload.get("data") or []:
+        if not isinstance(data, dict):
+            continue
+
+        structure_class = _safe_scalar(data.get("struct"))
+        if structure_class in {"DeathItemCache_C", "DeathItemCache_PlayerDeath_C"}:
+            continue
+
+        structure_uuid = _safe_scalar(data.get("id"))
+        structure_name_value = data.get("name")
+        structure_name = None if isinstance(structure_name_value, (dict, list, tuple)) else structure_name_value
+        structure_name_for_hash = _safe_scalar(structure_name_value)
+        ccc = _safe_scalar(data.get("ccc"))
+        sub_map = _safe_scalar(data.get("biom"))
+        structure_id = "SID_" + hashlib.md5(
+            (serverkey + ccc + structure_class + structure_name_for_hash).encode("utf-8")
+        ).hexdigest()
+
+        json_data = {
+            "id": structure_uuid,
+            "struct": structure_class,
+            "name": structure_name,
+            "lat": round(_safe_float(data.get("lat")), 2),
+            "lon": round(_safe_float(data.get("lon")), 2),
+            "locked": data.get("locked") if data.get("locked") is not None else True,
+            "ccc": ccc,
+        }
+        if sub_map:
+            json_data["biom"] = sub_map
+        if data.get("inventory"):
+            json_data["inventory"] = data.get("inventory")
+
+        rows.append(
+            (
+                structure_id,
+                structure_uuid or None,
+                _safe_int(data.get("tribeid")),
+                serverkey,
+                sub_map or None,
+                _json_for_db(json_data),
+                _safe_scalar(data.get("created")) or now,
+            )
+        )
+
+    return rows
+
+def build_structure_inventory_db_rows(payload: Dict[str, Any], serverkey: str) -> List[Tuple[Any, ...]]:
+    rows: List[Tuple[Any, ...]] = []
+
+    for data in payload.get("data") or []:
+        if not isinstance(data, dict):
+            continue
+
+        structure_uuid = _safe_scalar(data.get("id"))
+        if not structure_uuid:
+            continue
+
+        structure_class = _safe_scalar(data.get("struct"))
+        if not structure_class:
+            continue
+
+        tribe_name = _safe_scalar(data.get("tribe"))
+        structure_name = _safe_scalar(data.get("name"))
+        sub_map = _safe_scalar(data.get("biom"))
+        items = data.get("items") if isinstance(data.get("items"), list) else []
+
+        json_data = {
+            "id": structure_uuid,
+            "tribeid": _safe_int(data.get("tribeid")),
+            "tribe": tribe_name,
+            "struct": structure_class,
+            "name": structure_name or None,
+        }
+        if sub_map:
+            json_data["biom"] = sub_map
+
+        rows.append(
+            (
+                structure_uuid,
+                serverkey,
+                _safe_int(data.get("tribeid")),
+                tribe_name or None,
+                structure_class,
+                structure_name or None,
+                sub_map or None,
+                len(items),
+                _json_for_db(items),
+                _json_for_db(json_data),
+            )
+        )
+
+    return rows
+
+def write_structures_mariadb(
+    structures_payload: Dict[str, Any],
+    inventory_payload: Dict[str, Any],
+    serverkey: str,
+    db_options: Dict[str, Any],
+    debug_modes: Optional[set[str]] = None,
+) -> Tuple[int, int]:
+    rows_started = time()
+    structure_rows = build_structures_db_rows(structures_payload, serverkey)
+    perf_log(debug_modes, "db:structures", "build rows", rows_started, len(structure_rows))
+    inventory_rows_started = time()
+    inventory_rows = build_structure_inventory_db_rows(inventory_payload, serverkey)
+    perf_log(debug_modes, "db:structure_inventories", "build rows", inventory_rows_started, len(inventory_rows))
+
+    if not structures_payload.get("data"):
+        return 0, 0
+    if not structure_rows:
+        raise ValueError(f"Keine gültigen structures DB-Zeilen für serverkey={serverkey}; breche DB-Sync sicherheitshalber ab")
+
+    structures_table = f"`{db_options['structures_table']}`"
+    inventory_table = f"`{db_options['structure_inventories_table']}`"
+    structures_sql = f"""
+        INSERT INTO {structures_table}(
+            `structure_id`, `structure_uuid`, `tribe_id`, `server_key`, `sub_map`,
+            `json_data`, `last_update_date`, `created_date`
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            `structure_uuid` = VALUES(structure_uuid),
+            `server_key` = VALUES(server_key),
+            `tribe_id` = VALUES(tribe_id),
+            `sub_map` = VALUES(sub_map),
+            `json_data` = VALUES(json_data),
+            `last_update_date` = VALUES(last_update_date),
+            `created_date` = VALUES(created_date)
+    """
+    inventory_sql = f"""
+        INSERT INTO {inventory_table}(
+            `structure_uuid`, `server_key`, `tribe_id`, `tribe_name`, `struct`,
+            `structure_name`, `sub_map`, `items_count`, `items_json`, `json_data`,
+            `last_update_date`
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            `server_key` = VALUES(server_key),
+            `tribe_id` = VALUES(tribe_id),
+            `tribe_name` = VALUES(tribe_name),
+            `struct` = VALUES(struct),
+            `structure_name` = VALUES(structure_name),
+            `sub_map` = VALUES(sub_map),
+            `items_count` = VALUES(items_count),
+            `items_json` = VALUES(items_json),
+            `json_data` = VALUES(json_data),
+            `last_update_date` = VALUES(last_update_date)
+    """
+
+    connect_started = time()
+    conn = _connect_mariadb(db_options)
+    perf_log(debug_modes, "db:structures", "connect", connect_started)
+    try:
+        with conn.cursor() as cursor:
+            now_started = time()
+            cursor.execute("SELECT NOW()")
+            sync_started_at = cursor.fetchone()[0]
+            perf_log(debug_modes, "db:structures", "select sync timestamp", now_started)
+
+            upsert_started = time()
+            structure_chunk_count = 0
+            for chunk in _chunked_rows(structure_rows, db_options["batch_size"]):
+                structure_chunk_count += 1
+                cursor.executemany(structures_sql, [row[:6] + (sync_started_at, row[6]) for row in chunk])
+            perf_log(debug_modes, "db:structures", f"upsert chunks={structure_chunk_count}", upsert_started, len(structure_rows))
+
+            inventory_upsert_started = time()
+            inventory_chunk_count = 0
+            for chunk in _chunked_rows(inventory_rows, db_options["batch_size"]):
+                inventory_chunk_count += 1
+                cursor.executemany(inventory_sql, [row + (sync_started_at,) for row in chunk])
+            perf_log(debug_modes, "db:structure_inventories", f"upsert chunks={inventory_chunk_count}", inventory_upsert_started, len(inventory_rows))
+
+            cleanup_started = time()
+            cursor.execute(
+                f"DELETE FROM {structures_table} WHERE `server_key` = %s AND (`last_update_date` IS NULL OR `last_update_date` < %s)",
+                (serverkey, sync_started_at),
+            )
+            perf_log(debug_modes, "db:structures", "cleanup stale rows", cleanup_started, cursor.rowcount)
+
+            inventory_cleanup_started = time()
+            cursor.execute(
+                f"DELETE FROM {inventory_table} WHERE `server_key` = %s AND (`last_update_date` IS NULL OR `last_update_date` < %s)",
+                (serverkey, sync_started_at),
+            )
+            perf_log(debug_modes, "db:structure_inventories", "cleanup stale rows", inventory_cleanup_started, cursor.rowcount)
+
+        commit_started = time()
+        conn.commit()
+        perf_log(debug_modes, "db:structures", "commit", commit_started)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    return len(structure_rows), len(inventory_rows)
+
 def describe_export_target(export_type: str, filename: str, export_folder: Path, output_modes: set[str], db_options: Optional[Dict[str, Any]]) -> str:
     targets: List[str] = []
-    if "json" in output_modes:
+    if "json" in output_modes and export_type == "structures":
+        targets.append(f"{export_folder / 'Structures.json'} + {export_folder / 'StructuresInventory.json'}")
+    elif "json" in output_modes:
         targets.append(str(export_folder / filename))
     if "db" in output_modes and export_type == "tamed":
         table = db_options["tamed_table"] if db_options else DB_TAMED_TABLE_DEFAULT
         targets.append(f"MariaDB:{table}")
+    if "db" in output_modes and export_type == "players":
+        table = db_options["players_table"] if db_options else DB_PLAYERS_TABLE_DEFAULT
+        targets.append(f"MariaDB:{table}")
+    if "db" in output_modes and export_type == "structures":
+        structures_table = db_options["structures_table"] if db_options else DB_STRUCTURES_TABLE_DEFAULT
+        inventory_table = db_options["structure_inventories_table"] if db_options else DB_STRUCTURE_INVENTORIES_TABLE_DEFAULT
+        targets.append(f"MariaDB:{structures_table}")
+        targets.append(f"MariaDB:{inventory_table}")
     return " + ".join(targets) if targets else "(no output)"
 
 def get_map_key_from_savepath(save_path: Path) -> Tuple[str, str]:
@@ -747,7 +1117,16 @@ def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
 
 # ---------- Exporter: Players ----------
 
-def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple[str, int]:
+def export_players(
+    save: AsaSave,
+    export_folder: Path,
+    save_path: Path,
+    output_modes: Optional[set[str]] = None,
+    serverkey: Optional[str] = None,
+    db_options: Optional[Dict[str, Any]] = None,
+    debug_modes: Optional[set[str]] = None,
+) -> Tuple[str, int]:
+    output_modes = output_modes or {"json"}
     player_api = PlayerApi(save)
 
     # Tribe-Namen map
@@ -766,25 +1145,22 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
             continue
 
     players: List[Dict[str, Any]] = []
-    map_folder, _ = get_map_key_from_savepath(save_path)
+    map_folder, map_key = get_map_key_from_savepath(save_path)
+    ark_map = MAP_NAME_MAPPING.get(map_key)
+    if ark_map is None:
+        raise ValueError(f"Unknown map key '{map_key}' for players export")
+    map_params = MapCoordinateParameters(ark_map)
+
     for p in getattr(player_api, "players", []):
         if p.tribe is None:
             continue
-
-        map_key = save_path.stem
-        ark_map = MAP_NAME_MAPPING.get(map_key)
-        if ark_map is None:
-            raise ValueError(f"Unknown map key '{map_key}' for tamed export")
 
         lat = 0.0
         lon = 0.0
         ccc = ""
         loc = p.location
         if loc is not None:
-            ccc = f"{loc.x:.2f} {loc.y:.2f} {loc.z:.2f}"
-            coords = loc.as_map_coords(ark_map) if ark_map else None
-            lat = getattr(coords, "lat", 0.0) if coords else 0.0
-            lon = getattr(coords, "long", 0.0) if coords else 0.0
+            (lat, lon), ccc, _ = resolve_location_xyz_to_map_cached(loc, map_params)
 
         entry = {
             "playerid": str(p.id_),
@@ -821,15 +1197,32 @@ def export_players(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple
 
     payload = {"map": map_folder, "data": players}
     path = export_folder / "Players.json"
-    atomic_write_json(payload, path, export_folder)
+    if "json" in output_modes:
+        json_started = time()
+        atomic_write_json(payload, path, export_folder)
+        perf_log(debug_modes, "players", "write json", json_started, len(players))
+    if "db" in output_modes:
+        if not serverkey or db_options is None:
+            raise ValueError("DB Export für players benötigt serverkey und db_options")
+        write_players_mariadb(payload, serverkey, db_options, debug_modes)
     return ("Players.json", len(players))
 
 # ---------- Exporter: Structures ----------
 
-def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tuple[str, int]:
+def export_structures(
+    save: AsaSave,
+    export_folder: Path,
+    save_path: Path,
+    output_modes: Optional[set[str]] = None,
+    serverkey: Optional[str] = None,
+    db_options: Optional[Dict[str, Any]] = None,
+    debug_modes: Optional[set[str]] = None,
+) -> Tuple[str, int]:
+    output_modes = output_modes or {"json"}
     structure_api = StructureApi(save)
     map_folder, map_key = get_map_key_from_savepath(save_path)
     ark_map = MAP_NAME_MAPPING.get(map_key)
+    map_params = MapCoordinateParameters(ark_map) if ark_map else None
 
     out: List[Dict[str, Any]] = []
     inventory_out: List[Dict[str, Any]] = []
@@ -842,7 +1235,7 @@ def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tu
             continue
 
         created = parse_asa_stamp(structure.object.get_property_value("OriginalPlacedTimeStamp", 0))
-        (lat, lon), ccc, biom = resolve_coords_xyz_to_map(structure, ark_map)
+        (lat, lon), ccc, biom = resolve_location_xyz_to_map_cached(getattr(structure, "location", None), map_params)
         structure_id = str(structure.uuid)
         structure_class = asv_class_name(structure)
 
@@ -878,11 +1271,18 @@ def export_structures(save: AsaSave, export_folder: Path, save_path: Path) -> Tu
 
     payload = {"map": map_folder, "data": out}
     path = export_folder / "Structures.json"
-    atomic_write_json(payload, path, export_folder)
 
     inventory_payload = {"map": map_folder, "data": inventory_out}
     inventory_path = export_folder / "StructuresInventory.json"
-    atomic_write_json(inventory_payload, inventory_path, export_folder)
+    if "json" in output_modes:
+        json_started = time()
+        atomic_write_json(payload, path, export_folder)
+        atomic_write_json(inventory_payload, inventory_path, export_folder)
+        perf_log(debug_modes, "structures", "write json", json_started, len(out))
+    if "db" in output_modes:
+        if not serverkey or db_options is None:
+            raise ValueError("DB Export für structures benötigt serverkey und db_options")
+        write_structures_mariadb(payload, inventory_payload, serverkey, db_options, debug_modes)
     return ("Structures.json", len(out))
 
 # ---------- Hilfsfunktionen (Tamed) ----------
@@ -1189,6 +1589,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
 
     map_key = save_path.stem
     ark_map = MAP_NAME_MAPPING.get(map_key)
+    map_params = MapCoordinateParameters(ark_map) if ark_map else None
 
     out: List[Dict[str, Any]] = []
     for dino_id, dino in dino_api.get_all_wild_tamables().items():
@@ -1196,8 +1597,7 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
             continue
 
         lvl = dino.stats.base_level if dino.stats else None
-        dino_json = dino.to_json_obj()
-        dino_class = dino_json.get("ItemArchetype").split(".")[-1] or ""
+        dino_class = _dino_class_name(dino)
 
         if dino_class in TRASH_DINOS:
             continue
@@ -1206,18 +1606,18 @@ def export_wild(save: AsaSave, export_folder: Path, save_path: Path, cap_normal:
         if not wild_within_caps(dino_class, lvl, cap_normal, cap_bionic):
             continue
 
-        (lat, lon), ccc, biom = resolve_coords_xyz_to_map(dino, ark_map)
+        (lat, lon), ccc, biom = resolve_location_xyz_to_map_cached(getattr(dino, "location", None), map_params)
         coords = (lat, lon)
 
         s = dino.stats
-        colors = safe_color_indices(dino_json.get("ColorSetIndices"))
+        colors = safe_color_indices(_dino_color_set_indices(dino))
         try:
             int_id = int(str(dino_id))
             int_id = int_id if -(2**63) <= int_id < 2**63 else None
         except Exception:
             int_id = None
 
-        extracted_traits = format_gene_traits(dino_json.get("GeneTraits", []))
+        extracted_traits = format_gene_traits(_dino_gene_traits(dino))
 
         out.append(
             {
@@ -1321,9 +1721,9 @@ def child_worker(
         if t == "tamed":
             fname, cnt = export_tamed(save, export_folder, save_path, bool(with_cryo_flag), output_modes, serverkey, db_options, debug_modes)
         elif t == "players":
-            fname, cnt = export_players(save, export_folder, save_path)
+            fname, cnt = export_players(save, export_folder, save_path, output_modes, serverkey, db_options, debug_modes)
         elif t == "structures":
-            fname, cnt = export_structures(save, export_folder, save_path)
+            fname, cnt = export_structures(save, export_folder, save_path, output_modes, serverkey, db_options, debug_modes)
         elif t == "wild":
             fname, cnt = export_wild(save, export_folder, save_path, max_level, max_level_bionic)
         else:
@@ -1349,7 +1749,8 @@ def main() -> None:
     output_modes = parse_output_modes(args.output_mode)
     debug_modes = parse_debug_modes(args.debug)
     validate_output_modes(requested, output_modes)
-    db_options = load_db_options(args.db_config) if "db" in output_modes and "tamed" in requested else None
+    needs_db = "db" in output_modes and any(t in DB_SUPPORTED_TYPES for t in requested)
+    db_options = load_db_options(args.db_config) if needs_db else None
     export_folder = ensure_export_folder(args.output, args.serverkey)
     save_path = args.savegame
 
@@ -1398,9 +1799,9 @@ def main() -> None:
             if t == "tamed":
                 res = export_tamed(save, export_folder, save_path, bool(args.withcryo), output_modes, args.serverkey, db_options, debug_modes)
             elif t == "structures":
-                res = export_structures(save, export_folder, save_path)
+                res = export_structures(save, export_folder, save_path, output_modes, args.serverkey, db_options, debug_modes)
             elif t == "players":
-                res = export_players(save, export_folder, save_path)
+                res = export_players(save, export_folder, save_path, output_modes, args.serverkey, db_options, debug_modes)
             elif t == "wild":
                 res = export_wild(save, export_folder, save_path, args.max_level, args.max_level_bionic)
             else:

@@ -191,3 +191,4 @@ arkparse-fast-core/**
 .serena/
 **.zip
 .claude/
+db.local.ini
