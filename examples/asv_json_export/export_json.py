@@ -48,6 +48,7 @@ from arkparse.enums import ArkMap
 from arkparse.api.player_api import PlayerApi
 from arkparse.api.dino_api import DinoApi, Dino, TamedDino, TamedBaby
 from arkparse.api import StructureApi
+from arkparse.api._deviating_structures import _KNOWN_DEVIATING_STRUCTURE_BPS, _KNOWN_NONE_STRUCTURES
 from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
 from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.structures import StructureWithInventory
@@ -110,6 +111,7 @@ DB_TAMED_TABLE_DEFAULT = "pix_ark_sa_tamed_arkparse"
 DB_STRUCTURES_TABLE_DEFAULT = "pix_ark_sa_structures"
 DB_STRUCTURE_INVENTORIES_TABLE_DEFAULT = "pix_ark_sa_structure_inventories"
 STRUCTURE_INVENTORY_EXPORT_CLASSES = {"Market_C", "Bookshelf_C"}
+STRUCTURE_EXPORT_PREFILTER_PROPERTIES = ["OwnerName", "TargetingTeam"]
 DINO_CLASS_SEX_OVERRIDES = {
     "Lumina_Character_BP_C": "Female",
     "Umbra_Character_BP_C": "Male",
@@ -1006,6 +1008,31 @@ def asv_class_name(obj: Any) -> str:
     short_name = obj.get_short_name() if hasattr(obj, "get_short_name") else None
     return f"{short_name}_C" if short_name else ""
 
+def is_structure_export_blueprint(name: Optional[str]) -> bool:
+    if name is None:
+        return False
+
+    if name in _KNOWN_DEVIATING_STRUCTURE_BPS:
+        return True
+
+    return (
+        "Structures" in name
+        and ("PrimalItemStructure_" not in name or "PrimalItemStructure_ASR" in name)
+        and "/Skins/" not in name
+        and "PrimalInventory" not in name
+        and "/TreasureMap/" not in name
+        and "PrimalItemStructureSkin" not in name
+        and "PrimalItemResource" not in name
+        and "/TrainCarts/" not in name
+        and name not in _KNOWN_NONE_STRUCTURES
+    )
+
+def build_structure_export_reader_config() -> GameObjectReaderConfiguration:
+    return GameObjectReaderConfiguration(
+        blueprint_name_filter=is_structure_export_blueprint,
+        property_names=STRUCTURE_EXPORT_PREFILTER_PROPERTIES,
+    )
+
 def debug_dump_property_container(label: str, container: Any) -> None:
     print(f"[DEBUG][tamed] {label}", flush=True)
     props = getattr(container, "properties", None)
@@ -1267,13 +1294,16 @@ def export_structures(
     map_params = MapCoordinateParameters(ark_map) if ark_map else None
 
     objects_started = time()
-    structure_objects = structure_api.get_all_objects()
-    perf_log(debug_modes, "structures", "get_all_objects", objects_started, len(structure_objects))
+    structure_objects = structure_api.get_all_objects(build_structure_export_reader_config())
+    perf_log(debug_modes, "structures", "get_all_objects prefiltered", objects_started, len(structure_objects))
 
     out: List[Dict[str, Any]] = []
     inventory_out: List[Dict[str, Any]] = []
     payload_started = time()
     for structure_obj in structure_objects.values():
+        if structure_obj.get_property_value("bIsEngram") is not None:
+            continue
+
         owner_name = structure_obj.get_property_value("OwnerName")
         if owner_name is None:
             continue
