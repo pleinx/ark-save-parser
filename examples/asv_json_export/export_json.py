@@ -49,6 +49,7 @@ from arkparse.api.player_api import PlayerApi
 from arkparse.api.dino_api import DinoApi, Dino, TamedDino, TamedBaby
 from arkparse.api import StructureApi
 from arkparse.helpers.dino.is_wild_tamed import is_wild_tamed
+from arkparse.object_model.misc.inventory import Inventory
 from arkparse.object_model.structures import StructureWithInventory
 from arkparse.parsing import GameObjectReaderConfiguration
 from arkparse.parsing.struct.actor_transform import MapCoordinateParameters
@@ -88,7 +89,7 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--withcryo", type=int, default=1, choices=(0, 1),
                    help="1 = Cryopod-Dinos einbeziehen beim Tamed-Export, 1 = mit Cryos (Default). Für andere Typen ignoriert.")
     p.add_argument("--output-mode", type=str, default="json",
-                   help='Ausgabeziel: "json", "db" oder "json,db" (DB aktuell für players, tamed und structures)')
+                   help='Ausgabeziel: "json", "db" oder "json,db" (DB aktuell für players, tamed und structures; wild schreibt weiter JSON)')
     p.add_argument("--db-config", type=Path, default=None,
                    help="Pfad zu db.ini für --output-mode=db")
     p.add_argument("--debug", type=str, default="",
@@ -101,6 +102,9 @@ SUPPORTED_TYPES = {"players", "structures", "tamed", "wild"}
 SUPPORTED_OUTPUT_MODES = {"json", "db"}
 SUPPORTED_DEBUG_MODES = {"performance"}
 DB_SUPPORTED_TYPES = {"players", "tamed", "structures"}
+# TODO: Add a proper MariaDB export for wild dinos. Until then, wild must
+# still write WildDinos.json even when --output-mode=db was requested.
+DB_JSON_FALLBACK_TYPES = {"wild"}
 DB_PLAYERS_TABLE_DEFAULT = "pix_ark_sa_players"
 DB_TAMED_TABLE_DEFAULT = "pix_ark_sa_tamed_arkparse"
 DB_STRUCTURES_TABLE_DEFAULT = "pix_ark_sa_structures"
@@ -193,10 +197,11 @@ def validate_output_modes(types: List[str], output_modes: set[str]) -> None:
         return
 
     if "json" not in output_modes:
-        unsupported = [t for t in types if t not in DB_SUPPORTED_TYPES]
+        unsupported = [t for t in types if t not in DB_SUPPORTED_TYPES and t not in DB_JSON_FALLBACK_TYPES]
         if unsupported:
             raise ValueError(
                 "--output-mode=db unterstützt aktuell nur type=players,tamed,structures. "
+                "type=wild fällt bis zum DB-Export automatisch auf JSON zurück. "
                 f"Nicht unterstützt: {', '.join(unsupported)}"
             )
 
@@ -796,9 +801,10 @@ def write_structures_mariadb(
 
 def describe_export_target(export_type: str, filename: str, export_folder: Path, output_modes: set[str], db_options: Optional[Dict[str, Any]]) -> str:
     targets: List[str] = []
-    if "json" in output_modes and export_type == "structures":
+    writes_json = "json" in output_modes or ("db" in output_modes and export_type in DB_JSON_FALLBACK_TYPES)
+    if writes_json and export_type == "structures":
         targets.append(f"{export_folder / 'Structures.json'} + {export_folder / 'StructuresInventory.json'}")
-    elif "json" in output_modes:
+    elif writes_json:
         targets.append(str(export_folder / filename))
     if "db" in output_modes and export_type == "tamed":
         table = db_options["tamed_table"] if db_options else DB_TAMED_TABLE_DEFAULT
@@ -1062,9 +1068,26 @@ def get_nested_property(container: Any, name: str, default: Any = None) -> Any:
             return prop.value
     return default
 
+def get_wrapped_game_object(obj: Any) -> Any:
+    return getattr(obj, "object", obj)
+
+def get_inventory_uuid_from_object(obj: Any) -> Optional[UUID]:
+    inventory_ref = obj.get_property_value("MyInventoryComponent") if obj is not None else None
+    inventory_uuid = getattr(inventory_ref, "value", inventory_ref)
+    if not inventory_uuid:
+        return None
+    try:
+        return UUID(str(inventory_uuid))
+    except (TypeError, ValueError):
+        return None
+
 def get_market_sell_orders(structure: Any) -> Dict[str, Dict[str, Any]]:
     orders_by_item_uuid: Dict[str, Dict[str, Any]] = {}
-    trade_data = structure.object.get_property_value("MyTradeData")
+    structure_obj = get_wrapped_game_object(structure)
+    if structure_obj is None:
+        return orders_by_item_uuid
+
+    trade_data = structure_obj.get_property_value("MyTradeData")
     sell_orders = get_nested_property(trade_data, "SellOrders")
     if not hasattr(sell_orders, "properties"):
         return orders_by_item_uuid
@@ -1083,19 +1106,7 @@ def get_market_sell_orders(structure: Any) -> Dict[str, Dict[str, Any]]:
 
     return orders_by_item_uuid
 
-def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
-    if not isinstance(structure, StructureWithInventory):
-        return []
-
-    try:
-        inventory = structure.inventory
-        if inventory is None or getattr(inventory, "object", None) is None:
-            return []
-        inventory_items = list(inventory.items.values())
-    except Exception:
-        return []
-
-    sell_orders = get_market_sell_orders(structure)
+def format_structure_inventory_items(inventory_items: List[Any], sell_orders: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
     items: List[Dict[str, Any]] = []
     for item in inventory_items:
         item_obj = getattr(item, "object", None)
@@ -1114,6 +1125,37 @@ def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
             }
         )
     return items
+
+def export_structure_inventory_items(structure: Any) -> List[Dict[str, Any]]:
+    if not isinstance(structure, StructureWithInventory):
+        return []
+
+    try:
+        inventory = structure.inventory
+        if inventory is None or getattr(inventory, "object", None) is None:
+            return []
+        inventory_items = list(inventory.items.values())
+    except Exception:
+        return []
+
+    sell_orders = get_market_sell_orders(structure)
+    return format_structure_inventory_items(inventory_items, sell_orders)
+
+def export_structure_inventory_items_from_object(save: AsaSave, structure_obj: Any) -> List[Dict[str, Any]]:
+    inventory_uuid = get_inventory_uuid_from_object(structure_obj)
+    if inventory_uuid is None:
+        return []
+
+    try:
+        inventory = Inventory(inventory_uuid, save=save)
+        if inventory is None or getattr(inventory, "object", None) is None:
+            return []
+        inventory_items = list(inventory.items.values())
+    except Exception:
+        return []
+
+    sell_orders = get_market_sell_orders(structure_obj)
+    return format_structure_inventory_items(inventory_items, sell_orders)
 
 # ---------- Exporter: Players ----------
 
@@ -1224,27 +1266,33 @@ def export_structures(
     ark_map = MAP_NAME_MAPPING.get(map_key)
     map_params = MapCoordinateParameters(ark_map) if ark_map else None
 
+    objects_started = time()
+    structure_objects = structure_api.get_all_objects()
+    perf_log(debug_modes, "structures", "get_all_objects", objects_started, len(structure_objects))
+
     out: List[Dict[str, Any]] = []
     inventory_out: List[Dict[str, Any]] = []
-    for structure in structure_api.get_all().values():
-        owner_name = structure.object.get_property_value("OwnerName")
+    payload_started = time()
+    for structure_obj in structure_objects.values():
+        owner_name = structure_obj.get_property_value("OwnerName")
         if owner_name is None:
             continue
-        tribe_id = structure.object.get_property_value("TargetingTeam")
+        tribe_id = structure_obj.get_property_value("TargetingTeam")
         if tribe_id is None:
             continue
 
-        created = parse_asa_stamp(structure.object.get_property_value("OriginalPlacedTimeStamp", 0))
-        (lat, lon), ccc, biom = resolve_location_xyz_to_map_cached(getattr(structure, "location", None), map_params)
-        structure_id = str(structure.uuid)
-        structure_class = asv_class_name(structure)
+        structure_name = structure_obj.get_property_value("BoxName")
+        created = parse_asa_stamp(structure_obj.get_property_value("OriginalPlacedTimeStamp", 0))
+        (lat, lon), ccc, biom = resolve_location_xyz_to_map_cached(getattr(structure_obj, "location", None), map_params)
+        structure_id = str(structure_obj.uuid)
+        structure_class = asv_class_name(structure_obj)
 
         entry = {
             "id": structure_id,
             "tribeid": tribe_id,
             "tribe": owner_name,
             "struct": structure_class,
-            "name": structure.object.get_property_value("BoxName"),
+            "name": structure_name,
             "lat": lat,
             "lon": lon,
             "ccc": ccc,
@@ -1262,12 +1310,13 @@ def export_structures(
                 "tribeid": tribe_id,
                 "tribe": owner_name,
                 "struct": structure_class,
-                "name": structure.object.get_property_value("BoxName"),
-                "items": export_structure_inventory_items(structure),
+                "name": structure_name,
+                "items": export_structure_inventory_items_from_object(save, structure_obj),
             }
             if ark_map == ArkMap.GENESIS1:
                 inventory_entry["biom"] = biom
             inventory_out.append(inventory_entry)
+    perf_log(debug_modes, "structures", "build payload", payload_started, len(out))
 
     payload = {"map": map_folder, "data": out}
     path = export_folder / "Structures.json"
