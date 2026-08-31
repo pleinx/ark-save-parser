@@ -1,5 +1,6 @@
 """Player API: load players/tribes/pawns and snapshot the counts. Also checks
-that every pawn-bearing player resolves an inventory."""
+that every pawn-bearing player resolves an inventory, and that the loaded counts
+agree with the .arkprofile/.arktribe files sitting next to the save."""
 import pytest
 
 from arkparse.api import PlayerApi
@@ -34,3 +35,42 @@ def test_pawn_inventories(player_api: PlayerApi):
             )
             checked += 1
     print(f"Verified inventories for {checked} pawn-bearing players")
+
+
+def test_matches_files_on_disk(player_api: PlayerApi):
+    """Guard against silently loading nothing.
+
+    A save whose player/tribe data lives in .arkprofile/.arktribe files next to
+    it must yield one player/tribe per file. Without this check a run that loads
+    zero players still "passes" once a broken zero is baselined into the
+    snapshot, which is exactly how a store-detection bug stayed hidden.
+    """
+    save_dir = player_api.save.save_dir
+    if save_dir is None:
+        pytest.skip("Save has no directory on disk")
+
+    # Counts kept in plain ints so a failure reports numbers, not path dumps.
+    n_profile_files = len(list(save_dir.glob("*.arkprofile")))
+    n_tribe_files = len(list(save_dir.glob("*.arktribe")))
+
+    if n_profile_files == 0 and n_tribe_files == 0:
+        pytest.skip(
+            "No .arkprofile/.arktribe files next to the save "
+            "(player data is expected to come from the in-save store)"
+        )
+
+    n_players = len(player_api.players)
+    n_tribes = len(player_api.tribes)
+    print(
+        f"on disk: profiles={n_profile_files} tribes={n_tribe_files}; "
+        f"loaded: players={n_players} tribes={n_tribes}"
+    )
+
+    assert n_players == n_profile_files, (
+        f"{n_profile_files} .arkprofile file(s) next to the save but "
+        f"{n_players} player(s) loaded (from_store={player_api.from_store})"
+    )
+    assert n_tribes == n_tribe_files, (
+        f"{n_tribe_files} .arktribe file(s) next to the save but "
+        f"{n_tribes} tribe(s) loaded (from_store={player_api.from_store})"
+    )

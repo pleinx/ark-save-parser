@@ -70,11 +70,30 @@ class AsaSave:
         self.profile_data_in_db = self.profile_data_in_saves()
         self._get_game_time_params()
 
+    # Markers of the embedded profile/tribe store inside GameModeCustomBytes.
+    _TRIBE_STORE_MARKER = b"/Script/ShooterGame.PrimalTribeData"
+    _PLAYER_STORE_MARKER = b"PrimalPlayerDataBP.PrimalPlayerDataBP_C"
+
     def profile_data_in_saves(self) -> bool:
         parser: ArkBinaryParser = self.get_custom_value("GameModeCustomBytes")
+        if parser is None:
+            ArkSaveLogger.save_log("No GameModeCustomBytes in the save, profile data not in saves")
+            return False
+
         if len(parser.byte_buffer) < 30:
             ArkSaveLogger.save_log("GameModeCustomBytes is too short, profile data not in saves")
             return False
+
+        # A large GameModeCustomBytes does not by itself mean the profile/tribe
+        # store lives in the save: some saves use it for unrelated data (player
+        # name registries, ...). Only the store markers are conclusive.
+        buffer = bytes(parser.byte_buffer)
+        if self._TRIBE_STORE_MARKER not in buffer and self._PLAYER_STORE_MARKER not in buffer:
+            ArkSaveLogger.save_log(
+                "GameModeCustomBytes contains no player/tribe store markers, profile data not in saves"
+            )
+            return False
+
         return True
 
     def get_class_of_uuid(self, obj_uuid: uuid.UUID) -> Optional[str]:

@@ -155,6 +155,15 @@ class PlayerApi:
 
         if self.from_store:
             self.__get_files_from_db()
+            if (len(self.data.player_data_pointers) == 0
+                    and len(self.data.tribe_data_pointers) == 0
+                    and save.save_dir is not None):
+                # The save claimed to hold the store but it is empty; the real
+                # data is in the .arkprofile/.arktribe files next to the save.
+                ArkSaveLogger.api_log(
+                    "Save store held no player or tribe data, falling back to profile/tribe files")
+                self.from_store = False
+                self.get_files_from_directory(save.save_dir)
         elif save.save_dir is not None:
             self.get_files_from_directory(save.save_dir)
 
