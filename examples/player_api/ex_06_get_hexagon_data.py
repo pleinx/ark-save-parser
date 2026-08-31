@@ -4,7 +4,7 @@ from arkparse.saves.asa_save import AsaSave
 from arkparse.player.hexagon_state import HexagonState
 from arkparse.player.genesis1_missions import Genesis1Missions
 
-save_path = Path.cwd() / "Genesis_WP.ark"  # Adjust the path as needed
+save_path = Path.cwd() / "temp" / "Genesis_WP.ark" # Adjust the path as needed
 save = AsaSave(save_path)
 
 player_api = PlayerApi(save)
