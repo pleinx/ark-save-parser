@@ -4,6 +4,8 @@ agree with the .arkprofile/.arktribe files sitting next to the save."""
 import pytest
 
 from arkparse.api import PlayerApi
+from arkparse.api.player_api import _TribeAndPlayerData
+from arkparse.saves.save_connection import SaveConnection
 
 from snapshot import Snapshot
 
@@ -73,4 +75,46 @@ def test_matches_files_on_disk(player_api: PlayerApi):
     assert n_tribes == n_tribe_files, (
         f"{n_tribe_files} .arktribe file(s) next to the save but "
         f"{n_tribes} tribe(s) loaded (from_store={player_api.from_store})"
+    )
+
+
+def test_store_records_all_reachable(player_api: PlayerApi):
+    """The in-save store path must not silently drop records either.
+
+    Counterpart to test_matches_files_on_disk: when the data comes from the
+    store there are no files to count against, so check the store's own
+    bookkeeping instead.
+    """
+    if not player_api.from_store:
+        pytest.skip("Player data comes from .arkprofile/.arktribe files")
+
+    data = player_api.data
+    n_player_ptrs = len(data.player_data_pointers)
+    n_tribe_ptrs = len(data.tribe_data_pointers)
+    n_players = len(player_api.players)
+    n_tribes = len(player_api.tribes)
+    print(
+        f"store pointers: players={n_player_ptrs} tribes={n_tribe_ptrs}; "
+        f"loaded: players={n_players} tribes={n_tribes}"
+    )
+
+    assert n_players == n_player_ptrs, (
+        f"store located {n_player_ptrs} player record(s) but {n_players} "
+        f"player(s) were loaded"
+    )
+
+    # The record boundary for the last player used to be computed as "up to the
+    # next marker", which does not exist for the final one, so it was dropped.
+    positions = data.data.find_byte_sequence(_TribeAndPlayerData.PLAYER_DATA_NAME)
+    assert positions, "no player records found in the store"
+    data.data.set_position(positions[-1] - 20)
+    last_uuid = SaveConnection.byte_array_to_uuid(data.data.read_bytes(16))
+    assert last_uuid in data.player_data_pointers, (
+        "the last player record in the store was not picked up"
+    )
+
+    # Tribe pointers can hold several revisions of the same tribe, which collapse
+    # on tribe id, so this is bounded rather than exact.
+    assert 0 < n_tribes <= n_tribe_ptrs, (
+        f"{n_tribe_ptrs} tribe record(s) in the store but {n_tribes} loaded"
     )
