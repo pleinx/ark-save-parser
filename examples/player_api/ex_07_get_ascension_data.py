@@ -4,7 +4,7 @@ from arkparse.saves.asa_save import AsaSave
 from arkparse.enums import AscensionSlot, AscensionLevel
 from arkparse.player.ascension_data import AscensionData
 
-save_path = Path.cwd() / "Genesis_WP.ark"  # Adjust the path as needed
+save_path = Path.cwd() / "LostColony_WP.ark"  # Adjust the path as needed
 save = AsaSave(save_path)
 
 player_api = PlayerApi(save)
