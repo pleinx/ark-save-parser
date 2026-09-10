@@ -1196,7 +1196,7 @@ def export_players(
     debug_modes: Optional[set[str]] = None,
 ) -> Tuple[str, int]:
     output_modes = output_modes or {"json"}
-    player_api = PlayerApi(save)
+    player_api = PlayerApi(save, bypass_inventory=True)
 
     # Tribe-Namen map
     tribes_by_id: Dict[int, str] = {}
@@ -1469,7 +1469,11 @@ def export_tamed(
     structure_api = StructureApi(save)
     #possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C', 'IceBox_C', 'StorageBox_Large_C', 'LinkedStorage_C', 'StorageBox_Small_C', 'StorageBox_Huge_C']
     possible_cryopod_storages = ['CryoFridge_C', 'CryoHospital_Base_C']
-    config = GameObjectReaderConfiguration(blueprint_name_filter=lambda name: name is not None and any(cls in name for cls in possible_cryopod_storages))
+    config = GameObjectReaderConfiguration(
+        blueprint_name_filter=lambda name: name is not None and any(
+            cls in name for cls in possible_cryopod_storages
+        ),
+    )
 
 #     config = GameObjectReaderConfiguration(
 #         blueprint_name_filter=lambda name: name is not None and (
@@ -1479,20 +1483,28 @@ def export_tamed(
 #         property_names=["OwnerName", "TargetingTeam", "OriginalPlacedTimeStamp", "BoxName", "InventoryUUID"]
 #     )
 
-    storages = structure_api.get_all(config)
-    perf_log(debug_modes, "tamed", "cryopod storage scan", storage_started, len(storages))
+    storage_objects = structure_api.get_all_objects(config)
+    perf_log(debug_modes, "tamed", "cryopod storage scan", storage_started, len(storage_objects))
 
     inventory_map_started = time()
     inventory_map: Dict[UUID, Dict[str, Any]] = {}
-    for key, storage in storages.items():
-        if not isinstance(storage, StructureWithInventory):
+    for storage in storage_objects.values():
+        tribe_id = storage.get_property_value("TargetingTeam")
+        inventory_ref = storage.get_property_value("MyInventoryComponent")
+        location = getattr(storage, "location", None)
+
+        if tribe_id is None or location is None or inventory_ref is None:
             continue
 
-        if storage.owner.tribe_id is not None and storage.owner.properties.location is not None:
-            inventory_map[storage.inventory_uuid] = {
-                "tribe_id": storage.owner.tribe_id,
-                "location": storage.owner.properties.location,
-            }
+        try:
+            inventory_uuid = UUID(inventory_ref.value)
+        except (AttributeError, TypeError, ValueError):
+            continue
+
+        inventory_map[inventory_uuid] = {
+            "tribe_id": tribe_id,
+            "location": location,
+        }
     perf_log(debug_modes, "tamed", "cryopod inventory map", inventory_map_started, len(inventory_map))
 
     map_folder = save_path.parent.name
